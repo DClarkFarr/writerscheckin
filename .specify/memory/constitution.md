@@ -336,22 +336,6 @@ other visual decision. Technical correctness is not a substitute for meeting the
 - **Role clarity**: Reading, presenting, and participation roles MUST be visually distinct
   (e.g., a badge or icon). A user MUST be able to tell their own role without reading fine print.
 
-### XII. ShadCN UI Component System
-
-The ShadCN UI components in `web/src/components/ui/` are the **authoritative base building
-blocks** for all frontend UI. Raw HTML elements (`<button>`, `<input>`, `<div>` used as
-interactive containers, etc.) MUST NOT be used when an equivalent ShadCN component exists.
-Custom components MUST be composed from these primitives, not built from scratch.
-
-All ShadCN components use `data-slot` attributes as internal styling hooks. Never remove or
-override `data-slot` props — they drive parent→child CSS selectors throughout the system.
-
-All className composition MUST use the `cn()` utility from `@/lib/utils` (combines `clsx` +
-`tailwind-merge`). Never concatenate className strings with template literals or `+`.
-
-Icons MUST come from `@hugeicons/react` (`HugeiconsIcon`) with icons imported from
-`@hugeicons/core-free-icons`. Set `strokeWidth={2}` as the standard weight.
-
 #### Component Inventory & Composition Trees
 
 The following components are available. Use the documented composition tree to assemble UI
@@ -512,9 +496,8 @@ When a ShadCN primitive does not meet a requirement:
 
 1. Compose from existing sub-components before creating a new one.
 2. New shared components go in `web/src/components/` under an appropriate subdirectory
-   (`forms/`, `helpers/`, `layout/`) and MUST import from `@/components/ui/`.
-3. Do not fork or copy-paste a ShadCN component file; extend by wrapping.
-4. New components MUST accept and spread a `className` prop and apply it via `cn()`.
+   (`forms/`, `helpers/`, `layout/`, etc.) and MUST import from `@/components/ui/`.
+3. New components MUST accept and spread a `className` prop and apply it via `cn()`.
 
 ### X. Deployment & Change Detection
 
