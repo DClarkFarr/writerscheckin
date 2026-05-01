@@ -1,13 +1,13 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.0.0 → 1.1.0 (MINOR — Principle II materially expanded with explicit DB/model/service/router/utils rules)
-Modified principles: II. Layered Backend Architecture — expanded from summary to full specification
-Added sections: None
+Version change: 1.1.0 → 1.2.0 (MINOR — new Principle XI: ShadCN UI Component System)
+Modified principles: None
+Added sections: Principle XI — ShadCN UI Component System
 Removed sections: None
 Templates requiring updates:
   ✅ constitution.md — this file
-  ⚠ .specify/templates/plan-template.md — no changes needed, references constitution generically
+  ⚠ .specify/templates/plan-template.md — no changes needed
   ⚠ .specify/templates/spec-template.md — no changes needed
   ⚠ .specify/templates/tasks-template.md — no changes needed
 Deferred TODOs: None
@@ -261,6 +261,181 @@ All authentication actions (signup, login, logout, reset-request, reset-confirm)
 `recordAuditEvent()` from `utils/audit.ts`. The audit record MUST include `action`, `userId`,
 `email`, and `ipAddress`. Extend `AuditAction` union type when adding new sensitive actions.
 
+### XI. ShadCN UI Component System
+
+The ShadCN UI components in `web/src/components/ui/` are the **authoritative base building
+blocks** for all frontend UI. Raw HTML elements (`<button>`, `<input>`, `<div>` used as
+interactive containers, etc.) MUST NOT be used when an equivalent ShadCN component exists.
+Custom components MUST be composed from these primitives, not built from scratch.
+
+All ShadCN components use `data-slot` attributes as internal styling hooks. Never remove or
+override `data-slot` props — they drive parent→child CSS selectors throughout the system.
+
+All className composition MUST use the `cn()` utility from `@/lib/utils` (combines `clsx` +
+`tailwind-merge`). Never concatenate className strings with template literals or `+`.
+
+Icons MUST come from `@hugeicons/react` (`HugeiconsIcon`) with icons imported from
+`@hugeicons/core-free-icons`. Set `strokeWidth={2}` as the standard weight.
+
+#### Component Inventory & Composition Trees
+
+The following components are available. Use the documented composition tree to assemble UI
+correctly — do not skip levels or mix sub-components from different parents.
+
+**Button** — use for all clickable actions.
+
+```
+Button  (variants: default | outline | secondary | ghost | destructive | link)
+        (sizes:    default | xs | sm | lg | icon | icon-xs | icon-sm | icon-lg)
+```
+
+- Use `asChild` to render as a different element (e.g., `<Link asChild>`) via Radix `Slot`.
+- Use `size="icon"` variants for icon-only buttons; always include `<span className="sr-only">`.
+- Use `variant="destructive"` for irreversible actions.
+
+**Field / FieldGroup** — the canonical wrapper for all form inputs. Never use a raw `<label>` +
+`<input>` pair outside of a `Field`.
+
+```
+FieldGroup
+└── Field  (orientation: vertical | horizontal | responsive)
+    ├── FieldLabel    — wraps Label; drives disabled/invalid styling via group selectors
+    ├── FieldTitle    — alternative to FieldLabel for non-label headings
+    ├── Input | Textarea | Switch | ...  — the actual control
+    ├── FieldDescription  — helper text below the control
+    └── FieldContent  — container for controls with separate description
+FieldSet
+└── FieldLegend  (variant: legend | label)
+```
+
+- Mark invalid state with `aria-invalid="true"` on the input AND `data-invalid={true}` on the
+  `Field` — this triggers red styling via CSS attribute selectors.
+- Mark disabled state with `data-disabled={true}` on the `Field`.
+- Use `FieldGroup` to lay out multiple `Field` blocks in a form; it handles responsive stacking.
+- Use `FieldSet` + `FieldLegend` for groups of checkboxes or radio buttons.
+
+**InputGroup** — wraps `Input` or `Textarea` to add inline/block addons (icons, text, buttons).
+
+```
+InputGroup
+├── InputGroupAddon  (align: inline-start | inline-end | block-start | block-end)
+│   └── icon | text | InputGroupButton
+└── Input | Textarea  (add data-slot="input-group-control" to the native input)
+```
+
+- Use `align="inline-start"` for a leading icon, `align="inline-end"` for a trailing action.
+- Do not use `InputGroup` for standalone inputs; use `Field` + `Input` directly.
+
+**Card** — use for contained sections of content.
+
+```
+Card  (size: default | sm)
+├── CardHeader
+│   ├── CardTitle
+│   ├── CardDescription
+│   └── CardAction   — placed top-right; use for a Button or Badge
+├── CardContent
+└── CardFooter
+```
+
+**Dialog** — use for modal overlays requiring user attention or confirmation.
+
+```
+Dialog
+├── DialogTrigger  (asChild to use a custom trigger element)
+└── DialogContent  (showCloseButton=true by default)
+    ├── DialogHeader
+    │   ├── DialogTitle
+    │   └── DialogDescription
+    └── DialogFooter
+```
+
+- Always provide `DialogTitle` (accessibility). Use `className="sr-only"` if visually hidden.
+- Use `showCloseButton={false}` only when a custom close action is provided.
+
+**DropdownMenu** — use for contextual action menus.
+
+```
+DropdownMenu
+├── DropdownMenuTrigger  (asChild to use a Button)
+└── DropdownMenuContent
+    ├── DropdownMenuGroup
+    │   ├── DropdownMenuLabel
+    │   ├── DropdownMenuItem            (variant: default | destructive)
+    │   ├── DropdownMenuCheckboxItem
+    │   └── DropdownMenuRadioGroup
+    │       └── DropdownMenuRadioItem
+    ├── DropdownMenuSeparator
+    └── DropdownMenuSub
+        ├── DropdownMenuSubTrigger
+        └── DropdownMenuSubContent
+```
+
+- Always wrap `DropdownMenuTrigger` with `asChild` + a `Button` (never a raw `<div>`).
+- Use `DropdownMenuGroup` to cluster related items; use `DropdownMenuLabel` to name groups.
+- Use `variant="destructive"` on `DropdownMenuItem` for delete/irreversible actions.
+
+**Item / ItemGroup** — use for list rows (not for menus — use DropdownMenu for that).
+
+```
+ItemGroup
+├── ItemSeparator
+└── Item  (variant: default | outline | muted)  (size: default | sm | xs)
+    ├── ItemMedia    (variant: default | icon | image)
+    ├── ItemContent
+    │   ├── ItemTitle
+    │   └── ItemDescription
+    └── ItemActions
+```
+
+- Use `Item` with `asChild` to render list rows as links (`<Link asChild>`).
+- `ItemMedia` with `variant="image"` crops images to a fixed square thumbnail.
+- `ItemActions` renders at the far right; use for icon `Button` controls.
+
+**Tabs** — use for switching between content sections.
+
+```
+Tabs  (orientation: horizontal | vertical)
+├── TabsList  (variant: default | line)
+│   └── TabsTrigger
+└── TabsContent
+```
+
+- Use `variant="line"` on `TabsList` for an underline-style tab bar.
+- Use `orientation="vertical"` for sidebar-style navigation.
+
+**Sheet** — use for slide-over panels (side navigation, detail drawers).
+**Drawer** — use for bottom-sheet patterns on mobile.
+**Popover** — use for non-modal floating content anchored to a trigger.
+**HoverCard** — use for preview cards on hover (not for interactive content).
+**Tooltip** — use for short labels on icon-only buttons. Wrap with `CustomTooltip` from
+`components/helpers/CustomTooltip.tsx` if a reusable tooltip pattern is needed.
+
+**Badge** — use for status labels, counts, and tags inline with text.
+**Alert** — use for page-level feedback messages (success, error, warning, info).
+**Skeleton** — use as a loading placeholder; match the shape of the real content.
+**Spinner** — use for indeterminate loading states within buttons or inline.
+**Separator** — use for visual dividers between sections.
+
+**Collapsible** — use for expand/collapse sections.
+**Toggle / ToggleGroup** — use for binary or exclusive-choice button sets.
+**Switch** — use for boolean on/off settings (inside a `Field`).
+**Calendar** — use for date pickers.
+**Command** — use for command palettes and searchable lists.
+**Breadcrumb** — use for hierarchical navigation paths.
+
+**ColorPaletteDropdown** — project-specific component in `ui/`; use for color selection UI.
+
+#### Extension Rules
+
+When a ShadCN primitive does not meet a requirement:
+
+1. Compose from existing sub-components before creating a new one.
+2. New shared components go in `web/src/components/` under an appropriate subdirectory
+   (`forms/`, `helpers/`, `layout/`) and MUST import from `@/components/ui/`.
+3. Do not fork or copy-paste a ShadCN component file; extend by wrapping.
+4. New components MUST accept and spread a `className` prop and apply it via `cn()`.
+
 ### X. Deployment & Change Detection
 
 Deployment is fully scripted via `deploy.sh`. The script:
@@ -316,4 +491,4 @@ All new features and changes MUST comply with these principles. Any amendment re
 - MINOR bump: new principle or section added.
 - PATCH bump: clarifications, wording fixes, non-semantic refinements.
 
-**Version**: 1.1.0 | **Ratified**: 2026-04-30 | **Last Amended**: 2026-04-30
+**Version**: 1.2.0 | **Ratified**: 2026-04-30 | **Last Amended**: 2026-04-30
