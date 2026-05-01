@@ -1,9 +1,9 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.1.0 → 1.2.0 (MINOR — new Principle XI: ShadCN UI Component System)
-Modified principles: None
-Added sections: Principle XI — ShadCN UI Component System
+Version change: 1.2.0 → 1.3.0 (MINOR — expanded Project Overview; added Principle XII: Product Design Imperatives)
+Modified sections: Project Overview — filled TODO with full product description
+Added sections: Principle XII — Product Design Imperatives
 Removed sections: None
 Templates requiring updates:
   ✅ constitution.md — this file
@@ -17,10 +17,17 @@ Deferred TODOs: None
 
 ## Project Overview
 
-Writers CheckIn is a full-stack web application [TODO]. It
-uses a monorepo layout with two projects: `express/` (Node.js/TypeScript API server) and `web/`
-(React/TypeScript SPA). Both are served from the same origin — Express serves the compiled SPA
-as a static fallback and exposes all API routes under `/api`.
+Writers CheckIn is a mobile-first web app for writing groups. Writers join groups, view upcoming
+meetings, check in to confirm attendance, and see who else will attend. Each meeting shows who is
+reading, presenting, or participating in another role. The core user need is answered in one glance:
+_What is my next meeting, am I checked in, who else is coming, and who is reading?_
+
+The product is modern, clean, spacious, and simple. It avoids dashboard clutter and prioritizes
+quick comprehension. The experience is calm and polished — closer to a mobile app than a web tool.
+
+The codebase uses a monorepo layout with two projects: `express/` (Node.js/TypeScript API server)
+and `web/` (React/TypeScript SPA). Both are served from the same origin — Express serves the
+compiled SPA as a static fallback and exposes all API routes under `/api`.
 
 **Technology Stack:**
 
@@ -261,7 +268,72 @@ All authentication actions (signup, login, logout, reset-request, reset-confirm)
 `recordAuditEvent()` from `utils/audit.ts`. The audit record MUST include `action`, `userId`,
 `email`, and `ipAddress`. Extend `AuditAction` union type when adding new sensitive actions.
 
-### XI. ShadCN UI Component System
+### XI. Product Design Imperatives (NON-NEGOTIABLE)
+
+These rules govern every screen, component, and interaction. They MUST be applied before any
+other visual decision. Technical correctness is not a substitute for meeting these criteria.
+
+#### Layout & Chrome
+
+- **Mobile-first**: All layouts MUST be designed and tested at mobile widths first. Desktop is
+  an enhancement, not the default.
+- **Centered phone card on desktop**: On viewports wider than mobile breakpoint, the entire app
+  content MUST render as a centered, phone-sized white content card (`max-w-sm` or similar),
+  with a **dark sky-blue full-page background** filling the rest of the viewport. The card MUST
+  have rounded corners (`rounded-2xl` or similar) and a soft shadow.
+- **White content area**: The card/content area background is white (or near-white). Content is
+  never placed directly on the sky-blue background.
+- **Navigation minimal**: Navigation MUST be minimal — a single bottom tab bar or a compact
+  top bar. No sidebars, no hamburger menus unless unavoidable on a specific nested screen.
+
+#### Color & Typography
+
+- **Primary action color**: Bright sky blue MUST be used for primary buttons, key CTAs, and
+  active/selected states. This is the single accent color — do not introduce secondary accent
+  colors without explicit justification.
+- **Text on white**: Body text MUST use dark gray (not pure black) for readability. Muted text
+  for secondary labels MUST pass WCAG AA contrast against white.
+- **Accessible contrast**: All text and interactive states MUST meet WCAG AA contrast ratios
+  (4.5:1 for normal text, 3:1 for large text and UI components).
+- **Readable typography**: Font sizes MUST be comfortable at arm's length on a phone screen.
+  Body text MUST NOT be smaller than `text-sm` (14px). Labels MUST NOT be smaller than `text-xs`
+  (12px). Prefer `text-base` for primary reading content.
+
+#### Content Density & Spacing
+
+- **Generous spacing**: Use ample padding inside cards and between list items. Prefer `gap-4` or
+  `gap-6` between major sections. Avoid cramming information.
+- **Card-based content**: Meetings, groups, and members MUST be displayed in clear card
+  components. Never render data as bare text lists.
+- **One primary action per screen**: Each screen MUST have at most one primary (sky-blue) CTA
+  that is immediately obvious. Secondary actions use `outline` or `ghost` variants.
+
+#### Interaction & States
+
+- **Obvious interactive states**: Every interactive element MUST have clearly visible hover,
+  focus, and active states. Focus rings MUST be visible (do not suppress `outline` without
+  replacing with a visible `ring`).
+- **Check-in is the primary action**: The meeting check-in action MUST be the most visually
+  prominent element on a meeting screen. It MUST be reachable in ≤2 taps from the home screen.
+- **Loading states**: Skeleton placeholders MUST be used for any content that loads
+  asynchronously. Spinners are reserved for actions (button loading states), not page content.
+- **Empty states**: Every list or card grid MUST have a purposeful empty state with a short
+  message and, where appropriate, a primary CTA (e.g., "No upcoming meetings — find a group").
+
+#### Domain-Specific UX Rules
+
+- **Next meeting is always visible**: The home screen MUST immediately surface the user's next
+  upcoming meeting (or a prompt to join a group if none exists). This is the first thing a user
+  sees after logging in.
+- **Attendance visibility**: Meeting screens MUST clearly show: who has checked in, who is
+  attending, and the reading/presenting roles. This information MUST be scannable at a glance
+  (avatars + names, not just counts).
+- **Group context**: Every meeting MUST display its parent group. Users viewing a meeting always
+  know which group it belongs to.
+- **Role clarity**: Reading, presenting, and participation roles MUST be visually distinct
+  (e.g., a badge or icon). A user MUST be able to tell their own role without reading fine print.
+
+### XII. ShadCN UI Component System
 
 The ShadCN UI components in `web/src/components/ui/` are the **authoritative base building
 blocks** for all frontend UI. Raw HTML elements (`<button>`, `<input>`, `<div>` used as
@@ -491,4 +563,4 @@ All new features and changes MUST comply with these principles. Any amendment re
 - MINOR bump: new principle or section added.
 - PATCH bump: clarifications, wording fixes, non-semantic refinements.
 
-**Version**: 1.2.0 | **Ratified**: 2026-04-30 | **Last Amended**: 2026-04-30
+**Version**: 1.3.0 | **Ratified**: 2026-04-30 | **Last Amended**: 2026-04-30
