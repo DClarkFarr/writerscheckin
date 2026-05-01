@@ -1,5 +1,4 @@
 import { Link } from "@tanstack/react-router";
-import { Button } from "flowbite-react";
 import { Topbar } from "../components/layout/Topbar";
 import Logo from "../assets/logo-icon.png";
 export function Home() {
@@ -18,9 +17,7 @@ export function Home() {
         <p className="text-lg text-gray-400 max-w-md">
           Plan, plot, and build your stories.
         </p>
-        <Button as={Link} to="/login" size="lg" color="blue">
-          Get Started
-        </Button>
+        <Link to="/login">Get Started</Link>
       </main>
     </div>
   );
