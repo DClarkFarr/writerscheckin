@@ -1,15 +1,15 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: (new) → 1.0.0
-Added sections: All (initial constitution generated from codebase analysis)
-Removed sections: None (template placeholders replaced)
-Modified principles: None (initial)
+Version change: 1.0.0 → 1.1.0 (MINOR — Principle II materially expanded with explicit DB/model/service/router/utils rules)
+Modified principles: II. Layered Backend Architecture — expanded from summary to full specification
+Added sections: None
+Removed sections: None
 Templates requiring updates:
   ✅ constitution.md — this file
-  ⚠ .specify/templates/plan-template.md — may reference generic principles; review against constitution
-  ⚠ .specify/templates/spec-template.md — review scope/requirements alignment
-  ⚠ .specify/templates/tasks-template.md — review task categories against principles
+  ⚠ .specify/templates/plan-template.md — no changes needed, references constitution generically
+  ⚠ .specify/templates/spec-template.md — no changes needed
+  ⚠ .specify/templates/tasks-template.md — no changes needed
 Deferred TODOs: None
 -->
 
@@ -27,7 +27,7 @@ as a static fallback and exposes all API routes under `/api`.
 - **Backend**: Express 5, TypeScript (strict), MongoDB (native driver), express-session,
   bcryptjs, Nodemailer, Multer, Helmet, CORS
 - **Frontend**: React 19, TypeScript (strict), Vite 8, TanStack Router (file-based),
-  TanStack Query v5, Zustand, Axios, Tailwind CSS v4, Flowbite UI, TipTap, dnd-kit
+  TanStack Query v5, Zustand, Axios, Tailwind CSS v4, ShadCN UI, TipTap, dnd-kit
 - **Deploy**: Bash scripts with git-pull-based CI, change detection, process restart
 
 ## Core Principles
@@ -42,25 +42,116 @@ provably correct; do not use `any`.
 Use the `@/` path alias (maps to `web/src/`) for all frontend imports. Use relative paths in
 `express/src/`.
 
-### II. Layered Backend Architecture (Models → Services → Routers)
+### II. Layered Backend Architecture (Models → Services → Routers → Utils)
 
-The Express backend MUST follow a strict three-layer architecture:
+The Express backend MUST follow a strict four-layer architecture. Each layer has exclusive
+responsibilities and MUST NOT do the work of another layer.
 
-1. **Models** (`express/src/models/`) — define TypeScript interfaces, MongoDB collection helpers,
-   and index setup. Each entity gets its own file. Use the generic type system:
-   - `ModelDocument<TDefinition>` for full documents with `_id` and timestamps.
-   - `ModelInsertInput<TDefinition>` for insert payloads.
-   - `ModelBlueprint<TDefinition>` for the raw shape.
-   - Call `ensureXxxIndexes()` during app startup to create MongoDB indexes.
+#### Layer 1 — Models (`express/src/models/`)
 
-2. **Services** (`express/src/services/`) — contain all business logic. Services MUST validate
-   input using helpers from `utils/validators.ts`, throw typed errors (`AuthError`,
-   `ValidationError`, or descriptive `Error` messages), call model functions, record audit events,
-   and return typed response objects. Services MUST NOT reference `req`/`res`.
+Model files are the **only** place in the codebase that may touch MongoDB. This includes every
+call to `getCollection()`, every `find`, `findOne`, `insertOne`, `updateOne`, `deleteOne`, and
+any use of the MongoDB `Collection` type.
 
-3. **Routers** (`express/src/routers/`) — contain only route definitions. Each handler extracts
-   data from `req`, calls one or more services, and writes `res`. All async handlers MUST be
-   wrapped with `handleAsync()`. Routers MUST NOT contain business logic.
+Each entity gets its own model file (e.g., `users.ts`, `sessions.ts`). A model file MUST contain:
+
+- **Type definitions** using the generic type system from `models/types.ts`:
+  - `interface XxxDefinition extends BaseModelBlueprint` — the entity's field shape.
+  - `type XxxBlueprint = ModelBlueprint<XxxDefinition>` — raw document shape.
+  - `type XxxDocument = ModelDocument<XxxDefinition>` — full document with `_id` and timestamps.
+  - Input interfaces for create/update operations (e.g., `CreateXxxInput`, `UpdateXxxInput`).
+- **Collection accessor** — a `getXxxCollection()` function that calls `getCollection<XxxDocument>(COLLECTIONS.xxx)`.
+- **Index setup** — an `ensureXxxIndexes()` async function that creates all MongoDB indexes for
+  the entity. Called once at startup in `server.ts`.
+- **All CRUD functions** for the entity — `createXxx`, `getXxxById`, `getXxxByYyy`, `listXxx`,
+  `updateXxxById`, `deleteXxxById`, etc. Each function calls the collection accessor and returns
+  typed results. These MUST be plain async functions (not classes).
+- **Pure helper functions** that are data-only and entity-specific (e.g., `normalizeEmail()` in
+  `users.ts`, `assertNotExpired()` in `sessions.ts`).
+
+Model functions MUST NOT contain business logic, validation of user inputs, rate limiting, or
+audit logging. They MUST only translate between the service layer and MongoDB.
+
+Timestamps are managed via `createTimestamps()` (sets `createdAt`) and `touchTimestamps()` (sets
+`updatedAt`) from `models/types.ts`. Always spread these into insert/update payloads.
+
+Use `ensureObjectId(value, label)` from `models/types.ts` to safely coerce `string | ObjectId`
+to `ObjectId` before passing to MongoDB queries.
+
+`models/collections.ts` is the single source of truth for collection names via `COLLECTIONS`
+(a `const` object). `getCollection<T>(name)` accesses `db` from `utils/db.ts`. New entities
+MUST register their collection name in `COLLECTIONS` before writing any model code.
+
+`models/types.ts` MUST NOT be modified to add entity-specific types; those belong in each
+entity's own model file.
+
+#### Layer 2 — Services (`express/src/services/`)
+
+Services contain all **business logic**. They coordinate multiple model functions, enforce
+business rules, and produce the final response data for the router layer.
+
+A service function MUST:
+
+- Accept plain data inputs (primitives, POJOs) — never `req` or `res`.
+- Validate inputs using helpers from `utils/validators.ts` (e.g., `validateEmail()`,
+  `requireString()`, `requireUserId()`).
+- Call model functions to read/write data — never call `getCollection()` directly.
+- Throw typed errors (`AuthError`, `ValidationError`, plain `Error`) for all failure paths.
+- Call `recordAuditEvent()` for sensitive actions.
+- Return typed response objects (not raw `ModelDocument` shapes unless appropriate).
+
+Services MUST NOT access `req`, `res`, or any HTTP-level concept. They MUST NOT call
+`getCollection()` or import from `models/collections.ts` directly.
+
+A service may call functions from multiple model files to combine data. For example,
+`authService.ts` calls functions from `users.ts`, `sessions.ts`, `authAttempts.ts`, and
+`passwordResets.ts`.
+
+Services that require only logic around a single model and no business rules (e.g.,
+`authAttemptService.ts`) are still services — they encapsulate the logic (rate-limit window
+calculation, attempt counting) so the router and other services stay clean.
+
+Email templates live in `services/emailTemplates/` and MUST be pure functions returning
+`{ subject, text, html }` with no dependencies on external services.
+
+#### Layer 3 — Routers (`express/src/routers/`)
+
+Routers contain **only route definitions**. Each route handler:
+
+1. Extracts data from `req` (body, params, query, IP, session).
+2. Calls one or more service functions with plain arguments.
+3. Writes the HTTP response via `res`.
+
+All async handlers MUST be wrapped with `handleAsync()` from `utils/asyncHandler.ts`. Routers
+MUST NOT contain business logic, direct model calls, or validation logic.
+
+Each router is created with `express.Router({ mergeParams: true })` and registered in
+`apiRouter.ts` via `applyNestedRouter(apiRouter, "/path", xRouter)`.
+
+The session is accessed in routers by casting `req.session` to the typed `AuthSession` shape.
+
+#### Layer 4 — Utils (`express/src/utils/`)
+
+Utils are **cross-cutting infrastructure** shared across all layers. Each util has a single
+responsibility:
+
+| File              | Responsibility                                                                      |
+| ----------------- | ----------------------------------------------------------------------------------- |
+| `app.ts`          | Singleton Express app with ordered setup methods                                    |
+| `asyncHandler.ts` | `handleAsync()` wrapper that routes errors to `handleError()`                       |
+| `audit.ts`        | `recordAuditEvent()` — structured audit logging                                     |
+| `db.ts`           | `db` singleton reference (set after `connectToMongo()`)                             |
+| `env.ts`          | Typed proxy for all environment variables                                           |
+| `errorHandler.ts` | `handleError()` + `resolveError()` — maps errors to HTTP responses                  |
+| `errorLogging.ts` | `logError()` — structured error logging with stack source extraction                |
+| `mongo.ts`        | `connectToMongo()` / `disconnectFromMongo()` — raw MongoClient lifecycle            |
+| `passwords.ts`    | `hashPassword()` / `verifyPassword()` — bcrypt wrappers                             |
+| `routes.ts`       | `applyNestedRouter()` + `assertParamIsString()` helpers                             |
+| `sessionStore.ts` | `MongoSessionStore` — express-session store backed by MongoDB                       |
+| `validators.ts`   | `requireString()`, `validateEmail()`, `validatePassword()`, `requireUserId()`, etc. |
+
+Utils MUST NOT contain business logic or entity-specific rules. Validators throw `ValidationError`
+or `AuthError`; they do not call model functions.
 
 New routers MUST be registered in `apiRouter.ts` using `applyNestedRouter()`.
 
@@ -124,7 +215,7 @@ Forms MUST be split into two parts:
    (`XxxFormProps`). The hook MUST NOT render any JSX.
 
 2. **A pure presentational component** (`web/src/components/forms/XxxForm.tsx`) — receives only
-   the typed props interface and renders the Flowbite UI form. The component MUST NOT contain
+   the typed props interface and renders the ShadCN UI form. The component MUST NOT contain
    business logic or direct API calls.
 
 Pages wire the two together: `const formProps = useXxxForm({ onSuccess: ... }); return <XxxForm {...formProps} />;`
@@ -225,4 +316,4 @@ All new features and changes MUST comply with these principles. Any amendment re
 - MINOR bump: new principle or section added.
 - PATCH bump: clarifications, wording fixes, non-semantic refinements.
 
-**Version**: 1.0.0 | **Ratified**: 2026-04-30 | **Last Amended**: 2026-04-30
+**Version**: 1.1.0 | **Ratified**: 2026-04-30 | **Last Amended**: 2026-04-30

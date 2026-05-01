@@ -7,7 +7,6 @@ import {
   type EditorStateSnapshot,
 } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { Button, ButtonGroup } from "flowbite-react";
 import { CustomTooltip } from "../helpers/CustomTooltip";
 
 import IconFormatBold from "~icons/mdi/format-bold";
