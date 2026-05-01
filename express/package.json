@@ -1,0 +1,46 @@
+{
+  "name": "plotter-express",
+  "version": "1.0.0",
+  "description": "Express router app for Plotstack project",
+  "main": "dist/src/server.js",
+  "scripts": {
+    "start": "ts-node src/server.ts",
+    "dev": "nodemon --watch src --ext ts --exec ts-node src/server.ts",
+    "build": "tsc",
+    "serve": "node dist/src/server.js",
+    "check:model-imports": "ts-node scripts/check-model-imports.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^2.2.2",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "docx": "^9.6.1",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "helmet": "^8.1.0",
+    "mongodb": "^6.16.0",
+    "multer": "^1.4.5-lts.1",
+    "node-html-parser": "^7.1.0",
+    "nodemailer": "^8.0.6",
+    "officeparser": "^6.0.7"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/express-session": "^1.18.2",
+    "@types/multer": "^1.4.13",
+    "@types/node": "^25.5.0",
+    "@types/nodemailer": "^8.0.0",
+    "nodemon": "^3.1.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}
