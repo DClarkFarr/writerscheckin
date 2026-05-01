@@ -14,12 +14,12 @@ export const buildPasswordResetEmail = (
   input: PasswordResetEmailInput,
 ): PasswordResetEmailContent => {
   const greetingName = input.firstName?.trim() || "there";
-  const subject = "Your Plotstack password reset code";
+  const subject = "Your Writers CheckIn password reset code";
 
   const text = [
     `Hi ${greetingName},`,
     "",
-    "Use this code to reset your Plotstack password:",
+    "Use this code to reset your Writers CheckIn password:",
     "",
     input.resetCode,
     "",
@@ -29,7 +29,7 @@ export const buildPasswordResetEmail = (
 
   const html = [
     `<p>Hi ${greetingName},</p>`,
-    "<p>Use this code to reset your Plotstack password:</p>",
+    "<p>Use this code to reset your Writers CheckIn password:</p>",
     `<p style=\"font-size: 24px; font-weight: bold; letter-spacing: 0.2em;\">${input.resetCode}</p>`,
     `<p>This code expires in <strong>${input.expiresInMinutes} minutes</strong>.</p>`,
     "<p>If you did not request this reset, you can safely ignore this email.</p>",

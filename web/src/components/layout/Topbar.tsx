@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useAuthStore } from "../../store/authStore";
-import Logo from "../../assets/plotstack-logo-h-transparent-sm.min.png";
+import Logo from "../../assets/logo-h-transparent-sm.min.png";
 
 export function Topbar() {
   const { isAuthenticated, clearUser } = useAuthStore();
@@ -9,7 +9,7 @@ export function Topbar() {
     <div>
       <div>
         <Link to="/" className="font-bold text-xl text-purple-950">
-          <img src={Logo} alt="Plotstack Logo" className="h-12 w-auto" />
+          <img src={Logo} alt="Writers CheckIn Logo" className="h-12 w-auto" />
         </Link>
       </div>
       <div className="flex items-center gap-2">

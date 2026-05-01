@@ -64,10 +64,7 @@ const applyAuthRoutes = () => {
         }
       });
 
-      res
-        .clearCookie("plotstack.sid")
-        .status(200)
-        .json({ message: "Logged out" });
+      res.clearCookie("wci.sid").status(200).json({ message: "Logged out" });
     }),
   );
 

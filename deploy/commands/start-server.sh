@@ -7,21 +7,21 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/common.sh"
 log_phase "Starting Server"
 
 LOG_DIR="${REPO_ROOT}/deploy/logs"
-LOG_FILE="${LOG_DIR}/$(date '+%Y-%m-%d')-plotter-server.log"
+LOG_FILE="${LOG_DIR}/$(date '+%Y-%m-%d')-wci-server.log"
 
 mkdir -p "${LOG_DIR}"
 
 {
     echo ""
     echo "[========== Server Start Attempt ==========]"
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting plotter-server via PM2"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] Starting wci-server via PM2"
     echo "Log file: ${LOG_FILE}"
-    echo "Command: pm2 start ${REPO_ROOT}/express/dist/src/server.js --name plotter-server"
+    echo "Command: pm2 start ${REPO_ROOT}/express/dist/src/server.js --name wci-server"
     echo "[========================================]"
 } >> "${LOG_FILE}"
 
 if ! pm2 start "${REPO_ROOT}/express/dist/src/server.js" \
-    --name "plotter-server" \
+    --name "wci-server" \
     --cwd "${REPO_ROOT}/express" \
     --instances 1 \
     --max-restarts 10 \

@@ -1,7 +1,7 @@
 {
-  "name": "plotter-express",
+  "name": "wci-express",
   "version": "1.0.0",
-  "description": "Express router app for Plotstack project",
+  "description": "Express router app for WritersCheck project",
   "main": "dist/src/server.js",
   "scripts": {
     "start": "ts-node src/server.ts",

@@ -148,7 +148,7 @@ class App {
 
   private getCorsAllowedOrigins(): string[] {
     if (env.MODE === "production") {
-      return ["https://plotstack.danielsjunk.com"];
+      return ["https://writerscheck.in"];
     }
 
     return ["http://localhost:5173", "http://localhost:4000"];
