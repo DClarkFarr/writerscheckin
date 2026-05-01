@@ -1,15 +1,18 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.2.0 → 1.3.0 (MINOR — expanded Project Overview; added Principle XII: Product Design Imperatives)
-Modified sections: Project Overview — filled TODO with full product description
-Added sections: Principle XII — Product Design Imperatives
+Version change: 1.3.0 → 1.4.0 (MINOR — expanded ShadCN governance with explicit base component immutability rule)
+Modified sections: Principle XII — ShadCN UI Component System (added explicit no-edit rule for default base components)
+Added sections: None
 Removed sections: None
 Templates requiring updates:
   ✅ constitution.md — this file
-  ⚠ .specify/templates/plan-template.md — no changes needed
-  ⚠ .specify/templates/spec-template.md — no changes needed
-  ⚠ .specify/templates/tasks-template.md — no changes needed
+  ✅ .specify/templates/plan-template.md — reviewed, no updates required
+  ✅ .specify/templates/spec-template.md — reviewed, no updates required
+  ✅ .specify/templates/tasks-template.md — reviewed, no updates required
+  ✅ .specify/templates/commands/*.md — not present in repository, no updates required
+  ✅ web/README.md — reviewed, no updates required
+  ✅ express/README.md — reviewed, no updates required
 Deferred TODOs: None
 -->
 
@@ -500,6 +503,11 @@ Tabs  (orientation: horizontal | vertical)
 
 #### Extension Rules
 
+Default shadcn component files in `web/src/components/ui/*` are treated as baseline library
+primitives and MUST NOT be modified without explicit instructions in the active task,
+specification, or direct user request. Extend behavior by wrapping/composing in other component
+directories first.
+
 When a ShadCN primitive does not meet a requirement:
 
 1. Compose from existing sub-components before creating a new one.
@@ -563,4 +571,4 @@ All new features and changes MUST comply with these principles. Any amendment re
 - MINOR bump: new principle or section added.
 - PATCH bump: clarifications, wording fixes, non-semantic refinements.
 
-**Version**: 1.3.0 | **Ratified**: 2026-04-30 | **Last Amended**: 2026-04-30
+**Version**: 1.4.0 | **Ratified**: 2026-04-30 | **Last Amended**: 2026-04-30
