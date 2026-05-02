@@ -7,7 +7,7 @@ import { ApiError } from "../../api/types";
 import { Topbar } from "./Topbar";
 
 export function RootLayout() {
-  const { setUser, clearUser, user } = useAuthStore();
+  const { setUser, clearUser } = useAuthStore();
 
   const navigate = useNavigate();
 
@@ -39,12 +39,12 @@ export function RootLayout() {
   }, [error, clearUser]);
 
   useEffect(() => {
-    if (!user && !isLoading) {
+    if (!data && !isLoading) {
       navigate({
         to: "/",
       });
     }
-  }, [user, isLoading, navigate]);
+  }, [data, isLoading, navigate]);
 
   return (
     <div className="min-h-screen flex flex-col bg-theme-950">

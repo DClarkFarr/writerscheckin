@@ -20,7 +20,7 @@ export function GroupMeetingEditPage({
   meetingId,
 }: GroupMeetingEditPageProps) {
   const header = (
-    <Breadcrumb>
+    <Breadcrumb variant="light">
       <BreadcrumbList>
         <BreadcrumbItem>
           <BreadcrumbLink asChild>

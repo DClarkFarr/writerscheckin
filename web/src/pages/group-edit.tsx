@@ -25,7 +25,7 @@ export function GroupEditPage({ groupId }: GroupEditPageProps) {
   });
 
   const header = (
-    <Breadcrumb>
+    <Breadcrumb variant="light">
       <BreadcrumbList>
         <BreadcrumbItem>
           <BreadcrumbLink asChild>

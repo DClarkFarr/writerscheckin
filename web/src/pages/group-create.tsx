@@ -24,7 +24,7 @@ export function GroupCreatePage() {
   });
 
   const header = (
-    <Breadcrumb>
+    <Breadcrumb variant="light">
       <BreadcrumbList>
         <BreadcrumbItem>
           <BreadcrumbLink asChild>
