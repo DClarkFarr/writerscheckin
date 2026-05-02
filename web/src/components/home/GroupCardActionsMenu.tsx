@@ -47,12 +47,7 @@ export function GroupCardActionsMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          type="button"
-          size="icon-sm"
-          variant="ghost"
-          disabled={disabled}
-        >
+        <Button type="button" size="icon" variant="ghost" disabled={disabled}>
           ...
         </Button>
       </DropdownMenuTrigger>

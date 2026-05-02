@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import IconPlusBox from "~icons/mdi/plus-box";
+import IconPencil from "~icons/mdi/pencil";
 import { GroupCardActionsMenu } from "./GroupCardActionsMenu";
 import { useMyGroupsQuery } from "@/hooks/useMyGroupsQuery";
 import { useNavigate } from "@tanstack/react-router";
@@ -38,6 +39,19 @@ export function MyGroupsTab() {
       <CardHeader>
         <CardTitle>{group.name}</CardTitle>
         <CardAction>
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            onClick={() =>
+              navigate({
+                to: "/groups/$groupId/edit",
+                params: { groupId: group.groupId },
+              })
+            }
+          >
+            <IconPencil />
+          </Button>
           <GroupCardActionsMenu
             groupId={group.groupId}
             availableActions={group.availableActions}
@@ -46,31 +60,24 @@ export function MyGroupsTab() {
         </CardAction>
       </CardHeader>
       <CardContent className="space-y-1 text-xs text-muted-foreground">
-        <p>Recurrence: {group.recurrence}</p>
         <p>
-          Members: {group.counts.activeMembers} active /{" "}
-          {group.counts.invitedMembers} invited
+          Recurrence: <b className="text-gray-600">{group.recurrence}</b>
         </p>
-        <p>Past meetings: {group.counts.pastMeetings}</p>
+        <p>
+          Members: <b className="text-gray-600">{group.counts.activeMembers}</b>{" "}
+          active /{" "}
+          <b className="text-gray-600">{group.counts.invitedMembers}</b> invited
+        </p>
+        <p>
+          Past meetings:{" "}
+          <b className="text-gray-600">{group.counts.pastMeetings}</b>
+        </p>
         <p>
           Next upcoming meeting:{" "}
-          {formatMeetingDate(group.nextUpcomingMeeting?.startsAt ?? null)}
+          <b className="text-gray-600">
+            {formatMeetingDate(group.nextUpcomingMeeting?.startsAt ?? null)}
+          </b>
         </p>
-        <div className="pt-2">
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() =>
-              navigate({
-                to: "/groups/$groupId/edit",
-                params: { groupId: group.groupId },
-              })
-            }
-          >
-            Edit
-          </Button>
-        </div>
       </CardContent>
     </Card>
   ));
