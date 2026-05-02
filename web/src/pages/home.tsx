@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Topbar } from "../components/layout/Topbar";
-import Logo from "../assets/logo-icon.png";
+import Logo from "../assets/logo-icon-md.png";
 export function Home() {
   return (
     <div className="min-h-screen flex flex-col bg-theme-950">
@@ -19,6 +19,7 @@ export function Home() {
         </p>
         <Link
           to="/login"
+          search={{ redir: "" }}
           className="rounded-lg bg-theme-600 px-5 py-2.5 text-sm font-medium text-theme-50 transition-colors hover:bg-theme-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-theme-300/60 active:bg-theme-700"
         >
           Get Started

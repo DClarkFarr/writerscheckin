@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { useAuthStore } from "../../store/authStore";
-import Logo from "../../assets/logo-h-transparent-sm.min.png";
+import Logo from "../../assets/logo-sm.png";
 
 export function Topbar() {
   const { isAuthenticated, clearUser } = useAuthStore();
