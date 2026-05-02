@@ -40,8 +40,8 @@ _GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
    - Routers: Add `PATCH /groups/:id/leave` route in `groupsRouter.ts`
 3. **Centralized Error Handling**: Leave operation will use `handleAsync()` wrapper and throw typed errors.
 4. **Security-First**: Verify user is authenticated and is a member of the group before allowing leave action.
-5. **Frontend Components**: Split into hook + component (e.g., `useGroupActions.ts` + `GroupMemberActionsDropdown.tsx`).
-6. **File-Based Routing**: New group detail page route at `web/src/routes/groups.$id.tsx`.
+5. **Frontend Components**: Split into hook + role-specific menu components (e.g., `useGroupActions.ts` + `GroupMemberActionsDropdown.tsx` + `GroupAdminActionsDropdown.tsx`).
+6. **File-Based Routing**: Group view route at `web/src/routes/groups/$groupId/view.tsx`.
 7. **ShadCN Styling**: Use ShadCN components for UI; style page-level overrides in component files, not `index.css`.
 
 ## Project Structure
@@ -92,12 +92,13 @@ express/src/
 ```text
 web/src/
 ├── routes/
-│   └── groups.$id.tsx       # ADD: New group detail page route
+│   └── groups/$groupId/view.tsx  # ADD: Group view page route
 ├── pages/
-│   └── GroupDetailPage.tsx  # ADD: Page component displaying group summary + details
+│   └── group-view.tsx       # ADD: Page component displaying group summary + details
 ├── components/
 │   └── group/
-│       ├── GroupMemberActionsDropdown.tsx     # ADD: Role-based actions dropdown (Edit, Leave, View)
+│       ├── GroupMemberActionsDropdown.tsx  # ADD: Member actions menu (Leave)
+│       ├── GroupAdminActionsDropdown.tsx   # ADD: Admin/owner actions menu
 │       ├── GroupSummaryModal.tsx        # ADD: Modal displaying group info
 │       ├── GroupMembersList.tsx         # ADD: Active members list component
 │       └── GroupRoleBadge.tsx           # EXISTING
@@ -177,7 +178,8 @@ Define endpoints:
 
 Define component interfaces:
 
-- **GroupMemberActionsDropdown**: `{ groupId: string; userRole: 'owner' | 'admin' | 'member' }`
+- **GroupMemberActionsDropdown**: `{ group: GroupSummaryItem }`
+- **GroupAdminActionsMenu**: `{ group: GroupSummaryItem; disabled?: boolean }`
 - **GroupSummaryModal**: `{ groupId: string; isOpen: boolean; onClose: () => void }`
 - **GroupMembersList**: `{ members: User[]; maxDisplay?: number }`
 
@@ -187,9 +189,9 @@ High-level implementation order:
 
 1. Extend GroupMember model with soft-delete fields
 2. Implement `PATCH /groups/:id/leave` endpoint
-3. Create `GroupMemberActionsDropdown` component with role-based rendering
+3. Create split action menus (`GroupMemberActionsDropdown` and `GroupAdminActionsMenu`) with standalone View/Edit buttons
 4. Create `GroupSummaryModal` component
-5. Create `GroupDetailPage` route + page component
+5. Create `group-view` route + page component
 6. Update group list views to use new dropdown
 
 ---

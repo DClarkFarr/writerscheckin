@@ -13,7 +13,7 @@ This contract defines the React component interfaces and behaviors for the group
 
 ### 1. GroupMemberActionsDropdown
 
-**Purpose**: Display role-based actions for a group (View, Edit, Leave, Manage).
+**Purpose**: Display member-specific actions for a group in a dedicated dropdown.
 
 **File**: `web/src/components/group/GroupMemberActionsDropdown.tsx`  
 **Hook**: `web/src/hooks/useGroupActions.ts`
@@ -22,56 +22,61 @@ This contract defines the React component interfaces and behaviors for the group
 
 ```typescript
 interface GroupMemberActionsDropdownProps {
-  groupId: string;
-  userRole: "owner" | "admin" | "member";
-  onViewClick?: () => void; // Callback when View button clicked
-  onEditClick?: () => void; // Callback when Edit button clicked
-  onLeaveClick?: () => void; // Callback when Leave button clicked
-  className?: string; // Optional Tailwind classes
+  group: GroupSummaryItem;
 }
 ```
 
 #### Rendering Rules
 
-**For `owner` or `admin` role**:
-
-- View button (eye icon) → opens group summary modal
-- Edit button (pencil icon) → navigates to group edit form
-- Manage button (gear icon) → shows admin actions (deactivate group, remove members, etc.)
-
-**For `member` role**:
-
-- View button (eye icon) → opens group summary modal
-- Leave button (log-out icon, red/destructive style) → triggers leave group action with confirmation
+- This dropdown is shown only for `member` role in list/detail views.
+- It contains member-only actions (currently Leave).
+- View is rendered as a separate standalone eye button outside the dropdown.
 
 #### Component Behavior
 
 ```tsx
 export const GroupMemberActionsDropdown: React.FC<
   GroupMemberActionsDropdownProps
-> = ({
-  groupId,
-  userRole,
-  onViewClick,
-  onEditClick,
-  onLeaveClick,
-  className = "",
-}) => {
+> = ({ group }) => {
   // Render DropdownMenu (from ShadCN)
   // - Trigger: vertical dots icon (three dots)
-  // - Content: role-based actions
-  // View action: always present
-  // Edit, Manage actions: only if userRole is 'owner' or 'admin'
-  // Leave action: only if userRole is 'member'
+  // - Content: member-specific actions
+  // Leave action is primary action for members
 };
 ```
 
 #### Event Handlers
 
-- **View**: `onViewClick()` → triggers GroupSummaryModal open
-- **Edit**: `onEditClick()` → navigates to `/admin/groups/:id/edit`
-- **Manage**: `onManageClick()` → shows management options (existing functionality)
-- **Leave**: `onLeaveClick()` → calls `useGroupActions().leaveGroup()` mutation
+- **Leave**: Calls `useGroupActions().leaveGroup()` mutation
+
+---
+
+### 1b. GroupAdminActionsMenu
+
+**Purpose**: Display admin/owner management actions in a dedicated admin menu.
+
+**File**: `web/src/components/group/GroupAdminActionsDropdown.tsx`
+
+#### Props Interface
+
+```typescript
+interface GroupAdminActionsMenuProps {
+  group: GroupSummaryItem;
+  disabled?: boolean;
+}
+```
+
+#### Rendering Rules
+
+- This dropdown is shown for `owner` and `admin` roles.
+- Edit is exposed as a separate standalone pencil button outside the dropdown.
+- The dropdown contains admin actions (activate/deactivate, upcoming meeting actions, create manual meeting).
+
+#### Event Handlers
+
+- **Activate/Deactivate**: invokes admin state actions (implementation-specific)
+- **View Upcoming Meeting**: navigates to meeting edit route
+- **Create Manual Meeting**: triggers create meeting mutation
 
 ---
 
@@ -301,7 +306,7 @@ function mapApiErrorToMessage(error: Error): string {
 
 ## Integration Points
 
-### GroupMemberActionsDropdown + GroupSummaryModal
+### Standalone Buttons + Separate Menus
 
 ```tsx
 const MyGroupCard = ({ groupId, userRole }) => {
@@ -309,11 +314,26 @@ const MyGroupCard = ({ groupId, userRole }) => {
 
   return (
     <>
-      <GroupMemberActionsDropdown
-        groupId={groupId}
-        userRole={userRole}
-        onViewClick={() => setSummaryOpen(true)}
-      />
+      {userRole === "member" ? (
+        <>
+          <Button onClick={() => setSummaryOpen(true)}>
+            <EyeIcon />
+          </Button>
+          <GroupMemberActionsDropdown group={group} />
+        </>
+      ) : (
+        <>
+          <Button
+            onClick={() =>
+              navigate({ to: "/groups/$groupId/edit", params: { groupId } })
+            }
+          >
+            <PencilIcon />
+          </Button>
+          <GroupAdminActionsMenu group={group} />
+        </>
+      )}
+
       <GroupSummaryModal
         groupId={groupId}
         isOpen={summaryOpen}
@@ -335,17 +355,7 @@ const MyGroupCard = ({ groupId, userRole }) => {
     },
   });
 
-  return (
-    <GroupMemberActionsDropdown
-      groupId={groupId}
-      userRole={userRole}
-      onLeaveClick={() => {
-        if (confirm("Are you sure you want to leave this group?")) {
-          leaveGroup.mutate(groupId);
-        }
-      }}
-    />
-  );
+  return <GroupMemberActionsDropdown group={group} />;
 };
 ```
 

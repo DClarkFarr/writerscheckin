@@ -15,6 +15,7 @@ import { Route as GroupsCreateRouteImport } from "./routes/groups/create"
 import { Route as AuthSignUpRouteImport } from "./routes/_auth/sign-up"
 import { Route as AuthResetPasswordRouteImport } from "./routes/_auth/reset-password"
 import { Route as AuthLoginRouteImport } from "./routes/_auth/login"
+import { Route as GroupsGroupIdViewRouteImport } from "./routes/groups/$groupId/view"
 import { Route as GroupsGroupIdEditRouteImport } from "./routes/groups/$groupId/edit"
 import { Route as GroupsGroupIdMeetingsMeetingIdEditRouteImport } from "./routes/groups/$groupId/meetings/$meetingId/edit"
 
@@ -47,6 +48,11 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
   path: "/login",
   getParentRoute: () => AuthRoute,
 } as any)
+const GroupsGroupIdViewRoute = GroupsGroupIdViewRouteImport.update({
+  id: "/groups/$groupId/view",
+  path: "/groups/$groupId/view",
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GroupsGroupIdEditRoute = GroupsGroupIdEditRouteImport.update({
   id: "/groups/$groupId/edit",
   path: "/groups/$groupId/edit",
@@ -66,6 +72,7 @@ export interface FileRoutesByFullPath {
   "/sign-up": typeof AuthSignUpRoute
   "/groups/create": typeof GroupsCreateRoute
   "/groups/$groupId/edit": typeof GroupsGroupIdEditRoute
+  "/groups/$groupId/view": typeof GroupsGroupIdViewRoute
   "/groups/$groupId/meetings/$meetingId/edit": typeof GroupsGroupIdMeetingsMeetingIdEditRoute
 }
 export interface FileRoutesByTo {
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
   "/sign-up": typeof AuthSignUpRoute
   "/groups/create": typeof GroupsCreateRoute
   "/groups/$groupId/edit": typeof GroupsGroupIdEditRoute
+  "/groups/$groupId/view": typeof GroupsGroupIdViewRoute
   "/groups/$groupId/meetings/$meetingId/edit": typeof GroupsGroupIdMeetingsMeetingIdEditRoute
 }
 export interface FileRoutesById {
@@ -86,6 +94,7 @@ export interface FileRoutesById {
   "/_auth/sign-up": typeof AuthSignUpRoute
   "/groups/create": typeof GroupsCreateRoute
   "/groups/$groupId/edit": typeof GroupsGroupIdEditRoute
+  "/groups/$groupId/view": typeof GroupsGroupIdViewRoute
   "/groups/$groupId/meetings/$meetingId/edit": typeof GroupsGroupIdMeetingsMeetingIdEditRoute
 }
 export interface FileRouteTypes {
@@ -97,6 +106,7 @@ export interface FileRouteTypes {
     | "/sign-up"
     | "/groups/create"
     | "/groups/$groupId/edit"
+    | "/groups/$groupId/view"
     | "/groups/$groupId/meetings/$meetingId/edit"
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | "/sign-up"
     | "/groups/create"
     | "/groups/$groupId/edit"
+    | "/groups/$groupId/view"
     | "/groups/$groupId/meetings/$meetingId/edit"
   id:
     | "__root__"
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | "/_auth/sign-up"
     | "/groups/create"
     | "/groups/$groupId/edit"
+    | "/groups/$groupId/view"
     | "/groups/$groupId/meetings/$meetingId/edit"
   fileRoutesById: FileRoutesById
 }
@@ -124,6 +136,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   GroupsCreateRoute: typeof GroupsCreateRoute
   GroupsGroupIdEditRoute: typeof GroupsGroupIdEditRoute
+  GroupsGroupIdViewRoute: typeof GroupsGroupIdViewRoute
   GroupsGroupIdMeetingsMeetingIdEditRoute: typeof GroupsGroupIdMeetingsMeetingIdEditRoute
 }
 
@@ -171,6 +184,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof AuthRoute
     }
+    "/groups/$groupId/view": {
+      id: "/groups/$groupId/view"
+      path: "/groups/$groupId/view"
+      fullPath: "/groups/$groupId/view"
+      preLoaderRoute: typeof GroupsGroupIdViewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/groups/$groupId/edit": {
       id: "/groups/$groupId/edit"
       path: "/groups/$groupId/edit"
@@ -207,6 +227,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   GroupsCreateRoute: GroupsCreateRoute,
   GroupsGroupIdEditRoute: GroupsGroupIdEditRoute,
+  GroupsGroupIdViewRoute: GroupsGroupIdViewRoute,
   GroupsGroupIdMeetingsMeetingIdEditRoute:
     GroupsGroupIdMeetingsMeetingIdEditRoute,
 }

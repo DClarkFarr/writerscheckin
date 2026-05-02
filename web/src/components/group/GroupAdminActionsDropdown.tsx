@@ -51,12 +51,12 @@ export function GroupAdminActionsMenu({
           disabled={disabled}
           onSelect={() =>
             navigate({
-              to: "/groups/$groupId/edit",
+              to: "/groups/$groupId/view",
               params: { groupId },
             })
           }
         >
-          Edit Group
+          View Group
         </DropdownMenuItem>
         <DropdownMenuItem disabled={!availableActions.canActivate}>
           Activate Group

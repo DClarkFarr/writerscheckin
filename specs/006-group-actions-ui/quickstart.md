@@ -151,31 +151,39 @@ leaveGroup.mutate("group-id"); // Should call API and show toast
 
 ---
 
-### Step 7: Create GroupMemberActionsDropdown Component
+### Step 7: Create Split Group Action Menus
 
-**File**: `web/src/components/group/GroupMemberActionsDropdown.tsx`
+**Files**:
+
+- `web/src/components/group/GroupMemberActionsDropdown.tsx`
+- `web/src/components/group/GroupAdminActionsDropdown.tsx`
 
 **Changes**:
 
-1. Create component accepting `groupId`, `userRole`, callbacks
-2. Use ShadCN `DropdownMenu` for wrapper
-3. Render role-based actions:
-   - **Always**: View button (eye icon)
-   - **If admin/owner**: Edit button (pencil icon), Manage button (gear icon)
-   - **If member**: Leave button (log-out icon, destructive style)
-4. Call provided callbacks on action click
-5. Export component
+1. Create separate member and admin/owner menus
+2. Use ShadCN `DropdownMenu` for each menu wrapper
+3. Follow standalone button + menu pattern:
+
+- **Member**: standalone View button (eye icon) + member menu with Leave
+- **Owner/Admin**: standalone Edit button (pencil icon) + admin actions menu
+
+4. Wire menu actions and route navigation
+5. Export both components
 
 **Test**:
 
 ```tsx
 // As member:
-<GroupMemberActionsDropdown groupId="123" userRole="member" />
-// Should show View and Leave buttons
+<Button onClick={() => navigate({ to: "/groups/$groupId/view", params: { groupId: "123" } })}>
+  <EyeIcon />
+</Button>
+<GroupMemberActionsDropdown group={group} />
 
-// As owner:
-<GroupMemberActionsDropdown groupId="123" userRole="owner" />
-// Should show View, Edit, and Manage buttons
+// As owner/admin:
+<Button onClick={() => navigate({ to: "/groups/$groupId/edit", params: { groupId: "123" } })}>
+  <PencilIcon />
+</Button>
+<GroupAdminActionsMenu group={group} />
 ```
 
 ---
@@ -191,30 +199,30 @@ leaveGroup.mutate("group-id"); // Should call API and show toast
 1. Accept `groupId` from route params (via `useParams()`)
 2. Fetch group data via TanStack Query
 3. Display group details (name, description, meetings, members)
-4. Render `GroupMemberActionsDropdown` in header
+4. Render role-specific actions in header (standalone View/Edit button + matching menu)
 5. Render `GroupSummaryModal` state management
 6. Handle leave group logic: show confirmation, call mutation, navigate away on success
 
-**Test**: Navigate to `/groups/[id]` and verify page loads group data.
+**Test**: Navigate to `/groups/[groupId]/view` and verify page loads group data.
 
 ---
 
 ### Step 9: Create GroupDetail Route
 
-**File**: `web/src/routes/groups.$id.tsx`
+**File**: `web/src/routes/groups/$groupId/view.tsx`
 
 **Changes**:
 
-1. Create file-based route using TanStack Router naming: `groups.$id.tsx`
+1. Create file-based route using TanStack Router naming: `groups/$groupId/view.tsx`
 2. Define route loader if needed for prefetching
 3. Render `GroupDetailPage` component
 4. Pass route params to component
 
-**Test**: Navigate to `/groups/[id]` in app; verify route loads without errors.
+**Test**: Navigate to `/groups/[groupId]/view` in app; verify route loads without errors.
 
 ---
 
-### Step 10: Integrate GroupMemberActionsDropdown in Existing Views
+### Step 10: Integrate Split Menus in Existing Views
 
 **File**: Update files that display group lists/cards:
 
@@ -224,10 +232,10 @@ leaveGroup.mutate("group-id"); // Should call API and show toast
 
 **Changes**:
 
-1. Import `GroupMemberActionsDropdown` and `GroupSummaryModal`
-2. Add dropdown to group card/list item
+1. Import `GroupMemberActionsDropdown`, `GroupAdminActionsMenu`, and `GroupSummaryModal`
+2. Add role-specific standalone button and matching menu to each group card/list item
 3. Add modal state management (useState for isOpen)
-4. Connect View button to open modal
+4. Connect member View button to open modal or navigate to `/groups/$groupId/view`
 5. Connect Leave button to mutation via `useGroupActions` hook
 
 **Example**:
@@ -243,16 +251,28 @@ const { leaveGroup } = useGroupActions({
 
 return (
   <>
-    <GroupMemberActionsDropdown
-      groupId={group.id}
-      userRole={userRole}
-      onViewClick={() => setSummaryOpen(true)}
-      onLeaveClick={() => {
-        if (confirm("Leave this group?")) {
-          leaveGroup.mutate(group.id);
-        }
-      }}
-    />
+    {userRole === "member" ? (
+      <>
+        <Button onClick={() => setSummaryOpen(true)}>
+          <EyeIcon />
+        </Button>
+        <GroupMemberActionsDropdown group={group} />
+      </>
+    ) : (
+      <>
+        <Button
+          onClick={() =>
+            navigate({
+              to: "/groups/$groupId/edit",
+              params: { groupId: group.id },
+            })
+          }
+        >
+          <PencilIcon />
+        </Button>
+        <GroupAdminActionsMenu group={group} />
+      </>
+    )}
     <GroupSummaryModal
       groupId={group.id}
       isOpen={summaryOpen}
@@ -305,7 +325,7 @@ If issues occur:
 
 1. **Backend model**: Delete new fields from MongoDB via migration tool or manually
 2. **Backend routes**: Comment out leave endpoint, restart server
-3. **Frontend**: Disable/hide GroupMemberActionsDropdown component, restart dev server
+3. **Frontend**: Disable/hide GroupMemberActionsDropdown and GroupAdminActionsMenu components, restart dev server
 4. **Database**: Revert GroupMember documents to state before leaving
 
 ---

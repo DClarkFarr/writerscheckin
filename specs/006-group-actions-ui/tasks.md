@@ -102,20 +102,18 @@ Implementation tasks for the Group Actions UI feature, organized by user story w
 
 ### Group Actions Dropdown (Supports User Stories 1 & 2)
 
-- [x] T013 Create `web/src/components/group/GroupMemberActionsDropdown.tsx` component:
-  - Accept props: `groupId: string`, `userRole: 'owner' | 'admin' | 'member'`, `onViewClick?: () => void`, `onEditClick?: () => void`, `onLeaveClick?: () => void`
-  - Use ShadCN `DropdownMenu` component
-  - Render role-based actions:
-    - **Always**: View button (Eye icon) → triggers `onViewClick()`
-    - **If owner/admin**: Edit button (Pencil icon) → triggers `onEditClick()`, Manage button (Gear icon) → triggers `onManageClick()`
-    - **If member**: Leave button (LogOut icon, destructive style) → triggers `onLeaveClick()`
-  - Trigger: vertical dots menu icon
+- [x] T013 Create split action menus in `web/src/components/group/`:
+  - Create `GroupMemberActionsDropdown.tsx` for member-specific actions (leave)
+  - Create `GroupAdminActionsDropdown.tsx` for admin/owner management actions
+  - Follow standalone button + actions menu pattern:
+    - **Member**: standalone View button (Eye icon) + member actions dropdown
+    - **Owner/Admin**: standalone Edit button (Pencil icon) + admin actions menu
 
-- [ ] T014 [P] Test GroupMemberActionsDropdown component:
-  - Render as member → verify View and Leave buttons only
-  - Render as owner → verify View, Edit, and Manage buttons
-  - Click View button → verify `onViewClick` callback triggered
-  - Click Leave button → verify `onLeaveClick` callback triggered
+- [ ] T014 [P] Test split menus and standalone buttons:
+  - Render as member → verify standalone View button and member actions dropdown with Leave
+  - Render as owner/admin → verify standalone Edit button and admin actions menu
+  - Click View button → verify navigation to group view route
+  - Click Leave button in member dropdown → verify leave action triggered
 
 ---
 
@@ -123,24 +121,24 @@ Implementation tasks for the Group Actions UI feature, organized by user story w
 
 ### Group Detail Page
 
-- [ ] T015 Create `web/src/pages/GroupDetailPage.tsx` component:
+- [ ] T015 Create group view page component (`web/src/pages/group-view.tsx`):
   - Accept `groupId` from route params via `useParams()`
   - Fetch group data via TanStack Query
-  - Display header with group name + `GroupMemberActionsDropdown`
+  - Display header with group name + role-specific standalone button and matching actions menu
   - Display group details (full description, meeting info, owner info)
   - Display active members list (using `GroupMembersList`)
   - Manage modal state for `GroupSummaryModal` (useState for `isOpen`)
   - Handle leave group: show confirmation dialog, call `useGroupActions().leaveGroup()` mutation, navigate to `/groups` on success
 
-- [ ] T016 Create `web/src/routes/groups.$id.tsx` file-based route:
-  - Use TanStack Router naming convention
-  - Define route as `createFileRoute('/groups/$id')` with component: `GroupDetailPage`
-  - Page should be accessible at `/groups/[groupId]`
+- [x] T016 Create group view route:
+  - Use TanStack Router naming convention and current route conventions
+  - Define route as `createFileRoute('/groups/$groupId/view')`
+  - Page should be accessible at `/groups/[groupId]/view`
 
-- [ ] T017 [P] Test group detail page:
+- [ ] T017 [P] Test group view page:
   - Navigate to `/groups/[valid-id]` → verify page loads group data
   - Verify all group info displays (name, description, owner, members)
-  - Verify `GroupMemberActionsDropdown` is visible in header
+  - Verify role-specific actions are visible in header (member menu or admin menu)
   - As member, click Leave button → verify confirmation dialog, then leave API call
 
 ---
@@ -149,9 +147,9 @@ Implementation tasks for the Group Actions UI feature, organized by user story w
 
 ### Integrate Dropdown into Group List Views
 
-- [ ] T018 Update existing group list/card components to include `GroupMemberActionsDropdown` and `GroupSummaryModal`:
+- [ ] T018 Update existing group list/card components to include split menus and `GroupSummaryModal`:
   - Find all components that display groups (e.g., `MyGroupsPage`, group card components)
-  - Import `GroupMemberActionsDropdown` and `GroupSummaryModal`
+  - Import `GroupMemberActionsDropdown`, `GroupAdminActionsMenu`, and `GroupSummaryModal`
   - Add dropdown to each group card/row
   - Add modal state management (useState for `isOpen`)
   - Wire View button to open modal
@@ -190,7 +188,7 @@ Implementation tasks for the Group Actions UI feature, organized by user story w
   - Verify touch targets are adequate (min 44x44px)
 
 - [ ] T023 [P] Update UI documentation (README or component docs):
-  - Document `GroupMemberActionsDropdown` component props and usage
+  - Document `GroupMemberActionsDropdown` and `GroupAdminActionsMenu` props and usage
   - Document `GroupSummaryModal` component props and usage
   - Document `useGroupActions` hook and error mapping
   - Add usage examples
@@ -248,7 +246,7 @@ T001 (Review Model)
 T009 (GroupMembersList) [P T010]
   └─→ T011 (GroupSummaryModal) [P T012]
         └─→ T015 (GroupDetailPage)
-              ├─→ T016 (Group detail route)
+              ├─→ T016 (Group view route)
               └─→ T017 (Test page)
                     └─→ T024-T027 (E2E testing)
 
