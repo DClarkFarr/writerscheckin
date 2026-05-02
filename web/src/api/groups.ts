@@ -4,9 +4,11 @@ import type {
   CreateUpcomingMeetingResponse,
   EditableGroupResponse,
   GroupFormDraft,
+  GroupFormMember,
   GroupSummaryItem,
   ListMyGroupsInput,
   ListMyGroupsResponse,
+  ParticipantSummary,
   SaveGroupResponse,
   SearchParticipantsResponse,
   UpdateGroupStateInput,
@@ -48,6 +50,77 @@ const normalizeListMyGroupsResponse = (
   nextCursor: data.nextCursor ?? null,
 });
 
+const toGroupFormMember = (
+  participant: ParticipantSummary,
+  role: GroupFormMember["role"],
+): GroupFormMember => ({
+  identifier: participant.userId,
+  userId: participant.userId,
+  email: null,
+  name: participant.displayName,
+  avatarUrl: participant.avatarUrl,
+  role,
+  status: "accepted",
+});
+
+const normalizeEditableGroupResponse = (
+  data: EditableGroupResponse & {
+    admins?: ParticipantSummary[];
+    members?: GroupFormMember[] | ParticipantSummary[];
+  },
+): EditableGroupResponse => {
+  const hasUnifiedMembers =
+    Array.isArray(data.members) &&
+    data.members.some(
+      (member): member is GroupFormMember =>
+        "identifier" in member && "role" in member,
+    );
+
+  const legacyMembers = (Array.isArray(data.members)
+    ? data.members
+    : []
+  ).filter(
+    (participant) => "userId" in participant && "displayName" in participant,
+  ) as unknown as ParticipantSummary[];
+
+  const normalizedMembers = hasUnifiedMembers
+    ? (data.members as GroupFormMember[]).map((member) => ({
+        _id: member._id,
+        identifier: member.identifier,
+        userId: member.userId ?? null,
+        email: member.email ?? null,
+        name: member.name,
+        avatarUrl: member.avatarUrl ?? null,
+        role: member.role,
+        status: member.status ?? "accepted",
+      }))
+    : [
+        ...(Array.isArray(data.admins)
+          ? data.admins.map((participant) =>
+              toGroupFormMember(participant, "admin"),
+            )
+          : []),
+        ...legacyMembers.map((participant) =>
+          toGroupFormMember(participant, "member"),
+        ),
+      ];
+
+  return {
+    ...data,
+    members: normalizedMembers,
+  };
+};
+
+const toLegacyGroupPayload = (input: GroupFormDraft) => ({
+  ...input,
+  adminUserIds: input.members
+    .filter((member) => member.role === "admin")
+    .map((member) => member.identifier),
+  memberUserIds: input.members
+    .filter((member) => member.role === "member")
+    .map((member) => member.identifier),
+});
+
 export async function listMyGroups(
   input: ListMyGroupsInput = {},
 ): Promise<ListMyGroupsResponse> {
@@ -80,7 +153,10 @@ export async function createGroup(
   input: GroupFormDraft,
 ): Promise<SaveGroupResponse> {
   try {
-    const { data } = await apiClient.post<SaveGroupResponse>("/groups", input);
+    const { data } = await apiClient.post<SaveGroupResponse>(
+      "/groups",
+      toLegacyGroupPayload(input),
+    );
     return data;
   } catch (err) {
     throw await toApiError(err);
@@ -94,7 +170,7 @@ export async function getGroupForm(
     const { data } = await apiClient.get<EditableGroupResponse>(
       `/groups/${groupId}`,
     );
-    return data;
+    return normalizeEditableGroupResponse(data);
   } catch (err) {
     throw await toApiError(err);
   }
@@ -107,7 +183,7 @@ export async function getGroupById(
     const { data } = await apiClient.get<EditableGroupResponse>(
       `/groups/${groupId}`,
     );
-    return data;
+    return normalizeEditableGroupResponse(data);
   } catch (err) {
     throw await toApiError(err);
   }
@@ -120,7 +196,7 @@ export async function updateGroup(
   try {
     const { data } = await apiClient.patch<SaveGroupResponse>(
       `/groups/${groupId}`,
-      input,
+      toLegacyGroupPayload(input),
     );
     return data;
   } catch (err) {
@@ -158,6 +234,38 @@ export async function searchGroupParticipants(
   }
 }
 
+export interface MemberSearchResult {
+  results: Array<{
+    _id: string;
+    name: string;
+    email: string;
+    avatar: string | null;
+  }>;
+  inviteOption: { email: string; suggested: true } | null;
+}
+
+export async function searchMembers(
+  query: string,
+  groupId?: string,
+  limit?: number,
+): Promise<MemberSearchResult> {
+  try {
+    const { data } = await apiClient.get<MemberSearchResult>(
+      "/members/search",
+      {
+        params: {
+          q: query,
+          ...(groupId ? { groupId } : {}),
+          ...(typeof limit === "number" ? { limit } : {}),
+        },
+      },
+    );
+    return data;
+  } catch (err) {
+    throw await toApiError(err);
+  }
+}
+
 export interface LeaveGroupResponse {
   success: boolean;
   message: string;
@@ -167,6 +275,49 @@ export async function leaveGroup(groupId: string): Promise<LeaveGroupResponse> {
   try {
     const { data } = await apiClient.patch<LeaveGroupResponse>(
       `/groups/${groupId}/leave`,
+    );
+    return data;
+  } catch (err) {
+    throw await toApiError(err);
+  }
+}
+
+export interface RemoveGroupMemberResponse {
+  success: boolean;
+  message: string;
+  memberStatus: string;
+}
+
+export async function removeGroupMember(
+  groupId: string,
+  memberId: string,
+): Promise<RemoveGroupMemberResponse> {
+  try {
+    const { data } = await apiClient.delete<RemoveGroupMemberResponse>(
+      `/groups/${groupId}/members/${memberId}`,
+    );
+    return data;
+  } catch (err) {
+    throw await toApiError(err);
+  }
+}
+
+export interface UpdateMemberRoleResponse {
+  success: boolean;
+  _id: string;
+  role: string;
+  updatedAt?: string;
+}
+
+export async function updateGroupMemberRole(
+  groupId: string,
+  memberId: string,
+  role: string,
+): Promise<UpdateMemberRoleResponse> {
+  try {
+    const { data } = await apiClient.patch<UpdateMemberRoleResponse>(
+      `/groups/${groupId}/members/${memberId}/role`,
+      { role },
     );
     return data;
   } catch (err) {

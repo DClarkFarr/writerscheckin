@@ -1,4 +1,5 @@
 import { Collection, ObjectId } from "mongodb";
+import { normalizeEmail } from "./users";
 import { COLLECTIONS, getCollection } from "./collections";
 import {
   activeRecordFilter,
@@ -19,19 +20,15 @@ import {
   touchTimestamps,
 } from "./types";
 
-export interface GroupMemberInvite {
-  invitedBy: ObjectId;
-  invitedAt: Date;
-  invitedUser: ObjectId;
-  status: GroupMemberInviteStatus;
-  statusChangedAt: Date;
-}
-
 export interface GroupMemberDefinition extends BaseModelBlueprint {
   groupId: ObjectId;
-  userId: ObjectId;
+  userId?: ObjectId;
+  email?: string;
   role: GroupMemberRole;
-  invite: GroupMemberInvite;
+  invitedBy: ObjectId;
+  invitedAt: Date;
+  acceptedAt?: Date;
+  status: GroupMemberInviteStatus;
   deletedAt?: Date;
 }
 
@@ -44,10 +41,32 @@ export const getGroupMembersCollection = (): Collection<GroupMemberDocument> =>
 export const ensureGroupMemberIndexes = async (): Promise<void> => {
   const collection = getGroupMembersCollection();
   await collection.createIndex({ groupId: 1, role: 1, deletedAt: 1 });
-  await collection.createIndex({ groupId: 1, userId: 1 }, { unique: true });
+  await collection.createIndex(
+    { groupId: 1, userId: 1 },
+    {
+      name: "groupId_userId_unique",
+      unique: true,
+      partialFilterExpression: {
+        userId: { $exists: true },
+      },
+    },
+  );
+  await collection.createIndex(
+    { groupId: 1, email: 1 },
+    {
+      name: "groupId_email_unique",
+      unique: true,
+      partialFilterExpression: {
+        email: { $exists: true },
+      },
+    },
+  );
+  await collection.createIndex({ email: 1, deletedAt: 1 });
+  await collection.createIndex({ status: 1, deletedAt: 1 });
   await collection.createIndex(
     { groupId: 1, role: 1 },
     {
+      name: "groupId_role_owner_unique",
       unique: true,
       partialFilterExpression: {
         role: "owner",
@@ -59,36 +78,34 @@ export const ensureGroupMemberIndexes = async (): Promise<void> => {
 
 export interface CreateGroupMemberInput {
   groupId: string | ObjectId;
-  userId: string | ObjectId;
+  userId?: string | ObjectId;
+  email?: string;
   role: GroupMemberRole;
-  invite: {
-    invitedBy: string | ObjectId;
-    invitedAt: Date;
-    invitedUser: string | ObjectId;
-    status: GroupMemberInviteStatus;
-    statusChangedAt: Date;
-  };
+  invitedBy: string | ObjectId;
+  invitedAt: Date;
+  acceptedAt?: Date;
+  status: GroupMemberInviteStatus;
 }
 
 export interface SaveGroupMemberInput {
   groupId: string | ObjectId;
-  userId: string | ObjectId;
+  userId?: string | ObjectId;
+  email?: string;
   role: GroupMemberRole;
-  invite: {
-    invitedBy: string | ObjectId;
-    invitedAt?: Date;
-    invitedUser?: string | ObjectId;
-    status: GroupMemberInviteStatus;
-    statusChangedAt?: Date;
-  };
+  invitedBy: string | ObjectId;
+  invitedAt?: Date;
+  acceptedAt?: Date;
+  status: GroupMemberInviteStatus;
 }
 
 export interface UpdateGroupMemberInput {
+  userId?: string | ObjectId;
+  email?: string | null;
   role?: GroupMemberRole;
-  invite?: {
-    status?: GroupMemberInviteStatus;
-    statusChangedAt?: Date;
-  };
+  invitedBy?: string | ObjectId;
+  invitedAt?: Date;
+  acceptedAt?: Date | null;
+  status?: GroupMemberInviteStatus;
 }
 
 export interface ListGroupMembersOptions {
@@ -118,28 +135,81 @@ const assertOneOwnerIfRoleOwner = async (
   }
 };
 
+const normalizeOptionalObjectId = (
+  value: string | ObjectId | undefined,
+  label: string,
+): ObjectId | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  return toObjectId(value, label);
+};
+
+const normalizeOptionalEmail = (
+  email: string | undefined,
+): string | undefined => {
+  if (email === undefined) {
+    return undefined;
+  }
+
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) {
+    throw new Error(
+      "Email is required when creating an email-based group member.",
+    );
+  }
+
+  return normalizedEmail;
+};
+
+const assertMemberIdentifier = (
+  userId: ObjectId | undefined,
+  email: string | undefined,
+): void => {
+  if (!userId && !email) {
+    throw new Error("Group members must include either a userId or email.");
+  }
+};
+
+const buildMemberFilter = (
+  groupId: ObjectId,
+  userId: ObjectId | undefined,
+  email: string | undefined,
+): { groupId: ObjectId; userId?: ObjectId; email?: string } => {
+  if (userId) {
+    return { groupId, userId };
+  }
+
+  if (email) {
+    return { groupId, email };
+  }
+
+  return { groupId };
+};
+
 export const createGroupMember = async (
   input: CreateGroupMemberInput,
 ): Promise<GroupMemberDocument> => {
   const collection = getGroupMembersCollection();
   const groupId = toObjectId(input.groupId, "groupId");
-  const userId = toObjectId(input.userId, "userId");
+  const userId = normalizeOptionalObjectId(input.userId, "userId");
+  const email = normalizeOptionalEmail(input.email);
   const role = assertRole(input.role);
-  const inviteStatus = assertInviteStatus(input.invite.status);
+  const status = assertInviteStatus(input.status);
+  assertMemberIdentifier(userId, email);
 
   await assertOneOwnerIfRoleOwner(groupId, role);
 
   const payload: ModelInsertInput<GroupMemberDefinition> = {
     groupId,
-    userId,
+    ...(userId ? { userId } : {}),
+    ...(email ? { email } : {}),
     role,
-    invite: {
-      invitedBy: toObjectId(input.invite.invitedBy, "invitedBy"),
-      invitedAt: input.invite.invitedAt,
-      invitedUser: toObjectId(input.invite.invitedUser, "invitedUser"),
-      status: inviteStatus,
-      statusChangedAt: input.invite.statusChangedAt,
-    },
+    invitedBy: toObjectId(input.invitedBy, "invitedBy"),
+    invitedAt: input.invitedAt,
+    ...(input.acceptedAt ? { acceptedAt: input.acceptedAt } : {}),
+    status,
     ...createTimestamps(),
   };
 
@@ -155,38 +225,36 @@ export const saveGroupMember = async (
 ): Promise<GroupMemberDocument> => {
   const collection = getGroupMembersCollection();
   const groupId = toObjectId(input.groupId, "groupId");
-  const userId = toObjectId(input.userId, "userId");
+  const userId = normalizeOptionalObjectId(input.userId, "userId");
+  const email = normalizeOptionalEmail(input.email);
   const role = assertRole(input.role);
-  const inviteStatus = assertInviteStatus(input.invite.status);
-  const invitedAt = input.invite.invitedAt ?? new Date();
-  const statusChangedAt = input.invite.statusChangedAt ?? invitedAt;
-  const existing = await collection.findOne({ groupId, userId });
+  const status = assertInviteStatus(input.status);
+  const invitedAt = input.invitedAt ?? new Date();
+  const acceptedAt = input.acceptedAt;
+  assertMemberIdentifier(userId, email);
+  const existing = await collection.findOne(
+    buildMemberFilter(groupId, userId, email),
+  );
 
   await assertOneOwnerIfRoleOwner(groupId, role, existing?._id);
 
   const result = await collection.findOneAndUpdate(
-    {
-      groupId,
-      userId,
-    },
+    buildMemberFilter(groupId, userId, email),
     {
       $set: {
+        ...(userId ? { userId } : {}),
+        ...(email ? { email } : {}),
         role,
-        invite: {
-          invitedBy: toObjectId(input.invite.invitedBy, "invitedBy"),
-          invitedAt,
-          invitedUser: toObjectId(
-            input.invite.invitedUser ?? userId,
-            "invitedUser",
-          ),
-          status: inviteStatus,
-          statusChangedAt,
-        },
+        invitedBy: toObjectId(input.invitedBy, "invitedBy"),
+        invitedAt,
+        ...(acceptedAt ? { acceptedAt } : {}),
+        status,
         ...touchTimestamps(),
       },
       $setOnInsert: {
         groupId,
-        userId,
+        ...(userId ? { userId } : {}),
+        ...(email ? { email } : {}),
         ...createTimestamps(),
       },
       $unset: {
@@ -227,6 +295,36 @@ export const getUserGroupMembership = async (
     groupId: toObjectId(groupId, "groupId"),
     ...activeRecordFilter(),
   });
+};
+
+export const getEmailGroupMembership = async (
+  email: string,
+  groupId: string | ObjectId,
+): Promise<GroupMemberDocument | null> => {
+  const collection = getGroupMembersCollection();
+
+  return collection.findOne({
+    email: normalizeEmail(email),
+    groupId: toObjectId(groupId, "groupId"),
+    ...activeRecordFilter(),
+  });
+};
+
+export const listGroupMembersByEmail = async (
+  email: string,
+  options: ListGroupMembersOptions = {},
+): Promise<GroupMemberDocument[]> => {
+  const collection = getGroupMembersCollection();
+  const limit = options.limit ?? 200;
+
+  return collection
+    .find({
+      email: normalizeEmail(email),
+      ...activeRecordFilter(options.includeDeleted),
+    })
+    .sort({ createdAt: 1 })
+    .limit(limit)
+    .toArray();
 };
 
 export const listGroupMembersByGroupId = async (
@@ -282,18 +380,37 @@ export const updateGroupMemberById = async (
     updatePayload.role = role;
   }
 
-  if (updates.invite) {
-    const invitePatch = { ...current.invite };
+  if (updates.userId !== undefined) {
+    updatePayload.userId = toObjectId(updates.userId, "userId");
+  }
 
-    if (typeof updates.invite.status === "string") {
-      const nextStatus = assertInviteStatus(updates.invite.status);
-      assertInviteStatusTransition(current.invite.status, nextStatus);
-      invitePatch.status = nextStatus;
-      invitePatch.statusChangedAt =
-        updates.invite.statusChangedAt ?? new Date();
+  if (updates.email !== undefined) {
+    if (updates.email !== null) {
+      const normalizedEmail = normalizeOptionalEmail(updates.email);
+      if (normalizedEmail) {
+        updatePayload.email = normalizedEmail;
+      }
     }
+  }
 
-    updatePayload.invite = invitePatch;
+  if (updates.invitedBy !== undefined) {
+    updatePayload.invitedBy = toObjectId(updates.invitedBy, "invitedBy");
+  }
+
+  if (updates.invitedAt !== undefined) {
+    updatePayload.invitedAt = updates.invitedAt;
+  }
+
+  if (updates.acceptedAt !== undefined) {
+    if (updates.acceptedAt !== null) {
+      updatePayload.acceptedAt = updates.acceptedAt;
+    }
+  }
+
+  if (typeof updates.status === "string") {
+    const nextStatus = assertInviteStatus(updates.status);
+    assertInviteStatusTransition(current.status, nextStatus);
+    updatePayload.status = nextStatus;
   }
 
   const result = await collection.findOneAndUpdate(

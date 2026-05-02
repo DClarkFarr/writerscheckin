@@ -1,3 +1,4 @@
+import { ObjectId } from "mongodb";
 import {
   decodeCursor,
   normalizePageSize,
@@ -15,8 +16,6 @@ import {
 } from "../models/groups";
 import {
   listGroupMembersByGroupId,
-  saveGroupMember,
-  softDeleteGroupMemberByGroupAndUserId,
   getUserGroupMembership,
   updateGroupMemberById,
 } from "../models/groupMembers";
@@ -29,11 +28,11 @@ import { listUsers, listUsersByIds } from "../models/users";
 import {
   assertTimeOfDay,
   type GroupMemberInviteStatus,
-  type GroupMemberRole,
   type MeetingTimeOfDay,
 } from "../models/groupModelCommon";
 import { AuthError } from "./authService";
 import { createNextUpcomingMeetingFromGroupDefaults } from "./groupMeetingsService";
+import { addGroupMember, removeGroupMember } from "./groupMembersService";
 
 import { recordAuditEvent } from "../utils/audit";
 
@@ -64,6 +63,23 @@ export interface SearchGroupParticipantsResultItem {
 
 export interface GroupFormParticipant extends SearchGroupParticipantsResultItem {}
 
+export interface GroupFormMemberInput {
+  _id?: string;
+  identifier: string;
+  role: "admin" | "member";
+}
+
+export interface EditableGroupFormMember {
+  _id: string;
+  identifier: string;
+  role: "admin" | "member";
+  userId: string | null;
+  email: string | null;
+  name: string;
+  avatarUrl: string | null;
+  status: GroupMemberInviteStatus;
+}
+
 export interface GroupFormPayload {
   name: string;
   description?: string;
@@ -74,8 +90,7 @@ export interface GroupFormPayload {
   recurrenceDaysOfWeek: number[];
   publicMessage?: string;
   attendanceMessage?: string;
-  adminUserIds: string[];
-  memberUserIds: string[];
+  members: GroupFormMemberInput[];
 }
 
 export interface EditableGroupFormResult {
@@ -90,8 +105,7 @@ export interface EditableGroupFormResult {
   recurrenceDaysOfWeek: number[];
   publicMessage: string;
   attendanceMessage: string;
-  admins: GroupFormParticipant[];
-  members: GroupFormParticipant[];
+  members: EditableGroupFormMember[];
 }
 
 export interface SaveGroupResult {
@@ -127,18 +141,30 @@ const formatTimeString = (value: MeetingTimeOfDay): string =>
     .toString()
     .padStart(2, "0")}`;
 
-const normalizeUserIds = (values: string[], label: string): string[] =>
-  Array.from(
-    new Set(values.map((value) => ensureObjectId(value, label).toHexString())),
-  );
+const normalizeMemberIdentifier = (identifier: string): string => {
+  const trimmed = identifier.trim().toLowerCase();
+  if (ObjectId.isValid(trimmed)) {
+    return new ObjectId(trimmed).toHexString();
+  }
 
-const toParticipantSummary = (
-  input: Awaited<ReturnType<typeof listUsersByIds>>[number],
-): GroupFormParticipant => ({
-  userId: input._id.toHexString(),
-  displayName: `${input.firstName} ${input.lastName}`.trim() || input.email,
-  avatarUrl: null,
-});
+  return trimmed;
+};
+
+const dedupeMembers = (
+  members: GroupFormMemberInput[],
+): GroupFormMemberInput[] => {
+  const uniqueMembers = new Map<string, GroupFormMemberInput>();
+
+  for (const member of members) {
+    const normalizedIdentifier = normalizeMemberIdentifier(member.identifier);
+    uniqueMembers.set(normalizedIdentifier, {
+      ...member,
+      identifier: normalizedIdentifier,
+    });
+  }
+
+  return Array.from(uniqueMembers.values());
+};
 
 const assertCanManageGroup = async (
   groupId: string,
@@ -154,9 +180,9 @@ const assertCanManageGroup = async (
   const memberships = await listGroupMembersByGroupId(groupId, { limit: 500 });
   const managerMembership = memberships.find(
     (member) =>
-      member.userId.equals(userObjectId) &&
+      member.userId?.equals(userObjectId) &&
       (member.role === "owner" ||
-        (member.role === "admin" && member.invite.status === "accepted")),
+        (member.role === "admin" && member.status === "accepted")),
   );
 
   if (!managerMembership) {
@@ -164,70 +190,55 @@ const assertCanManageGroup = async (
   }
 };
 
-const syncGroupParticipants = async (
+const syncGroupMembers = async (
   groupId: string,
   ownerUserId: string,
   managerUserId: string,
-  adminUserIds: string[],
-  memberUserIds: string[],
+  members: GroupFormMemberInput[],
 ): Promise<void> => {
-  const normalizedAdmins = normalizeUserIds(adminUserIds, "adminUserId").filter(
-    (userId) => userId !== ownerUserId,
+  const desiredMembers = dedupeMembers(members).filter(
+    (member) => member.identifier !== ownerUserId,
   );
-  const normalizedMembers = normalizeUserIds(
-    memberUserIds,
-    "memberUserId",
-  ).filter(
-    (userId) => userId !== ownerUserId && !normalizedAdmins.includes(userId),
+  const desiredIdentifiers = new Set(
+    desiredMembers.map((member) => member.identifier),
   );
 
-  const desiredParticipants = [
-    {
-      userId: ownerUserId,
-      role: "owner" as GroupMemberRole,
-      status: "accepted" as GroupMemberInviteStatus,
-    },
-    ...normalizedAdmins.map((userId) => ({
-      userId,
-      role: "admin" as GroupMemberRole,
-      status: "invited" as GroupMemberInviteStatus,
-    })),
-    ...normalizedMembers.map((userId) => ({
-      userId,
-      role: "member" as GroupMemberRole,
-      status: "invited" as GroupMemberInviteStatus,
-    })),
-  ];
+  await addGroupMember({
+    groupId,
+    identifier: ownerUserId,
+    role: "owner",
+    invitedBy: managerUserId,
+  });
 
   const existingMembers = await listGroupMembersByGroupId(groupId, {
     includeDeleted: true,
     limit: 500,
   });
-  const desiredUserIds = new Set(
-    desiredParticipants.map((participant) => participant.userId),
-  );
-  const timestamp = new Date();
 
-  for (const participant of desiredParticipants) {
-    await saveGroupMember({
+  for (const member of desiredMembers) {
+    await addGroupMember({
       groupId,
-      userId: participant.userId,
-      role: participant.role,
-      invite: {
-        invitedBy: managerUserId,
-        invitedAt: timestamp,
-        invitedUser: participant.userId,
-        status: participant.status,
-        statusChangedAt: timestamp,
-      },
+      identifier: member.identifier,
+      role: member.role,
+      invitedBy: managerUserId,
     });
   }
 
   for (const existingMember of existingMembers) {
-    const memberUserId = existingMember.userId.toHexString();
+    if (existingMember.role === "owner") {
+      continue;
+    }
 
-    if (!desiredUserIds.has(memberUserId)) {
-      await softDeleteGroupMemberByGroupAndUserId(groupId, memberUserId);
+    const existingIdentifier = existingMember.userId?.toHexString();
+    if (!existingIdentifier) {
+      continue;
+    }
+
+    if (!desiredIdentifiers.has(existingIdentifier)) {
+      await removeGroupMember({
+        groupId,
+        memberId: existingMember._id.toHexString(),
+      });
     }
   }
 };
@@ -257,8 +268,8 @@ export const listMyGroupsSummary = async (
 
     const hasMembership = members.some(
       (member) =>
-        member.userId.equals(userObjectId) &&
-        (member.role === "owner" || member.invite.status === "accepted"),
+        member.userId?.equals(userObjectId) &&
+        (member.role === "owner" || member.status === "accepted"),
     );
 
     if (!hasMembership) {
@@ -266,12 +277,11 @@ export const listMyGroupsSummary = async (
     }
 
     const activeMembers = members.filter(
-      (member) =>
-        member.role === "owner" || member.invite.status === "accepted",
+      (member) => member.role === "owner" || member.status === "accepted",
     ).length;
 
     const invitedMembers = members.filter(
-      (member) => member.invite.status === "invited",
+      (member) => member.status === "invited",
     ).length;
 
     const [pastMeetings, nextUpcomingMeeting] = await Promise.all([
@@ -283,7 +293,7 @@ export const listMyGroupsSummary = async (
     ]);
 
     const userMember = members.find((member) =>
-      member.userId.equals(userObjectId),
+      member.userId?.equals(userObjectId),
     );
     const userRole = userMember?.role ?? "member";
 
@@ -386,13 +396,7 @@ export const createManagedGroup = async (
   });
 
   const groupId = group._id.toHexString();
-  await syncGroupParticipants(
-    groupId,
-    ownerUserId,
-    ownerUserId,
-    input.adminUserIds,
-    input.memberUserIds,
-  );
+  await syncGroupMembers(groupId, ownerUserId, ownerUserId, input.members);
 
   await createNextUpcomingMeetingFromGroupDefaults(groupId);
 
@@ -416,26 +420,53 @@ export const getManagedGroupForm = async (
 
   const members = await listGroupMembersByGroupId(groupId, { limit: 500 });
   const participantUsers = await listUsersByIds(
-    members
-      .filter((member) => member.role !== "owner")
-      .map((member) => member.userId),
+    members.flatMap((member) => (member.userId ? [member.userId] : [])),
   );
   const usersById = new Map(
     participantUsers.map((participant) => [
       participant._id.toHexString(),
-      toParticipantSummary(participant),
+      {
+        userId: participant._id.toHexString(),
+        name:
+          `${participant.firstName} ${participant.lastName}`.trim() ||
+          participant.email,
+        email: participant.email,
+        avatarUrl: null,
+      },
     ]),
   );
 
-  const admins = members
-    .filter((member) => member.role === "admin")
-    .map((member) => usersById.get(member.userId.toHexString()))
-    .filter((value): value is GroupFormParticipant => Boolean(value));
+  const editableMembers = members.flatMap((member) => {
+    if (member.role === "owner") {
+      return [];
+    }
 
-  const regularMembers = members
-    .filter((member) => member.role === "member")
-    .map((member) => usersById.get(member.userId.toHexString()))
-    .filter((value): value is GroupFormParticipant => Boolean(value));
+    const userSummary = member.userId
+      ? usersById.get(member.userId.toHexString())
+      : null;
+    const identifier = member.userId?.toHexString() ?? member.email;
+
+    if (!identifier) {
+      return [];
+    }
+
+    return [
+      {
+        _id: member._id.toHexString(),
+        identifier,
+        role: member.role,
+        userId: member.userId?.toHexString() ?? null,
+        email: member.email ?? userSummary?.email ?? null,
+        name:
+          userSummary?.name ??
+          member.email ??
+          member.userId?.toHexString() ??
+          "Member",
+        avatarUrl: userSummary?.avatarUrl ?? null,
+        status: member.status,
+      },
+    ];
+  });
 
   return {
     groupId: group._id.toHexString(),
@@ -449,8 +480,7 @@ export const getManagedGroupForm = async (
     recurrenceDaysOfWeek: group.recurrenceRule.daysOfWeek,
     publicMessage: group.publishEmailMessage,
     attendanceMessage: group.attendanceEmailMessage,
-    admins,
-    members: regularMembers,
+    members: editableMembers,
   };
 };
 
@@ -492,12 +522,15 @@ export const updateManagedGroup = async (
     throw new Error("Group owner not found.");
   }
 
-  await syncGroupParticipants(
+  if (!owner.userId) {
+    throw new Error("Group owner is missing a userId.");
+  }
+
+  await syncGroupMembers(
     groupId,
     owner.userId.toHexString(),
     userId,
-    input.adminUserIds,
-    input.memberUserIds,
+    input.members,
   );
 
   return toSaveResult({
@@ -525,23 +558,19 @@ export const leaveGroup = async (
   }
 
   // Verify the member has accepted their invite
-  if (membership.invite.status === "cancelled") {
+  if (membership.status === "cancelled") {
     throw new AuthError("You have already left this group", 409);
   }
 
-  if (membership.invite.status !== "accepted") {
+  if (membership.status !== "accepted") {
     throw new AuthError(
       "Cannot leave a group without an accepted membership",
       409,
     );
   }
 
-  // Update membership status to 'cancelled'
   const updated = await updateGroupMemberById(membership._id, {
-    invite: {
-      status: "cancelled",
-      statusChangedAt: new Date(),
-    },
+    status: "cancelled",
   });
 
   if (!updated) {

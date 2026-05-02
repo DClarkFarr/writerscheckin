@@ -1,25 +1,24 @@
 import {
-  useDeferredValue,
-  useMemo,
   useState,
   type ChangeEvent,
   type FocusEvent,
   type FormEvent,
 } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "@/api/types";
 import {
   createGroup,
-  searchGroupParticipants,
   updateGroup,
+  removeGroupMember as apiRemoveGroupMember,
+  updateGroupMemberRole as apiUpdateGroupMemberRole,
 } from "@/api/groups";
 import type {
   EditableGroupResponse,
   GroupFormDraft,
-  ParticipantSummary,
+  GroupFormMember,
+  GroupMemberRole,
   SaveGroupResponse,
 } from "@/api/types/groups";
-import type { GroupUserOption } from "@/components/forms/GroupUserMultiSelect";
 
 type Fields = {
   name: string;
@@ -49,7 +48,6 @@ export type GroupFormInitialValues = Omit<
       | "recurrenceDaysOfWeek"
       | "publicMessage"
       | "attendanceMessage"
-      | "admins"
       | "members"
     >
   >,
@@ -67,19 +65,13 @@ export interface UseGroupFormOptions {
 
 export interface GroupFormProps {
   mode: "create" | "edit";
+  groupId?: string;
   fields: Fields;
   fieldErrors: FieldErrors;
   touched: Touched;
   recurrenceDaysOfWeek: number[];
-  selectedAdmins: GroupUserOption[];
-  selectedMembers: GroupUserOption[];
-  adminOptions: GroupUserOption[];
-  memberOptions: GroupUserOption[];
-  adminSearchValue: string;
-  memberSearchValue: string;
+  selectedMembers: GroupFormMember[];
   isSubmitting: boolean;
-  isAdminSearchLoading: boolean;
-  isMemberSearchLoading: boolean;
   formError: string | null;
   submitNotice: string | null;
   submitLabel: string;
@@ -95,10 +87,9 @@ export interface GroupFormProps {
   ) => void;
   handleDescriptionChange: (value: string) => void;
   handleRecurrenceDayToggle: (day: number) => void;
-  handleAdminsChange: (value: GroupUserOption[]) => void;
-  handleMembersChange: (value: GroupUserOption[]) => void;
-  handleAdminSearchChange: (value: string) => void;
-  handleMemberSearchChange: (value: string) => void;
+  handleMemberAdd: (member: GroupFormMember) => void;
+  handleMemberRoleChange: (memberId: string, role: GroupMemberRole) => void;
+  handleMemberDelete: (memberId: string) => void;
   handleSubmit: (event: FormEvent) => void;
 }
 
@@ -112,14 +103,6 @@ const DEFAULT_FIELDS: Fields = {
   publicMessage: "",
   attendanceMessage: "",
 };
-
-const normalizeParticipant = (
-  participant: ParticipantSummary,
-): GroupUserOption => ({
-  value: participant.userId,
-  label: participant.displayName,
-  avatarUrl: participant.avatarUrl,
-});
 
 const validateField = (
   name: FieldName,
@@ -206,43 +189,13 @@ export function useGroupForm(
   const [recurrenceDaysOfWeek, setRecurrenceDaysOfWeek] = useState<number[]>(
     options.existingGroup?.recurrenceDaysOfWeek ?? [1],
   );
-  const [selectedAdmins, setSelectedAdmins] = useState<GroupUserOption[]>(
-    (options.existingGroup?.admins ?? []).map(normalizeParticipant),
-  );
-  const [selectedMembers, setSelectedMembers] = useState<GroupUserOption[]>(
-    (options.existingGroup?.members ?? []).map(normalizeParticipant),
-  );
-  const [adminSearchValue, setAdminSearchValue] = useState("");
-  const [memberSearchValue, setMemberSearchValue] = useState("");
+  const [selectedGroupMembers, setSelectedGroupMembers] = useState<
+    GroupFormMember[]
+  >(options.existingGroup?.members ?? []);
   const [touched, setTouched] = useState<Touched>({});
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitNotice, setSubmitNotice] = useState<string | null>(null);
-
-  const deferredAdminSearchValue = useDeferredValue(adminSearchValue);
-  const deferredMemberSearchValue = useDeferredValue(memberSearchValue);
-
-  const adminQuery = useQuery({
-    queryKey: ["group-participants", "admins", deferredAdminSearchValue],
-    queryFn: () => searchGroupParticipants(deferredAdminSearchValue),
-    staleTime: 60_000,
-  });
-
-  const memberQuery = useQuery({
-    queryKey: ["group-participants", "members", deferredMemberSearchValue],
-    queryFn: () => searchGroupParticipants(deferredMemberSearchValue),
-    staleTime: 60_000,
-  });
-
-  const adminOptions = useMemo(
-    () => (adminQuery.data?.items ?? []).map(normalizeParticipant),
-    [adminQuery.data?.items],
-  );
-
-  const memberOptions = useMemo(
-    () => (memberQuery.data?.items ?? []).map(normalizeParticipant),
-    [memberQuery.data?.items],
-  );
 
   const { mutate, isPending } = useMutation({
     mutationFn: async (values: GroupFormDraft) => {
@@ -374,26 +327,19 @@ export function useGroupForm(
       recurrenceDaysOfWeek,
       publicMessage: fields.publicMessage.trim(),
       attendanceMessage: fields.attendanceMessage.trim(),
-      adminUserIds: selectedAdmins.map((participant) => participant.value),
-      memberUserIds: selectedMembers.map((participant) => participant.value),
+      members: selectedGroupMembers,
     });
   };
 
   return {
     mode: options.mode ?? "create",
+    groupId: options.groupId,
     fields,
     fieldErrors,
     touched,
     recurrenceDaysOfWeek,
-    selectedAdmins,
-    selectedMembers,
-    adminOptions,
-    memberOptions,
-    adminSearchValue,
-    memberSearchValue,
+    selectedMembers: selectedGroupMembers,
     isSubmitting: isPending,
-    isAdminSearchLoading: adminQuery.isLoading,
-    isMemberSearchLoading: memberQuery.isLoading,
     formError,
     submitNotice,
     submitLabel: options.mode === "edit" ? "Save Changes" : "Create Group",
@@ -401,10 +347,51 @@ export function useGroupForm(
     handleFieldBlur,
     handleDescriptionChange,
     handleRecurrenceDayToggle,
-    handleAdminsChange: setSelectedAdmins,
-    handleMembersChange: setSelectedMembers,
-    handleAdminSearchChange: setAdminSearchValue,
-    handleMemberSearchChange: setMemberSearchValue,
+    handleMemberAdd: (member: GroupFormMember) => {
+      setSelectedGroupMembers((current) => {
+        const alreadyExists = current.some(
+          (existing) =>
+            existing.identifier === member.identifier ||
+            (member.email && existing.email === member.email),
+        );
+
+        if (alreadyExists) {
+          return current;
+        }
+
+        return [...current, member];
+      });
+    },
+    handleMemberRoleChange: (memberId: string, role: GroupMemberRole) => {
+      setSelectedGroupMembers((current) =>
+        current.map((member) =>
+          (member._id ?? member.identifier) === memberId
+            ? { ...member, role }
+            : member,
+        ),
+      );
+      if (
+        options.mode === "edit" &&
+        options.groupId &&
+        memberId.length === 24
+      ) {
+        void apiUpdateGroupMemberRole(options.groupId, memberId, role);
+      }
+    },
+    handleMemberDelete: (memberId: string) => {
+      setSelectedGroupMembers((current) =>
+        current.filter(
+          (member) => (member._id ?? member.identifier) !== memberId,
+        ),
+      );
+      if (
+        options.mode === "edit" &&
+        options.groupId &&
+        memberId.length === 24
+      ) {
+        void apiRemoveGroupMember(options.groupId, memberId);
+      }
+    },
     handleSubmit,
   };
 }

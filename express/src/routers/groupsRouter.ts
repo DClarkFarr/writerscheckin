@@ -9,6 +9,10 @@ import {
   searchGroupParticipants,
   updateManagedGroup,
 } from "../services/groupsService";
+import {
+  updateGroupMemberRole,
+  removeGroupMember,
+} from "../services/groupMembersService";
 import { createUpcomingMeetingFromDefaults } from "../services/groupMeetingsService";
 
 export const groupsRouter = express.Router({ mergeParams: true });
@@ -54,8 +58,7 @@ const applyGroupRoutes = () => {
           recurrenceDaysOfWeek: req.body?.recurrenceDaysOfWeek,
           publicMessage: req.body?.publicMessage,
           attendanceMessage: req.body?.attendanceMessage,
-          adminUserIds: req.body?.adminUserIds,
-          memberUserIds: req.body?.memberUserIds,
+          members: Array.isArray(req.body?.members) ? req.body.members : [],
         },
         userId,
       );
@@ -148,8 +151,7 @@ const applyGroupRoutes = () => {
           recurrenceDaysOfWeek: req.body?.recurrenceDaysOfWeek,
           publicMessage: req.body?.publicMessage,
           attendanceMessage: req.body?.attendanceMessage,
-          adminUserIds: req.body?.adminUserIds,
-          memberUserIds: req.body?.memberUserIds,
+          members: Array.isArray(req.body?.members) ? req.body.members : [],
         },
         userId,
       );
@@ -184,6 +186,42 @@ const applyGroupRoutes = () => {
       });
 
       res.status(201).json(data);
+    }),
+  );
+
+  groupsRouter.delete(
+    "/:groupId/members/:memberId",
+    handleAsync(async (req, res) => {
+      getAuthenticatedUserId(req);
+      const groupId = getRouteParam(req.params.groupId, "groupId");
+      const memberId = getRouteParam(req.params.memberId, "memberId");
+
+      await removeGroupMember({ groupId, memberId });
+
+      res.status(200).json({
+        success: true,
+        message: "Member removed",
+        memberStatus: "removed",
+      });
+    }),
+  );
+
+  groupsRouter.patch(
+    "/:groupId/members/:memberId/role",
+    handleAsync(async (req, res) => {
+      getAuthenticatedUserId(req);
+      const groupId = getRouteParam(req.params.groupId, "groupId");
+      const memberId = getRouteParam(req.params.memberId, "memberId");
+      const role = req.body?.role;
+
+      const updated = await updateGroupMemberRole({ groupId, memberId, role });
+
+      res.status(200).json({
+        success: true,
+        _id: updated._id.toHexString(),
+        role: updated.role,
+        updatedAt: updated.updatedAt,
+      });
     }),
   );
 };

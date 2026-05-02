@@ -1,6 +1,7 @@
 import express from "express";
 import { authRouter } from "./authRouter";
 import { groupsRouter } from "./groupsRouter";
+import { membersRouter } from "./membersRouter";
 import { applyNestedRouter } from "../utils/routes";
 
 // The 'mergeParams: true' option is crucial here.
@@ -12,3 +13,4 @@ apiRouter.use(express.urlencoded({ extended: true }));
 
 applyNestedRouter(apiRouter, "/auth", authRouter);
 applyNestedRouter(apiRouter, "/groups", groupsRouter);
+applyNestedRouter(apiRouter, "/members", membersRouter);

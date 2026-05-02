@@ -9,6 +9,7 @@ export const GROUP_MEMBER_INVITE_STATUSES = [
   "accepted",
   "declined",
   "cancelled",
+  "removed",
 ] as const;
 export type GroupMemberInviteStatus =
   (typeof GROUP_MEMBER_INVITE_STATUSES)[number];
@@ -146,10 +147,11 @@ export const assertInviteStatusTransition = (
     GroupMemberInviteStatus,
     GroupMemberInviteStatus[]
   > = {
-    invited: ["accepted", "declined"],
-    accepted: ["cancelled"],
+    invited: ["accepted", "declined", "removed"],
+    accepted: ["cancelled", "removed"],
     declined: [],
-    cancelled: [],
+    cancelled: ["removed"],
+    removed: [],
   };
 
   if (!allowedTransitions[currentStatus].includes(nextStatus)) {

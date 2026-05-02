@@ -27,19 +27,13 @@ const WEEKDAY_OPTIONS = [
 
 export function GroupForm({
   mode,
+  groupId,
   fields,
   fieldErrors,
   touched,
   recurrenceDaysOfWeek,
-  selectedAdmins,
   selectedMembers,
-  adminOptions,
-  memberOptions,
-  adminSearchValue,
-  memberSearchValue,
   isSubmitting,
-  isAdminSearchLoading,
-  isMemberSearchLoading,
   formError,
   submitNotice,
   submitLabel,
@@ -47,10 +41,9 @@ export function GroupForm({
   handleFieldBlur,
   handleDescriptionChange,
   handleRecurrenceDayToggle,
-  handleAdminsChange,
-  handleMembersChange,
-  handleAdminSearchChange,
-  handleMemberSearchChange,
+  handleMemberAdd,
+  handleMemberRoleChange,
+  handleMemberDelete,
   handleSubmit,
 }: GroupFormProps) {
   const heading = mode === "edit" ? "Edit Group" : "Create Group";
@@ -240,37 +233,19 @@ export function GroupForm({
 
       <FieldGroup>
         <Field>
-          <FieldLabel htmlFor="group-admins">Other admins</FieldLabel>
-          <GroupUserMultiSelect
-            inputId="group-admins"
-            placeholder="Search users to add as admins"
-            options={adminOptions}
-            selected={selectedAdmins}
-            searchValue={adminSearchValue}
-            onSearchChange={handleAdminSearchChange}
-            onSelectionChange={handleAdminsChange}
-            isLoading={isAdminSearchLoading}
-          />
-          <FieldDescription>
-            Search by name or email and add additional admins beneath the owner.
-          </FieldDescription>
-        </Field>
-
-        <Field>
-          <FieldLabel htmlFor="group-members">Group members</FieldLabel>
+          <FieldLabel htmlFor="group-members">Members</FieldLabel>
           <GroupUserMultiSelect
             inputId="group-members"
-            placeholder="Search users to add as members"
-            options={memberOptions}
+            placeholder="Search by name or email"
+            groupId={groupId}
             selected={selectedMembers}
-            searchValue={memberSearchValue}
-            onSearchChange={handleMemberSearchChange}
-            onSelectionChange={handleMembersChange}
-            isLoading={isMemberSearchLoading}
+            onMemberAdd={handleMemberAdd}
+            onMemberRoleChange={handleMemberRoleChange}
+            onMemberDelete={handleMemberDelete}
           />
           <FieldDescription>
-            Selected members are listed beneath the search field with avatars
-            and names.
+            Search by name or email. Use the role selector on each row to set
+            admin or member status. Unknown emails will be invited.
           </FieldDescription>
         </Field>
       </FieldGroup>

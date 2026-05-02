@@ -59,6 +59,24 @@ export interface SearchParticipantsResponse {
 }
 
 export type GroupRecurrenceFrequency = "weekly" | "biweekly";
+export type GroupMemberRole = "admin" | "member";
+export type GroupMemberStatus =
+  | "invited"
+  | "accepted"
+  | "declined"
+  | "cancelled"
+  | "removed";
+
+export interface GroupFormMember {
+  _id?: string;
+  identifier: string;
+  role: GroupMemberRole;
+  userId?: string | null;
+  email?: string | null;
+  name: string;
+  avatarUrl: string | null;
+  status: GroupMemberStatus;
+}
 
 export interface GroupFormDraft {
   name: string;
@@ -70,8 +88,7 @@ export interface GroupFormDraft {
   recurrenceDaysOfWeek: number[];
   publicMessage: string;
   attendanceMessage: string;
-  adminUserIds: string[];
-  memberUserIds: string[];
+  members: GroupFormMember[];
 }
 
 export interface EditableGroupResponse {
@@ -86,8 +103,7 @@ export interface EditableGroupResponse {
   recurrenceDaysOfWeek: number[];
   publicMessage: string;
   attendanceMessage: string;
-  admins: ParticipantSummary[];
-  members: ParticipantSummary[];
+  members: GroupFormMember[];
 }
 
 export interface SaveGroupResponse {

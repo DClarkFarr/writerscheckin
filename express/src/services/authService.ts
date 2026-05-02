@@ -25,6 +25,7 @@ import {
 import { recordAuditEvent } from "../utils/audit";
 import { sendEmail } from "./emailService";
 import { buildPasswordResetEmail } from "./emailTemplates/passwordResetEmail";
+import { attachUserToInvitedMembers } from "./groupMembersService";
 
 export class AuthError extends Error {
   public readonly status: number;
@@ -143,6 +144,7 @@ export const signup = async (
     passwordChangedAt,
   });
 
+  await attachUserToInvitedMembers(user.email, user._id.toHexString());
   await resetAuthAttempt(email, ipAddress, "signup");
 
   sessionData.userId = user._id.toHexString();

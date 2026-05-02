@@ -131,9 +131,9 @@ const assertCanManageGroupMeeting = async (
   const memberships = await listGroupMembersByGroupId(groupId, { limit: 500 });
   const managerMembership = memberships.find(
     (member) =>
-      member.userId.equals(userObjectId) &&
+      member.userId?.equals(userObjectId) &&
       (member.role === "owner" ||
-        (member.role === "admin" && member.invite.status === "accepted")),
+        (member.role === "admin" && member.status === "accepted")),
   );
 
   if (!managerMembership) {
