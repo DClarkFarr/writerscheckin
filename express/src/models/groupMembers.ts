@@ -51,7 +51,7 @@ export const ensureGroupMemberIndexes = async (): Promise<void> => {
       unique: true,
       partialFilterExpression: {
         role: "owner",
-        deletedAt: { $exists: false },
+        deletedAt: null,
       },
     },
   );

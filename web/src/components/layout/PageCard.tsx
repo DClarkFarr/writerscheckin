@@ -14,7 +14,7 @@ export const PageCard = ({
   return (
     <>
       <div
-        className={`bg-white rounded-lg shadow-md p-6 w-full ${grow ? "flex flex-col gap-6 grow-1 lg:mt-10" : ""} ${className ?? ""}`}
+        className={`bg-white rounded-2xl shadow-md p-6 w-full ${grow ? "flex flex-col gap-6 grow-1 lg:mt-10" : ""} ${className ?? ""}`}
       >
         {children}
       </div>
