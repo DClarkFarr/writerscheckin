@@ -23,6 +23,7 @@ import {
 export interface GroupMeetingDefinition extends BaseModelBlueprint {
   groupId: ObjectId;
   name: string;
+  occursAt: Date;
   description: string;
   emailMessage: string;
   address: string;
@@ -42,6 +43,7 @@ export type GroupMeetingDocument = ModelDocument<GroupMeetingDefinition>;
 export interface CreateGroupMeetingInput {
   groupId: string | ObjectId;
   name: string;
+  occursAt?: Date;
   description?: string;
   emailMessage?: string;
   address?: string;
@@ -56,6 +58,7 @@ export interface CreateGroupMeetingInput {
 
 export interface UpdateGroupMeetingInput {
   name?: string;
+  occursAt?: Date;
   description?: string;
   emailMessage?: string;
   address?: string;
@@ -73,6 +76,13 @@ export interface ListGroupMeetingsOptions {
   limit?: number;
 }
 
+export interface CountGroupMeetingsOptions {
+  includeDeleted?: boolean;
+  status?: GroupMeetingStatus;
+  onlyPast?: boolean;
+  referenceDate?: Date;
+}
+
 export const getGroupMeetingsCollection =
   (): Collection<GroupMeetingDocument> =>
     getCollection<GroupMeetingDocument>(COLLECTIONS.groupMeetings);
@@ -83,11 +93,20 @@ export const ensureGroupMeetingIndexes = async (): Promise<void> => {
     groupId: 1,
     status: 1,
     deletedAt: 1,
-    createdAt: -1,
+    occursAt: 1,
+    createdAt: 1,
   });
 };
 
 const normalizeString = (value: string): string => value.trim();
+
+const assertDate = (value: Date, label: string): Date => {
+  if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
+    throw new Error(`${label} must be a valid datetime.`);
+  }
+
+  return value;
+};
 
 const normalizeCreateInput = (
   input: CreateGroupMeetingInput,
@@ -109,6 +128,7 @@ const normalizeCreateInput = (
   return {
     groupId: toObjectId(input.groupId, "groupId"),
     name,
+    occursAt: assertDate(input.occursAt ?? new Date(), "occursAt"),
     description: normalizeString(input.description ?? ""),
     emailMessage: normalizeString(input.emailMessage ?? ""),
     address: normalizeString(input.address ?? ""),
@@ -135,6 +155,10 @@ const normalizeUpdateInput = (
     }
 
     normalized.name = name;
+  }
+
+  if (updates.occursAt instanceof Date) {
+    normalized.occursAt = assertDate(updates.occursAt, "occursAt");
   }
 
   if (typeof updates.description === "string") {
@@ -235,6 +259,62 @@ export const listGroupMeetingsByGroupId = async (
     .sort({ createdAt: -1 })
     .limit(limit)
     .toArray();
+};
+
+export const countGroupMeetingsByGroupId = async (
+  groupId: string | ObjectId,
+  options: CountGroupMeetingsOptions = {},
+): Promise<number> => {
+  const collection = getGroupMeetingsCollection();
+  const referenceDate = options.referenceDate ?? new Date();
+
+  return collection.countDocuments({
+    groupId: toObjectId(groupId, "groupId"),
+    ...activeRecordFilter(options.includeDeleted),
+    ...(options.status ? { status: assertMeetingStatus(options.status) } : {}),
+    ...(options.onlyPast
+      ? {
+          $or: [
+            { occursAt: { $lt: referenceDate } },
+            { occursAt: { $exists: false } },
+          ],
+        }
+      : {}),
+  });
+};
+
+export const getNextUpcomingMeetingByGroupId = async (
+  groupId: string | ObjectId,
+): Promise<GroupMeetingDocument | null> => {
+  const collection = getGroupMeetingsCollection();
+  const now = new Date();
+
+  const meetingWithOccurrence = await collection.findOne(
+    {
+      groupId: toObjectId(groupId, "groupId"),
+      status: "draft",
+      occursAt: { $gte: now },
+      ...activeRecordFilter(),
+    },
+    {
+      sort: { occursAt: 1, createdAt: 1 },
+    },
+  );
+
+  if (meetingWithOccurrence) {
+    return meetingWithOccurrence;
+  }
+
+  return collection.findOne(
+    {
+      groupId: toObjectId(groupId, "groupId"),
+      status: "draft",
+      ...activeRecordFilter(),
+    },
+    {
+      sort: { createdAt: -1 },
+    },
+  );
 };
 
 export const updateGroupMeetingById = async (

@@ -20,7 +20,10 @@ import {
   getUserGroupMembership,
   updateGroupMemberById,
 } from "../models/groupMembers";
-import { listGroupMeetingsByGroupId } from "../models/groupMeetings";
+import {
+  countGroupMeetingsByGroupId,
+  getNextUpcomingMeetingByGroupId,
+} from "../models/groupMeetings";
 import { ensureObjectId } from "../models/types";
 import { listUsers, listUsersByIds } from "../models/users";
 import {
@@ -261,10 +264,6 @@ export const listMyGroupsSummary = async (
       continue;
     }
 
-    const meetings = await listGroupMeetingsByGroupId(group._id, {
-      limit: 500,
-    });
-
     const activeMembers = members.filter(
       (member) =>
         member.role === "owner" || member.invite.status === "accepted",
@@ -274,9 +273,13 @@ export const listMyGroupsSummary = async (
       (member) => member.invite.status === "invited",
     ).length;
 
-    const pastMeetings = meetings.filter(
-      (meeting) => meeting.status === "published",
-    ).length;
+    const [pastMeetings, nextUpcomingMeeting] = await Promise.all([
+      countGroupMeetingsByGroupId(group._id, {
+        status: "published",
+        onlyPast: true,
+      }),
+      getNextUpcomingMeetingByGroupId(group._id),
+    ]);
 
     const userMember = members.find((member) =>
       member.userId.equals(userObjectId),
@@ -293,7 +296,14 @@ export const listMyGroupsSummary = async (
         activeMembers,
         invitedMembers,
         pastMeetings,
-        nextUpcomingMeeting: null,
+        nextUpcomingMeeting: nextUpcomingMeeting
+          ? {
+              meetingId: nextUpcomingMeeting._id.toHexString(),
+              startsAt: (
+                nextUpcomingMeeting.occursAt ?? nextUpcomingMeeting.createdAt
+              ).toISOString(),
+            }
+          : null,
       }),
     );
 

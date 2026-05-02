@@ -16,6 +16,39 @@ export interface CreateUpcomingMeetingFromDefaultsResult {
   createdFromDefaults: true;
 }
 
+const computeNextOccurrence = (input: {
+  daysOfWeek: number[];
+  startTime: { hours: number; minutes: number };
+}): Date => {
+  const now = new Date();
+  const base = new Date(now);
+  base.setSeconds(0, 0);
+
+  const days =
+    input.daysOfWeek.length > 0
+      ? Array.from(new Set(input.daysOfWeek))
+      : [base.getDay()];
+
+  for (let dayOffset = 0; dayOffset < 28; dayOffset += 1) {
+    const candidate = new Date(base);
+    candidate.setDate(base.getDate() + dayOffset);
+
+    if (!days.includes(candidate.getDay())) {
+      continue;
+    }
+
+    candidate.setHours(input.startTime.hours, input.startTime.minutes, 0, 0);
+    if (candidate.getTime() > now.getTime()) {
+      return candidate;
+    }
+  }
+
+  const fallback = new Date(base);
+  fallback.setDate(base.getDate() + 1);
+  fallback.setHours(input.startTime.hours, input.startTime.minutes, 0, 0);
+  return fallback;
+};
+
 const assertCanManageGroupMeeting = async (
   groupId: string,
   userId: string,
@@ -53,6 +86,10 @@ export const createUpcomingMeetingFromDefaults = async (
   const meeting = await createGroupMeeting({
     groupId: group._id,
     name: group.name,
+    occursAt: computeNextOccurrence({
+      daysOfWeek: group.recurrenceRule.daysOfWeek,
+      startTime: group.startTime,
+    }),
     description: group.description,
     emailMessage: group.publishEmailMessage,
     address: group.address,
