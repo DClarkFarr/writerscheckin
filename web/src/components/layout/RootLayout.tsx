@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../../store/authStore";
 import { getMe } from "../../api/auth";
 import { ApiError } from "../../api/types";
+import { Topbar } from "./Topbar";
 
 export function RootLayout() {
   const { setUser, clearUser } = useAuthStore();
@@ -35,5 +36,14 @@ export function RootLayout() {
     }
   }, [error, clearUser]);
 
-  return <Outlet />;
+  return (
+    <div className="min-h-screen flex flex-col bg-theme-950">
+      <div className="shrink-0">
+        <Topbar />
+      </div>
+      <div className="grow-1 flex flex-col items-center justify-center mx-auto bg-theme-950 px-4 w-full max-w-lg">
+        <Outlet />;
+      </div>
+    </div>
+  );
 }

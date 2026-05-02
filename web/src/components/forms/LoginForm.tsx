@@ -16,7 +16,11 @@ export function LoginForm({
   handleSubmit,
 }: LoginFormProps) {
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
+    <form
+      onSubmit={handleSubmit}
+      noValidate
+      className="flex flex-col gap-6 grow-1"
+    >
       <h2 className="text-2xl font-bold text-foreground text-center">Log in</h2>
 
       {formError && (
@@ -65,26 +69,17 @@ export function LoginForm({
             </p>
           )}
         </Field>
-      </FieldGroup>
-
-      <div className="flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">
-          Don't have an account?{" "}
+        <div className="flex justify-end text-sm">
           <Link
-            to="/sign-up"
+            to="/reset-password"
             className="text-primary hover:underline font-medium"
           >
-            Sign up
+            Forgot password?
           </Link>
-        </span>
-        <Link
-          to="/reset-password"
-          className="text-primary hover:underline font-medium"
-        >
-          Forgot password?
-        </Link>
-      </div>
+        </div>
+      </FieldGroup>
 
+      <div className="mt-auto"></div>
       <Button
         type="submit"
         disabled={isSubmitting}

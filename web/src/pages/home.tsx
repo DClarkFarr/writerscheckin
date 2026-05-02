@@ -1,10 +1,8 @@
 import { Link } from "@tanstack/react-router";
-import { Topbar } from "../components/layout/Topbar";
 import Logo from "../assets/logo-icon-md.png";
 export function Home() {
   return (
-    <div className="min-h-screen flex flex-col bg-theme-950">
-      <Topbar />
+    <div className="">
       <main className="flex-1 flex flex-col items-center justify-center gap-6 px-4 text-center pt-10">
         <img
           src={Logo}
