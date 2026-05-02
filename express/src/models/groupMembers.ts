@@ -253,8 +253,6 @@ export const saveGroupMember = async (
       },
       $setOnInsert: {
         groupId,
-        ...(userId ? { userId } : {}),
-        ...(email ? { email } : {}),
         ...createTimestamps(),
       },
       $unset: {
