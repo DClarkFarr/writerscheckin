@@ -1,8 +1,10 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.3.0 → 1.4.0 (MINOR — expanded ShadCN governance with explicit base component immutability rule)
-Modified sections: Principle XII — ShadCN UI Component System (added explicit no-edit rule for default base components)
+Version change: 1.4.0 → 1.5.0 (MINOR — expanded ShadCN component extension rules with explicit anti-patterns for styling)
+Modified sections:
+  - Extension Rules (major expansion) — added decision tree for component variants vs. composition vs. page-level styling
+  - Added FORBIDDEN PATTERNS section — explicitly prohibits utility classes in index.css for component styling and styling-only classNames
 Added sections: None
 Removed sections: None
 Templates requiring updates:
@@ -488,16 +490,85 @@ Tabs  (orientation: horizontal | vertical)
 #### Extension Rules
 
 Default shadcn component files in `web/src/components/ui/*` are treated as baseline library
-primitives and MUST NOT be modified without explicit instructions in the active task,
-specification, or direct user request. Extend behavior by wrapping/composing in other component
-directories first.
+primitives. When a ShadCN primitive does not meet a requirement, follow this decision tree:
 
-When a ShadCN primitive does not meet a requirement:
+**Rule 1: Add Variants/Props to the Component (Preferred)**
 
-1. Compose from existing sub-components before creating a new one.
-2. New shared components go in `web/src/components/` under an appropriate subdirectory
-   (`forms/`, `helpers/`, `layout/`, etc.) and MUST import from `@/components/ui/`.
-3. New components MUST accept and spread a `className` prop and apply it via `cn()`.
+If a styling or behavioral requirement can be satisfied by adding a new variant or prop to the
+ShadCN component itself (e.g., adding `size="lg"` to `Input`, adding new color variants to
+`Button`):
+
+1. Modify the component file to add the variant/prop using `cva()` from `class-variance-authority`.
+2. Apply the variant/prop at component invocation (`<Input size="lg" />`).
+3. NEVER create utility classes in `index.css` that shadow component responsibilities.
+
+Example — adding a size prop to `Input`:
+
+```tsx
+// web/src/components/ui/input.tsx
+const inputVariants = cva([...], {
+  variants: {
+    size: {
+      default: "h-10 px-3 py-2 text-sm",
+      lg: "h-12 px-4 py-3 text-base",
+    },
+  },
+});
+
+function Input({ className, size = "default", ...props }) {
+  return <input className={cn(inputVariants({ size }), className)} {...props} />;
+}
+```
+
+Then use it: `<Input size="lg" />` — NOT `<Input className="auth-input-lg" />`.
+
+**Rule 2: Compose Multiple ShadCN Components (If No Variant Needed)**
+
+If the requirement needs multiple ShadCN sub-components (e.g., Field + FieldLabel + Input +
+helper text):
+
+1. Compose them in a new component in `web/src/components/<category>/` (e.g., `FormField.tsx`).
+2. Import ShadCN primitives from `@/components/ui/`.
+3. The new component MAY accept a `className` prop for outer layout adjustments (gaps, width).
+4. DO NOT use this for styling the internal ShadCN components — use their variants/props instead.
+
+Example:
+
+```tsx
+// web/src/components/forms/FormField.tsx
+export function FormField({ label, error, children }) {
+  return (
+    <Field>
+      <FieldLabel>{label}</FieldLabel>
+      {children}
+      {error && (
+        <FieldDescription className="text-destructive">
+          {error}
+        </FieldDescription>
+      )}
+    </Field>
+  );
+}
+```
+
+**Rule 3: Compose in a Page/Route Component (If Layout-Specific)**
+
+If the requirement is specific to a single page (e.g., a login form with custom spacing or
+responsive behavior):
+
+1. Compose and style in the page component itself.
+2. Do not extract to `web/src/components/` unless used in 2+ pages.
+
+**FORBIDDEN PATTERNS (Never Do This):**
+
+- ❌ Add utility classes to `web/src/index.css` like `.auth-input-lg` and apply them via
+  `className="auth-input-lg"`. This creates confusion between Tailwind classes and custom CSS,
+  conflicts with component variants, and is unmaintainable.
+- ❌ Add styling-only classNames to component props. WRONG: `<Input className="h-12 px-4 py-3" />`.
+  RIGHT: `<Input size="lg" />` (after adding the size variant to Input).
+- ❌ Modify `web/src/components/ui/*` files without explicit task/spec guidance UNLESS adding a
+  variant/prop that is required by the feature. Always justify the change in a code comment or
+  commit message.
 
 ### X. Deployment & Change Detection
 
@@ -554,4 +625,4 @@ All new features and changes MUST comply with these principles. Any amendment re
 - MINOR bump: new principle or section added.
 - PATCH bump: clarifications, wording fixes, non-semantic refinements.
 
-**Version**: 1.4.0 | **Ratified**: 2026-04-30 | **Last Amended**: 2026-04-30
+**Version**: 1.5.0 | **Ratified**: 2026-04-30 | **Last Amended**: 2026-05-01

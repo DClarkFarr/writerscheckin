@@ -1,4 +1,8 @@
 import { Link } from "@tanstack/react-router";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import type { LoginFormProps } from "../../hooks/useLoginForm";
 
 export function LoginForm({
@@ -12,76 +16,82 @@ export function LoginForm({
   handleSubmit,
 }: LoginFormProps) {
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
-      <h2 className="text-2xl font-bold text-gray-900 text-center">Log in</h2>
+    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
+      <h2 className="text-2xl font-bold text-foreground text-center">Log in</h2>
 
       {formError && (
-        <Alert color="failure">
-          <span>{formError}</span>
+        <Alert variant="destructive">
+          <AlertDescription>{formError}</AlertDescription>
         </Alert>
       )}
 
-      <div>
-        <Label htmlFor="email">Email</Label>
-        <TextInput
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          value={fields.email}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          color={touched.email && fieldErrors.email ? "failure" : undefined}
-          className="mt-1"
-        />
-        {touched.email && fieldErrors.email && (
-          <p className="mt-1 text-sm text-red-500">{fieldErrors.email}</p>
-        )}
-      </div>
+      <FieldGroup>
+        <Field>
+          <FieldLabel htmlFor="email">Email</FieldLabel>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            value={fields.email}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            aria-invalid={touched.email && !!fieldErrors.email}
+            className="auth-input-lg"
+            placeholder="you@example.com"
+          />
+          {touched.email && fieldErrors.email && (
+            <p className="mt-1 text-sm text-destructive">{fieldErrors.email}</p>
+          )}
+        </Field>
 
-      <div>
-        <div className="flex items-center justify-between">
-          <Label htmlFor="password">Password</Label>
+        <Field>
+          <FieldLabel htmlFor="password">Password</FieldLabel>
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            value={fields.password}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            aria-invalid={touched.password && !!fieldErrors.password}
+            className="auth-input-lg"
+            placeholder="••••••••"
+          />
+          {touched.password && fieldErrors.password && (
+            <p className="mt-1 text-sm text-destructive">
+              {fieldErrors.password}
+            </p>
+          )}
+        </Field>
+      </FieldGroup>
+
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-muted-foreground">
+          Don't have an account?{" "}
           <Link
-            to="/reset-password"
-            className="text-sm text-blue-600 hover:underline"
+            to="/sign-up"
+            className="text-primary hover:underline font-medium"
           >
-            Forgot password?
+            Sign up
           </Link>
-        </div>
-        <TextInput
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          value={fields.password}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          color={
-            touched.password && fieldErrors.password ? "failure" : undefined
-          }
-          className="mt-1"
-        />
-        {touched.password && fieldErrors.password && (
-          <p className="mt-1 text-sm text-red-500">{fieldErrors.password}</p>
-        )}
+        </span>
+        <Link
+          to="/reset-password"
+          className="text-primary hover:underline font-medium"
+        >
+          Forgot password?
+        </Link>
       </div>
 
       <Button
         type="submit"
-        color="blue"
         disabled={isSubmitting}
-        className="w-full"
+        className="auth-button-lg w-full"
       >
-        Log in
+        {isSubmitting ? "Logging in..." : "Log in"}
       </Button>
-
-      <p className="text-sm text-center text-gray-400">
-        Don&apos;t have an account?{" "}
-        <Link to="/sign-up" className="text-blue-600 hover:underline">
-          Sign up
-        </Link>
-      </p>
     </form>
   );
 }

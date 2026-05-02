@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
+import { Alert, AlertDescription } from "../components/ui/alert";
 import { ResetPasswordForm } from "../components/forms/ResetPasswordForm";
 import { ResetPasswordConfirmForm } from "../components/forms/ResetPasswordConfirmForm";
 import { useResetPasswordForm } from "../hooks/useResetPasswordForm";
@@ -40,20 +41,22 @@ export function ResetPasswordPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <h2 className="text-2xl font-bold text-white text-center">
+    <div className="flex flex-col gap-6">
+      <h2 className="text-2xl font-bold text-foreground text-center">
         Password updated
       </h2>
 
-      <Alert color="success">
-        <span>Your password was updated successfully.</span>
+      <Alert>
+        <AlertDescription>
+          Your password was updated successfully.
+        </AlertDescription>
       </Alert>
 
-      <p className="text-sm text-center text-gray-400">
+      <p className="text-sm text-center text-muted-foreground">
         <Link
           to="/login"
           search={{ redir: "" }}
-          className="text-blue-600 hover:underline"
+          className="text-primary hover:underline font-medium"
         >
           Continue to Log In
         </Link>

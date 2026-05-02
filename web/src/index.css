@@ -291,6 +291,27 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Auth Form Sizing Tokens - Ensure consistent control heights across login, sign-up, reset-password */
+@layer components {
+  /* Large size variant: 48px height with generous padding */
+  .auth-input-lg {
+    @apply h-12 px-4 py-3 text-base;
+  }
+
+  .auth-button-lg {
+    @apply h-12 px-6 py-3 text-base font-medium;
+  }
+
+  /* Default size variant: 40px height with standard padding */
+  .auth-input-default {
+    @apply h-10 px-3 py-2 text-sm;
+  }
+
+  .auth-button-default {
+    @apply h-10 px-4 py-2 text-sm font-medium;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

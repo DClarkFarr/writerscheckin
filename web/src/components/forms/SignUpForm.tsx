@@ -1,3 +1,8 @@
+import { Link } from "@tanstack/react-router";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import type { SignUpFormProps } from "../../hooks/useSignUpForm";
 
 export function SignUpForm({
@@ -11,109 +16,118 @@ export function SignUpForm({
   handleSubmit,
 }: SignUpFormProps) {
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
-      <h2 className="text-2xl font-bold text-white text-center">
+    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
+      <h2 className="text-2xl font-bold text-foreground text-center">
         Create an account
       </h2>
 
       {formError && (
-        <Alert color="failure">
-          <span>{formError}</span>
+        <Alert variant="destructive">
+          <AlertDescription>{formError}</AlertDescription>
         </Alert>
       )}
 
-      <div>
-        <Label htmlFor="firstName">First name</Label>
-        <TextInput
-          id="firstName"
-          name="firstName"
-          type="text"
-          autoComplete="given-name"
-          value={fields.firstName}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          color={
-            touched.firstName && fieldErrors.firstName ? "failure" : undefined
-          }
-          className="mt-1"
-        />
-        {touched.firstName && fieldErrors.firstName && (
-          <p className="mt-1 text-sm text-red-500">{fieldErrors.firstName}</p>
-        )}
-      </div>
+      <FieldGroup>
+        <Field>
+          <FieldLabel htmlFor="firstName">First name</FieldLabel>
+          <Input
+            id="firstName"
+            name="firstName"
+            type="text"
+            autoComplete="given-name"
+            value={fields.firstName}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            aria-invalid={touched.firstName && !!fieldErrors.firstName}
+            className="auth-input-lg"
+            placeholder="John"
+          />
+          {touched.firstName && fieldErrors.firstName && (
+            <p className="mt-1 text-sm text-destructive">
+              {fieldErrors.firstName}
+            </p>
+          )}
+        </Field>
 
-      <div>
-        <Label htmlFor="lastName">Last name</Label>
-        <TextInput
-          id="lastName"
-          name="lastName"
-          type="text"
-          autoComplete="family-name"
-          value={fields.lastName}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          color={
-            touched.lastName && fieldErrors.lastName ? "failure" : undefined
-          }
-          className="mt-1"
-        />
-        {touched.lastName && fieldErrors.lastName && (
-          <p className="mt-1 text-sm text-red-500">{fieldErrors.lastName}</p>
-        )}
-      </div>
+        <Field>
+          <FieldLabel htmlFor="lastName">Last name</FieldLabel>
+          <Input
+            id="lastName"
+            name="lastName"
+            type="text"
+            autoComplete="family-name"
+            value={fields.lastName}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            aria-invalid={touched.lastName && !!fieldErrors.lastName}
+            className="auth-input-lg"
+            placeholder="Doe"
+          />
+          {touched.lastName && fieldErrors.lastName && (
+            <p className="mt-1 text-sm text-destructive">
+              {fieldErrors.lastName}
+            </p>
+          )}
+        </Field>
 
-      <div>
-        <Label htmlFor="email">Email</Label>
-        <TextInput
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          value={fields.email}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          color={touched.email && fieldErrors.email ? "failure" : undefined}
-          className="mt-1"
-        />
-        {touched.email && fieldErrors.email && (
-          <p className="mt-1 text-sm text-red-500">{fieldErrors.email}</p>
-        )}
-      </div>
+        <Field>
+          <FieldLabel htmlFor="email">Email</FieldLabel>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            value={fields.email}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            aria-invalid={touched.email && !!fieldErrors.email}
+            className="auth-input-lg"
+            placeholder="you@example.com"
+          />
+          {touched.email && fieldErrors.email && (
+            <p className="mt-1 text-sm text-destructive">{fieldErrors.email}</p>
+          )}
+        </Field>
 
-      <div>
-        <Label htmlFor="password">Password</Label>
-        <TextInput
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="new-password"
-          value={fields.password}
-          onChange={handleChange}
-          onBlur={handleBlur}
-          color={
-            touched.password && fieldErrors.password ? "failure" : undefined
-          }
-          className="mt-1"
-        />
-        {touched.password && fieldErrors.password && (
-          <p className="mt-1 text-sm text-red-500">{fieldErrors.password}</p>
-        )}
-      </div>
+        <Field>
+          <FieldLabel htmlFor="password">Password</FieldLabel>
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            autoComplete="new-password"
+            value={fields.password}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            aria-invalid={touched.password && !!fieldErrors.password}
+            className="auth-input-lg"
+            placeholder="••••••••"
+          />
+          {touched.password && fieldErrors.password && (
+            <p className="mt-1 text-sm text-destructive">
+              {fieldErrors.password}
+            </p>
+          )}
+        </Field>
+      </FieldGroup>
 
       <Button
         type="submit"
-        color="blue"
         disabled={isSubmitting}
-        className="w-full"
+        className="auth-button-lg w-full"
       >
-        Create account
+        {isSubmitting ? "Creating account..." : "Create account"}
       </Button>
 
-      <p className="text-sm text-center text-gray-400">
+      <p className="text-sm text-center text-muted-foreground">
         Already have an account?{" "}
-        <a href="/login" className="text-blue-600 hover:underline">
+        <Link
+          to="/login"
+          search={{ redir: "" }}
+          className="text-primary hover:underline font-medium"
+        >
           Log in
-        </a>
+        </Link>
       </p>
     </form>
   );

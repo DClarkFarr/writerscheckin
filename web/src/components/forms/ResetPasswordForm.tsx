@@ -1,4 +1,8 @@
 import { Link } from "@tanstack/react-router";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import type { ResetPasswordFormProps } from "../../hooks/useResetPasswordForm";
 
 export function ResetPasswordForm({
@@ -13,21 +17,23 @@ export function ResetPasswordForm({
   handleSubmit,
 }: ResetPasswordFormProps) {
   return (
-    <div className="flex flex-col gap-4">
-      <h2 className="text-2xl font-bold text-gray-900 text-center">
+    <div className="flex flex-col gap-6">
+      <h2 className="text-2xl font-bold text-foreground text-center">
         Reset password
       </h2>
 
       {isSuccess ? (
         <>
-          <Alert color="success">
-            <span>If the account exists, instructions have been sent.</span>
+          <Alert>
+            <AlertDescription>
+              If the account exists, instructions have been sent to your email.
+            </AlertDescription>
           </Alert>
-          <p className="text-sm text-center text-gray-500">
+          <p className="text-sm text-center">
             <Link
               to="/login"
               search={{ redir: "" }}
-              className="text-blue-600 hover:underline"
+              className="text-primary hover:underline font-medium"
             >
               Back to Log In
             </Link>
@@ -37,50 +43,54 @@ export function ResetPasswordForm({
         <form
           onSubmit={handleSubmit}
           noValidate
-          className="flex flex-col gap-4"
+          className="flex flex-col gap-6"
         >
-          <p className="text-sm text-gray-500 text-center">
+          <p className="text-sm text-muted-foreground text-center">
             Enter your email address and we&apos;ll send a 6-digit reset code.
           </p>
 
           {formError && (
-            <Alert color="failure">
-              <span>{formError}</span>
+            <Alert variant="destructive">
+              <AlertDescription>{formError}</AlertDescription>
             </Alert>
           )}
 
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <TextInput
-              id="email"
-              name="email"
-              type="email"
-              autoComplete="email"
-              value={fields.email}
-              onChange={handleChange}
-              onBlur={handleBlur}
-              color={touched.email && fieldErrors.email ? "failure" : undefined}
-              className="mt-1"
-            />
-            {touched.email && fieldErrors.email && (
-              <p className="mt-1 text-sm text-red-500">{fieldErrors.email}</p>
-            )}
-          </div>
+          <FieldGroup>
+            <Field>
+              <FieldLabel htmlFor="email">Email</FieldLabel>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                value={fields.email}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                aria-invalid={touched.email && !!fieldErrors.email}
+                className="auth-input-lg"
+                placeholder="you@example.com"
+              />
+              {touched.email && fieldErrors.email && (
+                <p className="mt-1 text-sm text-destructive">
+                  {fieldErrors.email}
+                </p>
+              )}
+            </Field>
+          </FieldGroup>
 
           <Button
             type="submit"
-            color="blue"
             disabled={isSubmitting}
-            className="w-full"
+            className="auth-button-lg w-full"
           >
-            Send reset code
+            {isSubmitting ? "Sending code..." : "Send reset code"}
           </Button>
 
-          <p className="text-sm text-center text-gray-500">
+          <p className="text-sm text-center text-muted-foreground">
             <Link
               to="/login"
               search={{ redir: "" }}
-              className="text-blue-600 hover:underline"
+              className="text-primary hover:underline font-medium"
             >
               Back to Log In
             </Link>
