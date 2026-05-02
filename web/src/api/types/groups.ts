@@ -91,10 +91,7 @@ export interface GroupFormDraft {
   members: GroupFormMember[];
 }
 
-export interface EditableGroupResponse {
-  groupId: string;
-  isActive: boolean;
-  name: string;
+export interface EditableGroupResponse extends GroupSummaryItem {
   description: string;
   address: string;
   startTime: string;

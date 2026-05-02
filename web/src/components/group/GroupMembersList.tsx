@@ -1,11 +1,16 @@
 import type { ReactNode } from "react";
 import type { GroupFormMember } from "@/api/types/groups";
+import { Badge } from "@/components/ui/badge";
 
 export interface GroupMemberListItem {
   id: string;
   name: string;
   email?: string;
   avatar?: string;
+  badges?: Array<{
+    label: string;
+    colorClassName: string;
+  }>;
 }
 
 type GroupMembersInputItem = GroupMemberListItem | GroupFormMember;
@@ -32,16 +37,22 @@ const normalizeMemberItem = (
     return null;
   }
 
+  const badges: GroupMemberListItem["badges"] = [];
+
+  if (member.role === "admin") {
+    badges.push({ label: "Admin", colorClassName: "bg-green-500" });
+  }
+
+  if (member.status === "invited") {
+    badges.push({ label: "Invited", colorClassName: "bg-blue-500" });
+  }
+
   return {
     id: member._id ?? member.identifier,
-    name:
-      member.role === "admin"
-        ? `${member.name} (admin${member.status === "invited" ? ", invited" : ""})`
-        : member.status === "invited"
-          ? `${member.name} (invited)`
-          : member.name,
+    name: member.name,
     email: member.email ?? undefined,
     avatar: member.avatarUrl ?? undefined,
+    badges,
   };
 };
 
@@ -69,24 +80,27 @@ export function GroupMembersList({
             className="flex items-center justify-between gap-3 rounded-md border border-border/60 px-3 py-2"
           >
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium text-foreground">
-                {member.name}
-              </p>
+              <div className="flex flex-wrap gap-2 items-center">
+                <p className="truncate text-sm font-medium text-foreground">
+                  {member.name}
+                </p>
+                {member.badges && member.badges.length > 0 && (
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {member.badges.map((badge) => (
+                      <Badge
+                        key={`${member.id}-${badge.label}`}
+                        className={badge.colorClassName}
+                      >
+                        {badge.label}
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
               {variant === "detailed" && member.email && (
                 <p className="truncate text-xs text-muted-foreground">
                   {member.email}
                 </p>
-              )}
-            </div>
-            <div className="grid h-8 w-8 place-items-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
-              {member.avatar ? (
-                <img
-                  src={member.avatar}
-                  alt={member.name}
-                  className="h-8 w-8 rounded-full object-cover"
-                />
-              ) : (
-                member.name.slice(0, 1).toUpperCase()
               )}
             </div>
           </li>

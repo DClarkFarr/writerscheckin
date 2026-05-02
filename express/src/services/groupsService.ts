@@ -5,6 +5,7 @@ import {
   type DecodedCursor,
 } from "./groupsPagination";
 import {
+  buildActionAvailability,
   mapToGroupSummaryItem,
   type GroupSummaryItem,
 } from "./groupSummaryMapper";
@@ -96,7 +97,24 @@ export interface GroupFormPayload {
 export interface EditableGroupFormResult {
   groupId: string;
   isActive: boolean;
+  userRole: "owner" | "admin" | "member";
   name: string;
+  recurrence: string;
+  counts: {
+    activeMembers: number;
+    invitedMembers: number;
+    pastMeetings: number;
+  };
+  nextUpcomingMeeting: {
+    meetingId: string;
+    startsAt: string;
+  } | null;
+  availableActions: {
+    canActivate: boolean;
+    canDeactivate: boolean;
+    canViewUpcomingMeeting: boolean;
+    canCreateManualMeeting: boolean;
+  };
   description: string;
   address: string;
   startTime: string;
@@ -419,6 +437,23 @@ export const getManagedGroupForm = async (
   }
 
   const members = await listGroupMembersByGroupId(groupId, { limit: 500 });
+  const userObjectId = ensureObjectId(userId, "userId");
+  const userRole =
+    members.find((member) => member.userId?.equals(userObjectId))?.role ??
+    "member";
+  const activeMembers = members.filter(
+    (member) => member.role === "owner" || member.status === "accepted",
+  ).length;
+  const invitedMembers = members.filter(
+    (member) => member.status === "invited",
+  ).length;
+  const [pastMeetings, nextUpcomingMeeting] = await Promise.all([
+    countGroupMeetingsByGroupId(group._id, {
+      status: "published",
+      onlyPast: true,
+    }),
+    getNextUpcomingMeetingByGroupId(group._id),
+  ]);
   const participantUsers = await listUsersByIds(
     members.flatMap((member) => (member.userId ? [member.userId] : [])),
   );
@@ -471,7 +506,26 @@ export const getManagedGroupForm = async (
   return {
     groupId: group._id.toHexString(),
     isActive: !group.deletedAt,
+    userRole,
     name: group.name,
+    recurrence: group.recurrenceRule.frequency,
+    counts: {
+      activeMembers,
+      invitedMembers,
+      pastMeetings,
+    },
+    nextUpcomingMeeting: nextUpcomingMeeting
+      ? {
+          meetingId: nextUpcomingMeeting._id.toHexString(),
+          startsAt: (
+            nextUpcomingMeeting.occursAt ?? nextUpcomingMeeting.createdAt
+          ).toISOString(),
+        }
+      : null,
+    availableActions: buildActionAvailability(
+      !group.deletedAt,
+      Boolean(nextUpcomingMeeting),
+    ),
     description: group.description,
     address: group.address,
     startTime: formatTimeString(group.startTime),

@@ -69,6 +69,26 @@ const normalizeEditableGroupResponse = (
 
   return {
     ...data,
+    recurrence: data.recurrence ?? data.recurrenceFrequency ?? "weekly",
+    counts: {
+      activeMembers: data.counts?.activeMembers ?? 0,
+      invitedMembers: data.counts?.invitedMembers ?? 0,
+      pastMeetings: data.counts?.pastMeetings ?? 0,
+    },
+    nextUpcomingMeeting: data.nextUpcomingMeeting
+      ? {
+          meetingId: data.nextUpcomingMeeting.meetingId,
+          startsAt: data.nextUpcomingMeeting.startsAt,
+        }
+      : null,
+    availableActions: {
+      canActivate: data.availableActions?.canActivate ?? false,
+      canDeactivate: data.availableActions?.canDeactivate ?? false,
+      canViewUpcomingMeeting:
+        data.availableActions?.canViewUpcomingMeeting ?? false,
+      canCreateManualMeeting:
+        data.availableActions?.canCreateManualMeeting ?? false,
+    },
     members: normalizedMembers,
   };
 };

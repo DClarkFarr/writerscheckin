@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import IconPencil from "~icons/mdi/pencil";
@@ -14,7 +14,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { getGroupById } from "@/api/groups";
 import { useHomeStore } from "@/store/homeStore";
-import { useMyGroupsQuery } from "@/hooks/useMyGroupsQuery";
 import { GroupMembersList } from "@/components/group/GroupMembersList";
 import { GroupSummaryModal } from "@/components/group/GroupSummaryModal";
 import { GroupMemberActionsDropdown } from "@/components/group/GroupMemberActionsDropdown";
@@ -24,14 +23,12 @@ export function GroupViewPage() {
   const { groupId } = useParams({ from: "/groups/$groupId/view" });
   const navigate = useNavigate();
   const [isSummaryOpen, setSummaryOpen] = useState(false);
-  const { groups } = useMyGroupsQuery();
 
-  const group = useMemo(
-    () => groups.find((item) => item.groupId === groupId) ?? null,
-    [groupId, groups],
-  );
-
-  const groupQuery = useQuery({
+  const {
+    data: group,
+    error,
+    isLoading,
+  } = useQuery({
     queryKey: ["groups", groupId],
     queryFn: () => getGroupById(groupId),
   });
@@ -57,79 +54,90 @@ export function GroupViewPage() {
     </Breadcrumb>
   );
 
+  if (isLoading) {
+    return (
+      <PageCard grow header={header}>
+        <div className="py-6 text-sm text-muted-foreground">Loading group…</div>
+      </PageCard>
+    );
+  }
+  if (error || !group) {
+    return (
+      <PageCard grow header={header}>
+        <div className="py-6 text-sm text-destructive" role="alert">
+          Unable to load group details.
+        </div>
+      </PageCard>
+    );
+  }
+
   return (
     <PageCard grow header={header}>
       <div className="mb-2 flex items-start justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-foreground">
-            {groupQuery.data?.name ?? "Group"}
+            {group?.name ?? "Group"}
           </h1>
-          <p className="text-sm text-muted-foreground">
-            {groupQuery.data?.description || "No description available."}
-          </p>
+          <div
+            className="text-sm text-muted-foreground"
+            dangerouslySetInnerHTML={{
+              __html: group?.description || "No description available.",
+            }}
+          ></div>
+
+          <div className="my-4">
+            <div>
+              <b>Location:</b>
+            </div>
+            <p>{group.address || "No location specified."}</p>
+          </div>
         </div>
 
-        {group &&
-          (group.userRole === "member" ? (
-            <div className="flex items-center gap-1">
-              <GroupMemberActionsDropdown group={group} />
-            </div>
-          ) : (
-            <div className="flex items-center gap-1">
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                onClick={() =>
-                  navigate({
-                    to: "/groups/$groupId/edit",
-                    params: { groupId },
-                  })
-                }
-              >
-                <IconPencil />
-              </Button>
-              <GroupAdminActionsMenu hideViewLink group={group} />
-            </div>
-          ))}
+        {group.userRole === "member" ? (
+          <div className="flex items-center gap-1">
+            <GroupMemberActionsDropdown group={group} />
+          </div>
+        ) : (
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              onClick={() =>
+                navigate({
+                  to: "/groups/$groupId/edit",
+                  params: { groupId },
+                })
+              }
+            >
+              <IconPencil />
+            </Button>
+            <GroupAdminActionsMenu hideViewLink group={group} />
+          </div>
+        )}
       </div>
 
-      {groupQuery.isLoading ? (
-        <div className="py-6 text-sm text-muted-foreground">Loading group…</div>
-      ) : groupQuery.isError || !groupQuery.data ? (
-        <div className="py-6 text-sm text-destructive" role="alert">
-          Unable to load group details.
-        </div>
-      ) : (
-        <>
-          <div className="grid gap-3 rounded-md border border-border/60 p-3 text-sm">
-            <p>
-              <span className="text-muted-foreground">Recurrence:</span>{" "}
-              <span className="font-medium capitalize">
-                {groupQuery.data.recurrenceFrequency}
-              </span>
-            </p>
-            <p>
-              <span className="text-muted-foreground">Start time:</span>{" "}
-              <span className="font-medium">{groupQuery.data.startTime}</span>
-            </p>
-            <p>
-              <span className="text-muted-foreground">Duration:</span>{" "}
-              <span className="font-medium">
-                {groupQuery.data.durationMinutes} minutes
-              </span>
-            </p>
-          </div>
+      <div className="grid gap-3 rounded-md border border-border/60 p-3 text-sm">
+        <p>
+          <span className="text-muted-foreground">Recurrence:</span>{" "}
+          <span className="font-medium capitalize">
+            {group.recurrenceFrequency}
+          </span>
+        </p>
+        <p>
+          <span className="text-muted-foreground">Start time:</span>{" "}
+          <span className="font-medium">{group.startTime}</span>
+        </p>
+        <p>
+          <span className="text-muted-foreground">Duration:</span>{" "}
+          <span className="font-medium">{group.durationMinutes} minutes</span>
+        </p>
+      </div>
 
-          <section className="space-y-2">
-            <h2 className="text-sm font-semibold text-foreground">Members</h2>
-            <GroupMembersList
-              variant="detailed"
-              members={groupQuery.data.members}
-            />
-          </section>
-        </>
-      )}
+      <section className="space-y-2">
+        <h2 className="text-sm font-semibold text-foreground">Members</h2>
+        <GroupMembersList variant="detailed" members={group.members} />
+      </section>
 
       <GroupSummaryModal
         groupId={groupId}
