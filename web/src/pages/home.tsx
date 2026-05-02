@@ -1,6 +1,22 @@
 import { Link } from "@tanstack/react-router";
 import Logo from "../assets/logo-icon-md.png";
+import { useAuthStore } from "@/store/authStore";
+import { PageCard } from "@/components/layout/PageCard";
 export function Home() {
+  const user = useAuthStore((state) => state.user);
+  return user ? <HomeAuthenticated /> : <HomeUnauthenticated />;
+}
+
+const HomeAuthenticated = () => {
+  return (
+    <PageCard className="mt-6">
+      <div>Tabs</div>
+      <div>sdfsf</div>
+    </PageCard>
+  );
+};
+
+const HomeUnauthenticated = () => {
   return (
     <div className="">
       <main className="flex-1 flex flex-col items-center justify-center gap-6 px-4 text-center pt-10">
@@ -25,4 +41,4 @@ export function Home() {
       </main>
     </div>
   );
-}
+};

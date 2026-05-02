@@ -10,4 +10,9 @@ export const COLLECTIONS = {
   sessions: "sessions",
   passwordResets: "passwordResets",
   authAttempts: "authAttempts",
+  groups: "groups",
+  groupMembers: "groupMembers",
+  groupMeetings: "groupMeetings",
+  meetingAttendees: "meetingAttendees",
+  meetingAttendanceLogs: "meetingAttendanceLogs",
 } as const;

@@ -32,12 +32,6 @@ export function Topbar() {
       <div className="flex items-center justify-end gap-2 lg:w-1/3">
         {isAuthenticated ? (
           <>
-            <Link
-              to="/"
-              className="rounded-lg px-3 py-2 text-sm font-medium text-theme-100 hover:bg-theme-900/50 hover:text-theme-200"
-            >
-              My Board
-            </Link>
             <button
               type="button"
               onClick={clearUser}

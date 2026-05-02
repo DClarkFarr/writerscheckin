@@ -1,4 +1,4 @@
-import { Outlet } from "@tanstack/react-router";
+import { Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "../../store/authStore";
@@ -7,9 +7,11 @@ import { ApiError } from "../../api/types";
 import { Topbar } from "./Topbar";
 
 export function RootLayout() {
-  const { setUser, clearUser } = useAuthStore();
+  const { setUser, clearUser, user } = useAuthStore();
 
-  const { data, isSuccess, error } = useQuery({
+  const navigate = useNavigate();
+
+  const { data, isSuccess, error, isLoading } = useQuery({
     queryKey: ["me"],
     queryFn: getMe,
     retry: false,
@@ -36,13 +38,21 @@ export function RootLayout() {
     }
   }, [error, clearUser]);
 
+  useEffect(() => {
+    if (!user && !isLoading) {
+      navigate({
+        to: "/",
+      });
+    }
+  }, [user, isLoading, navigate]);
+
   return (
     <div className="min-h-screen flex flex-col bg-theme-950">
       <div className="shrink-0">
         <Topbar />
       </div>
       <div className="grow-1 flex flex-col items-center justify-center mx-auto bg-theme-950 px-4 w-full max-w-lg">
-        <Outlet />;
+        <Outlet />
       </div>
     </div>
   );

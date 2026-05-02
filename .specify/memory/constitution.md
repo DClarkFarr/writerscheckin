@@ -247,9 +247,6 @@ Frontend routes MUST live in `web/src/routes/` using TanStack Router file conven
 - Pages MUST live in `web/src/pages/` and be referenced from route files; route files MUST NOT
   contain component logic beyond a one-liner `component: PageComponent`.
 
-Protected routes MUST use `useAuthRedirect()` to redirect unauthenticated users to `/login`,
-preserving the intended destination in `search.redir`.
-
 The auth state is loaded once at the root level via a TanStack Query `queryKey: ["me"]` call with
 `staleTime: 5 minutes`. The result is written to the `useAuthStore` Zustand store.
 

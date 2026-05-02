@@ -4,6 +4,7 @@ import path from "path";
 
 dotenv.config({ path: [".env.local", ".env"] });
 
+import { ensureModelIndexes } from "./models/ensureIndexes";
 import { app } from "./utils/app";
 
 import { apiRouter } from "./routers/apiRouter";
@@ -20,6 +21,7 @@ const startServer = async () => {
   app.setupCookies();
 
   await app.setupDatabase();
+  await ensureModelIndexes();
 
   app.setupSessions();
 
