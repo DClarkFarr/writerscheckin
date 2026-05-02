@@ -274,12 +274,18 @@ export const listMyGroupsSummary = async (
       (meeting) => meeting.status === "published",
     ).length;
 
+    const userMember = members.find((member) =>
+      member.userId.equals(userObjectId),
+    );
+    const userRole = userMember?.role ?? "member";
+
     items.push(
       mapToGroupSummaryItem({
         groupId: group._id.toHexString(),
         name: group.name,
         recurrence: group.recurrenceRule.frequency,
         isActive: !group.deletedAt,
+        userRole,
         activeMembers,
         invitedMembers,
         pastMeetings,

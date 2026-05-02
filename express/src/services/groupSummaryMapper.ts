@@ -10,6 +10,7 @@ export interface GroupSummaryItem {
   name: string;
   recurrence: string;
   isActive: boolean;
+  userRole: string;
   counts: {
     activeMembers: number;
     invitedMembers: number;
@@ -27,6 +28,7 @@ export interface GroupSummaryMapperInput {
   name: string;
   recurrence: string;
   isActive: boolean;
+  userRole: string;
   activeMembers?: number;
   invitedMembers?: number;
   pastMeetings?: number;
@@ -53,6 +55,7 @@ export const mapToGroupSummaryItem = (
     name: input.name,
     recurrence: input.recurrence,
     isActive: input.isActive,
+    userRole: input.userRole,
     counts: {
       activeMembers: input.activeMembers ?? 0,
       invitedMembers: input.invitedMembers ?? 0,

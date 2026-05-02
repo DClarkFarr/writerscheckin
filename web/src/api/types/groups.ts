@@ -16,11 +16,13 @@ export interface GroupSummaryAvailableActions {
   canCreateManualMeeting: boolean;
 }
 
+export type GroupUserRole = "owner" | "admin" | "member";
 export interface GroupSummaryItem {
   groupId: string;
   name: string;
   recurrence: string;
   isActive: boolean;
+  userRole: GroupUserRole;
   counts: GroupSummaryCounts;
   nextUpcomingMeeting: GroupSummaryUpcomingMeeting | null;
   availableActions: GroupSummaryAvailableActions;

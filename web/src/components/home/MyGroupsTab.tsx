@@ -12,6 +12,7 @@ import IconPencil from "~icons/mdi/pencil";
 import { GroupCardActionsMenu } from "./GroupCardActionsMenu";
 import { useMyGroupsQuery } from "@/hooks/useMyGroupsQuery";
 import { useNavigate } from "@tanstack/react-router";
+import { GroupRoleBadge } from "../group/GroupRoleBadge";
 
 const formatMeetingDate = (value: string | null): string => {
   if (!value) {
@@ -37,7 +38,12 @@ export function MyGroupsTab() {
   const cards = groups.map((group) => (
     <Card key={group.groupId} size="sm">
       <CardHeader>
-        <CardTitle>{group.name}</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          <span>
+            <GroupRoleBadge userRole={group.userRole} />
+          </span>
+          <span>{group.name}</span>
+        </CardTitle>
         <CardAction>
           <Button
             type="button"
