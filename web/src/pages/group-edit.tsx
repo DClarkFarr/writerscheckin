@@ -1,8 +1,18 @@
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
 import { PageCard } from "@/components/layout/PageCard";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { GroupForm } from "@/components/forms/GroupForm";
 import { useGroupForm } from "@/hooks/useGroupForm";
 import { getGroupForm } from "@/api/groups";
+import { useHomeStore } from "@/store/homeStore";
 
 export interface GroupEditPageProps {
   groupId: string;
@@ -14,8 +24,29 @@ export function GroupEditPage({ groupId }: GroupEditPageProps) {
     queryFn: () => getGroupForm(groupId),
   });
 
+  const header = (
+    <Breadcrumb>
+      <BreadcrumbList>
+        <BreadcrumbItem>
+          <BreadcrumbLink asChild>
+            <Link
+              to="/"
+              onClick={() => useHomeStore.getState().setView("groups")}
+            >
+              My Groups
+            </Link>
+          </BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
+        <BreadcrumbItem>
+          <BreadcrumbPage>Edit Group</BreadcrumbPage>
+        </BreadcrumbItem>
+      </BreadcrumbList>
+    </Breadcrumb>
+  );
+
   return (
-    <PageCard grow>
+    <PageCard grow header={header}>
       {groupQuery.isLoading ? (
         <div className="py-6 text-sm text-muted-foreground">Loading group…</div>
       ) : groupQuery.isError ? (

@@ -1,7 +1,16 @@
 import { PageCard } from "@/components/layout/PageCard";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
 import { GroupForm } from "@/components/forms/GroupForm";
 import { useGroupForm } from "@/hooks/useGroupForm";
-import { useNavigate } from "@tanstack/react-router";
+import { useHomeStore } from "@/store/homeStore";
+import { Link, useNavigate } from "@tanstack/react-router";
 
 export function GroupCreatePage() {
   const navigate = useNavigate();
@@ -14,8 +23,29 @@ export function GroupCreatePage() {
       }),
   });
 
+  const header = (
+    <Breadcrumb>
+      <BreadcrumbList>
+        <BreadcrumbItem>
+          <BreadcrumbLink asChild>
+            <Link
+              to="/"
+              onClick={() => useHomeStore.getState().setView("groups")}
+            >
+              My Groups
+            </Link>
+          </BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
+        <BreadcrumbItem>
+          <BreadcrumbPage>Create Group</BreadcrumbPage>
+        </BreadcrumbItem>
+      </BreadcrumbList>
+    </Breadcrumb>
+  );
+
   return (
-    <PageCard grow>
+    <PageCard grow header={header}>
       <GroupForm {...formProps} />
     </PageCard>
   );
