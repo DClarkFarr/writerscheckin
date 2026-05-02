@@ -317,6 +317,26 @@ export const getNextUpcomingMeetingByGroupId = async (
   );
 };
 
+export const getLatestUpcomingMeetingByGroupId = async (
+  groupId: string | ObjectId,
+): Promise<GroupMeetingDocument | null> => {
+  const collection = getGroupMeetingsCollection();
+  const now = new Date();
+
+  const meetingWithOccurrence = await collection.findOne(
+    {
+      groupId: toObjectId(groupId, "groupId"),
+      occursAt: { $gte: now },
+      ...activeRecordFilter(),
+    },
+    {
+      sort: { occursAt: -1, createdAt: -1 },
+    },
+  );
+
+  return meetingWithOccurrence;
+};
+
 export const updateGroupMeetingById = async (
   id: string | ObjectId,
   updates: UpdateGroupMeetingInput,

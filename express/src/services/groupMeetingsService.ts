@@ -1,4 +1,7 @@
-import { createGroupMeeting } from "../models/groupMeetings";
+import {
+  createGroupMeeting,
+  getLatestUpcomingMeetingByGroupId,
+} from "../models/groupMeetings";
 import { getGroupById } from "../models/groups";
 import { listGroupMembersByGroupId } from "../models/groupMembers";
 import { ensureObjectId } from "../models/types";
@@ -18,18 +21,35 @@ export interface CreateUpcomingMeetingFromDefaultsResult {
 
 const computeNextOccurrence = (input: {
   daysOfWeek: number[];
+  recurrenceFrequency: "weekly" | "biweekly";
   startTime: { hours: number; minutes: number };
+  referenceDate: Date;
 }): Date => {
-  const now = new Date();
-  const base = new Date(now);
+  const base = new Date(input.referenceDate);
   base.setSeconds(0, 0);
 
   const days =
     input.daysOfWeek.length > 0
       ? Array.from(new Set(input.daysOfWeek))
       : [base.getDay()];
+  const anchorDay = new Date(base);
+  anchorDay.setHours(0, 0, 0, 0);
 
-  for (let dayOffset = 0; dayOffset < 28; dayOffset += 1) {
+  const isAllowedByFrequency = (candidateDate: Date): boolean => {
+    if (input.recurrenceFrequency === "weekly") {
+      return true;
+    }
+
+    const candidateDay = new Date(candidateDate);
+    candidateDay.setHours(0, 0, 0, 0);
+    const diffDays = Math.floor(
+      (candidateDay.getTime() - anchorDay.getTime()) / (1000 * 60 * 60 * 24),
+    );
+    const diffWeeks = Math.floor(diffDays / 7);
+    return diffWeeks % 2 === 0;
+  };
+
+  for (let dayOffset = 0; dayOffset < 56; dayOffset += 1) {
     const candidate = new Date(base);
     candidate.setDate(base.getDate() + dayOffset);
 
@@ -37,16 +57,64 @@ const computeNextOccurrence = (input: {
       continue;
     }
 
+    if (!isAllowedByFrequency(candidate)) {
+      continue;
+    }
+
     candidate.setHours(input.startTime.hours, input.startTime.minutes, 0, 0);
-    if (candidate.getTime() > now.getTime()) {
+    if (candidate.getTime() > input.referenceDate.getTime()) {
       return candidate;
     }
   }
 
   const fallback = new Date(base);
-  fallback.setDate(base.getDate() + 1);
+  fallback.setDate(
+    base.getDate() + (input.recurrenceFrequency === "biweekly" ? 14 : 7),
+  );
   fallback.setHours(input.startTime.hours, input.startTime.minutes, 0, 0);
   return fallback;
+};
+
+export const createNextUpcomingMeetingFromGroupDefaults = async (
+  groupId: string,
+): Promise<{ groupId: string; meetingId: string }> => {
+  const group = await getGroupById(groupId);
+  if (!group) {
+    throw new Error("Group not found.");
+  }
+
+  const latestUpcoming = await getLatestUpcomingMeetingByGroupId(group._id);
+  const referenceDate = latestUpcoming
+    ? (latestUpcoming.occursAt ?? latestUpcoming.createdAt)
+    : new Date();
+
+  const occursAt = computeNextOccurrence({
+    daysOfWeek: group.recurrenceRule.daysOfWeek,
+    recurrenceFrequency: group.recurrenceRule.frequency,
+    startTime: group.startTime,
+    referenceDate,
+  });
+
+  const meeting = await createGroupMeeting({
+    groupId: group._id,
+    name: group.name,
+    occursAt,
+    description: group.description,
+    emailMessage: group.publishEmailMessage,
+    address: group.address,
+    startTime: group.startTime,
+    durationMinutes: group.durationMinutes,
+    publishEmailMessage: group.publishEmailMessage,
+    attendanceEmailMessage: group.attendanceEmailMessage,
+    publishHoursBefore: group.publishHoursBefore,
+    notifyAttendanceHoursBefore: group.notifyAttendanceHoursBefore,
+    status: "draft",
+  });
+
+  return {
+    groupId: group._id.toHexString(),
+    meetingId: meeting._id.toHexString(),
+  };
 };
 
 const assertCanManageGroupMeeting = async (
@@ -77,33 +145,8 @@ export const createUpcomingMeetingFromDefaults = async (
   input: CreateUpcomingMeetingFromDefaultsInput,
 ): Promise<CreateUpcomingMeetingFromDefaultsResult> => {
   await assertCanManageGroupMeeting(input.groupId, input.userId);
-
-  const group = await getGroupById(input.groupId);
-  if (!group) {
-    throw new Error("Group not found.");
-  }
-
-  const meeting = await createGroupMeeting({
-    groupId: group._id,
-    name: group.name,
-    occursAt: computeNextOccurrence({
-      daysOfWeek: group.recurrenceRule.daysOfWeek,
-      startTime: group.startTime,
-    }),
-    description: group.description,
-    emailMessage: group.publishEmailMessage,
-    address: group.address,
-    startTime: group.startTime,
-    durationMinutes: group.durationMinutes,
-    publishEmailMessage: group.publishEmailMessage,
-    attendanceEmailMessage: group.attendanceEmailMessage,
-    publishHoursBefore: group.publishHoursBefore,
-    notifyAttendanceHoursBefore: group.notifyAttendanceHoursBefore,
-    status: "draft",
-  });
-
-  const groupId = group._id.toHexString();
-  const meetingId = meeting._id.toHexString();
+  const { groupId, meetingId } =
+    await createNextUpcomingMeetingFromGroupDefaults(input.groupId);
 
   return {
     groupId,

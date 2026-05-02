@@ -33,6 +33,7 @@ import {
   type MeetingTimeOfDay,
 } from "../models/groupModelCommon";
 import { AuthError } from "./authService";
+import { createNextUpcomingMeetingFromGroupDefaults } from "./groupMeetingsService";
 
 import { recordAuditEvent } from "../utils/audit";
 
@@ -392,6 +393,8 @@ export const createManagedGroup = async (
     input.adminUserIds,
     input.memberUserIds,
   );
+
+  await createNextUpcomingMeetingFromGroupDefaults(groupId);
 
   return toSaveResult({
     groupId,
