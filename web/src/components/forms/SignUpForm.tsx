@@ -39,7 +39,7 @@ export function SignUpForm({
             onChange={handleChange}
             onBlur={handleBlur}
             aria-invalid={touched.firstName && !!fieldErrors.firstName}
-            className="auth-input-lg"
+            size="lg"
             placeholder="John"
           />
           {touched.firstName && fieldErrors.firstName && (
@@ -60,7 +60,7 @@ export function SignUpForm({
             onChange={handleChange}
             onBlur={handleBlur}
             aria-invalid={touched.lastName && !!fieldErrors.lastName}
-            className="auth-input-lg"
+            size="lg"
             placeholder="Doe"
           />
           {touched.lastName && fieldErrors.lastName && (
@@ -81,7 +81,7 @@ export function SignUpForm({
             onChange={handleChange}
             onBlur={handleBlur}
             aria-invalid={touched.email && !!fieldErrors.email}
-            className="auth-input-lg"
+            size="lg"
             placeholder="you@example.com"
           />
           {touched.email && fieldErrors.email && (
@@ -100,7 +100,7 @@ export function SignUpForm({
             onChange={handleChange}
             onBlur={handleBlur}
             aria-invalid={touched.password && !!fieldErrors.password}
-            className="auth-input-lg"
+            size="lg"
             placeholder="••••••••"
           />
           {touched.password && fieldErrors.password && (
@@ -114,7 +114,8 @@ export function SignUpForm({
       <Button
         type="submit"
         disabled={isSubmitting}
-        className="auth-button-lg w-full"
+        size="lg"
+        className="w-full"
       >
         {isSubmitting ? "Creating account..." : "Create account"}
       </Button>

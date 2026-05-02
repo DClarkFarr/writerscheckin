@@ -37,7 +37,7 @@ export function LoginForm({
             onChange={handleChange}
             onBlur={handleBlur}
             aria-invalid={touched.email && !!fieldErrors.email}
-            className="auth-input-lg"
+            size="lg"
             placeholder="you@example.com"
           />
           {touched.email && fieldErrors.email && (
@@ -56,7 +56,7 @@ export function LoginForm({
             onChange={handleChange}
             onBlur={handleBlur}
             aria-invalid={touched.password && !!fieldErrors.password}
-            className="auth-input-lg"
+            size="lg"
             placeholder="••••••••"
           />
           {touched.password && fieldErrors.password && (
@@ -88,7 +88,8 @@ export function LoginForm({
       <Button
         type="submit"
         disabled={isSubmitting}
-        className="auth-button-lg w-full"
+        size="lg"
+        className="w-full"
       >
         {isSubmitting ? "Logging in..." : "Log in"}
       </Button>

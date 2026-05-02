@@ -50,7 +50,7 @@ export function ResetPasswordConfirmForm({
             onBlur={handleBlur}
             aria-invalid={touched.email && !!fieldErrors.email}
             disabled={emailFieldReadonly}
-            className="auth-input-lg"
+            size="lg"
             placeholder="you@example.com"
           />
           {touched.email && fieldErrors.email && (
@@ -70,7 +70,7 @@ export function ResetPasswordConfirmForm({
             onChange={handleChange}
             onBlur={handleBlur}
             aria-invalid={touched.code && !!fieldErrors.code}
-            className="auth-input-lg"
+            size="lg"
             placeholder="000000"
           />
           {touched.code && fieldErrors.code && (
@@ -89,7 +89,7 @@ export function ResetPasswordConfirmForm({
             onChange={handleChange}
             onBlur={handleBlur}
             aria-invalid={touched.password && !!fieldErrors.password}
-            className="auth-input-lg"
+            size="lg"
             placeholder="••••••••"
           />
           {touched.password && fieldErrors.password && (
@@ -103,7 +103,8 @@ export function ResetPasswordConfirmForm({
       <Button
         type="submit"
         disabled={isSubmitting}
-        className="auth-button-lg w-full"
+        size="lg"
+        className="w-full"
       >
         {isSubmitting ? "Resetting password..." : "Reset password"}
       </Button>
@@ -111,7 +112,7 @@ export function ResetPasswordConfirmForm({
       <Button
         type="button"
         variant="ghost"
-        className="text-primary hover:underline font-medium"
+        className="text-primary hover:underline font-medium w-full justify-center"
         onClick={onBackToRequest}
       >
         Request a new code

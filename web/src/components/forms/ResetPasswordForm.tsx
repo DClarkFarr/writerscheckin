@@ -67,7 +67,7 @@ export function ResetPasswordForm({
                 onChange={handleChange}
                 onBlur={handleBlur}
                 aria-invalid={touched.email && !!fieldErrors.email}
-                className="auth-input-lg"
+                size="lg"
                 placeholder="you@example.com"
               />
               {touched.email && fieldErrors.email && (
@@ -81,7 +81,8 @@ export function ResetPasswordForm({
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="auth-button-lg w-full"
+            size="lg"
+            className="w-full"
           >
             {isSubmitting ? "Sending code..." : "Send reset code"}
           </Button>

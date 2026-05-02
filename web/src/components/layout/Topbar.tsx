@@ -6,7 +6,8 @@ export function Topbar() {
   const { isAuthenticated, clearUser } = useAuthStore();
 
   return (
-    <header className="flex items-center justify-between border-b border-theme-800/70 px-4 py-4 sm:px-6">
+    <header className="flex items-center justify-between gap-6 px-4 py-4 sm:px-6">
+      <div className="lg:w-1/3 hidden lg:block"></div>
       <div>
         <Link
           to="/"
@@ -15,7 +16,7 @@ export function Topbar() {
           <img src={Logo} alt="Writers CheckIn Logo" className="h-12 w-auto" />
         </Link>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center justify-end gap-2 lg:w-1/3">
         {isAuthenticated ? (
           <>
             <Link
