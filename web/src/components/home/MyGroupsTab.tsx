@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -7,8 +7,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import IconPlusBox from "~icons/mdi/plus-box";
 import { GroupCardActionsMenu } from "./GroupCardActionsMenu";
 import { useMyGroupsQuery } from "@/hooks/useMyGroupsQuery";
+import { useNavigate } from "@tanstack/react-router";
 
 const formatMeetingDate = (value: string | null): string => {
   if (!value) {
@@ -24,51 +26,63 @@ const formatMeetingDate = (value: string | null): string => {
 };
 
 export function MyGroupsTab() {
+  const navigate = useNavigate();
+
   const { groups, isLoading, isError, errorMessage, refetch } =
     useMyGroupsQuery();
 
   const hasGroups = groups.length > 0;
 
-  const cards = useMemo(
-    () =>
-      groups.map((group) => (
-        <Card key={group.groupId} size="sm">
-          <CardHeader>
-            <CardTitle>{group.name}</CardTitle>
-            <CardAction>
-              <GroupCardActionsMenu />
-            </CardAction>
-          </CardHeader>
-          <CardContent className="space-y-1 text-xs text-muted-foreground">
-            <p>Recurrence: {group.recurrence}</p>
-            <p>
-              Members: {group.counts.activeMembers} active /{" "}
-              {group.counts.invitedMembers} invited
-            </p>
-            <p>Past meetings: {group.counts.pastMeetings}</p>
-            <p>
-              Next upcoming meeting:{" "}
-              {formatMeetingDate(group.nextUpcomingMeeting?.startsAt ?? null)}
-            </p>
-            <div className="pt-2">
-              <Button type="button" size="sm" variant="outline" disabled>
-                Edit
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )),
-    [groups],
-  );
+  const cards = groups.map((group) => (
+    <Card key={group.groupId} size="sm">
+      <CardHeader>
+        <CardTitle>{group.name}</CardTitle>
+        <CardAction>
+          <GroupCardActionsMenu
+            groupId={group.groupId}
+            availableActions={group.availableActions}
+            nextUpcomingMeeting={group.nextUpcomingMeeting}
+          />
+        </CardAction>
+      </CardHeader>
+      <CardContent className="space-y-1 text-xs text-muted-foreground">
+        <p>Recurrence: {group.recurrence}</p>
+        <p>
+          Members: {group.counts.activeMembers} active /{" "}
+          {group.counts.invitedMembers} invited
+        </p>
+        <p>Past meetings: {group.counts.pastMeetings}</p>
+        <p>
+          Next upcoming meeting:{" "}
+          {formatMeetingDate(group.nextUpcomingMeeting?.startsAt ?? null)}
+        </p>
+        <div className="pt-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() =>
+              navigate({
+                to: "/groups/$groupId/edit",
+                params: { groupId: group.groupId },
+              })
+            }
+          >
+            Edit
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  ));
 
-  if (isLoading) {
-    return (
-      <p className="py-6 text-sm text-muted-foreground">Loading groups...</p>
-    );
-  }
+  const onClickCreate = useCallback(() => {
+    navigate({ to: "/groups/create" });
+  }, [navigate]);
+
+  let content = <>{cards}</>;
 
   if (isError) {
-    return (
+    content = (
       <div className="flex flex-col gap-3 py-6">
         <p className="text-sm text-destructive" role="alert">
           {errorMessage ?? "Unable to load groups."}
@@ -85,10 +99,8 @@ export function MyGroupsTab() {
         </div>
       </div>
     );
-  }
-
-  if (!hasGroups) {
-    return (
+  } else if (!hasGroups) {
+    content = (
       <div className="py-6">
         <p className="text-sm text-muted-foreground">
           You are not in any groups yet. Create a new group to get started.
@@ -97,5 +109,22 @@ export function MyGroupsTab() {
     );
   }
 
-  return <div className="space-y-3 py-3">{cards}</div>;
+  return (
+    <div className="space-y-3 py-3">
+      <div className="flex justify-end">
+        <div>
+          <Button type="button" onClick={onClickCreate}>
+            <span>
+              <IconPlusBox />
+            </span>
+            <span>Group</span>
+          </Button>
+        </div>
+      </div>
+      {isLoading && (
+        <p className="py-6 text-sm text-muted-foreground">Loading groups...</p>
+      )}
+      {!isLoading && content}
+    </div>
+  );
 }

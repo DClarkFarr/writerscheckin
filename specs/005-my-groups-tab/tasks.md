@@ -110,24 +110,24 @@
 
 ### Implementation for User Story 4
 
-- [ ] T033 [US4] Implement create group service contract for full form payload in `express/src/services/groupsService.ts`
-- [ ] T034 [US4] Implement edit group service contract with prefill response shape in `express/src/services/groupsService.ts`
-- [ ] T035 [US4] Add `POST /api/groups` and `PATCH /api/groups/:groupId` handlers in `express/src/routers/groupsRouter.ts`
-- [ ] T036 [US4] Implement participant search service operation in `express/src/services/groupsService.ts`
-- [ ] T037 [US4] Add `GET /api/groups/participants/search` handler in `express/src/routers/groupsRouter.ts`
-- [ ] T038 [US4] Implement upcoming-meeting-from-defaults service operation in `express/src/services/groupMeetingsService.ts`
-- [ ] T039 [US4] Add `POST /api/groups/:groupId/meetings/upcoming` route handler in `express/src/routers/groupsRouter.ts`
-- [ ] T040 [P] [US4] Implement create/edit group API methods and participant search client methods in `web/src/api/groups.ts`
-- [ ] T041 [P] [US4] Implement `useGroupForm` hook with create/edit mode and mutation flows in `web/src/hooks/useGroupForm.ts`
-- [ ] T042 [P] [US4] Implement reusable participant multi-select with avatar/name option rendering in `web/src/components/forms/GroupUserMultiSelect.tsx`
-- [ ] T043 [US4] Implement create/edit presentational form with rich text basic mode and selected-user list rendering in `web/src/components/forms/GroupForm.tsx`
-- [ ] T044 [US4] Create page component for `/groups/create` using `useGroupForm` create mode in `web/src/pages/group-create.tsx`
-- [ ] T045 [US4] Create page component for `/groups/:groupId/edit` with preloaded group props in `web/src/pages/group-edit.tsx`
-- [ ] T046 [US4] Create page component for `/groups/:groupId/meetings/:meetingId/edit` shell in `web/src/pages/group-meeting-edit.tsx`
-- [ ] T047 [US4] Add TanStack file route for `/groups/create` in `web/src/routes/groups/create.tsx`
-- [ ] T048 [US4] Add TanStack file route for `/groups/:groupId/edit` in `web/src/routes/groups/$groupId/edit.tsx`
-- [ ] T049 [US4] Add TanStack file route for `/groups/:groupId/meetings/:meetingId/edit` in `web/src/routes/groups/$groupId/meetings/$meetingId/edit.tsx`
-- [ ] T050 [US4] Wire create-manual-meeting action to create endpoint and redirect target in `web/src/components/home/GroupCardActionsMenu.tsx`
+- [x] T033 [US4] Implement create group service contract for full form payload in `express/src/services/groupsService.ts`
+- [x] T034 [US4] Implement edit group service contract with prefill response shape in `express/src/services/groupsService.ts`
+- [x] T035 [US4] Add `POST /api/groups` and `PATCH /api/groups/:groupId` handlers in `express/src/routers/groupsRouter.ts`
+- [x] T036 [US4] Implement participant search service operation in `express/src/services/groupsService.ts`
+- [x] T037 [US4] Add `GET /api/groups/participants/search` handler in `express/src/routers/groupsRouter.ts`
+- [x] T038 [US4] Implement upcoming-meeting-from-defaults service operation in `express/src/services/groupMeetingsService.ts`
+- [x] T039 [US4] Add `POST /api/groups/:groupId/meetings/upcoming` route handler in `express/src/routers/groupsRouter.ts`
+- [x] T040 [P] [US4] Implement create/edit group API methods and participant search client methods in `web/src/api/groups.ts`
+- [x] T041 [P] [US4] Implement `useGroupForm` hook with create/edit mode and mutation flows in `web/src/hooks/useGroupForm.ts`
+- [x] T042 [P] [US4] Implement reusable participant multi-select with avatar/name option rendering in `web/src/components/forms/GroupUserMultiSelect.tsx`
+- [x] T043 [US4] Implement create/edit presentational form with rich text basic mode and selected-user list rendering in `web/src/components/forms/GroupForm.tsx`
+- [x] T044 [US4] Create page component for `/groups/create` using `useGroupForm` create mode in `web/src/pages/group-create.tsx`
+- [x] T045 [US4] Create page component for `/groups/:groupId/edit` with preloaded group props in `web/src/pages/group-edit.tsx`
+- [x] T046 [US4] Create page component for `/groups/:groupId/meetings/:meetingId/edit` shell in `web/src/pages/group-meeting-edit.tsx`
+- [x] T047 [US4] Add TanStack file route for `/groups/create` in `web/src/routes/groups/create.tsx`
+- [x] T048 [US4] Add TanStack file route for `/groups/:groupId/edit` in `web/src/routes/groups/$groupId/edit.tsx`
+- [x] T049 [US4] Add TanStack file route for `/groups/:groupId/meetings/:meetingId/edit` in `web/src/routes/groups/$groupId/meetings/$meetingId/edit.tsx`
+- [x] T050 [US4] Wire create-manual-meeting action to create endpoint and redirect target in `web/src/components/home/GroupCardActionsMenu.tsx`
 
 **Checkpoint**: All user stories are functionally complete with canonical routes and form workflows.
 

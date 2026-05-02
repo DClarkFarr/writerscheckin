@@ -11,9 +11,12 @@
 import { Route as rootRouteImport } from "./routes/__root"
 import { Route as AuthRouteImport } from "./routes/_auth"
 import { Route as IndexRouteImport } from "./routes/index"
+import { Route as GroupsCreateRouteImport } from "./routes/groups/create"
 import { Route as AuthSignUpRouteImport } from "./routes/_auth/sign-up"
 import { Route as AuthResetPasswordRouteImport } from "./routes/_auth/reset-password"
 import { Route as AuthLoginRouteImport } from "./routes/_auth/login"
+import { Route as GroupsGroupIdEditRouteImport } from "./routes/groups/$groupId/edit"
+import { Route as GroupsGroupIdMeetingsMeetingIdEditRouteImport } from "./routes/groups/$groupId/meetings/$meetingId/edit"
 
 const AuthRoute = AuthRouteImport.update({
   id: "/_auth",
@@ -22,6 +25,11 @@ const AuthRoute = AuthRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: "/",
   path: "/",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GroupsCreateRoute = GroupsCreateRouteImport.update({
+  id: "/groups/create",
+  path: "/groups/create",
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthSignUpRoute = AuthSignUpRouteImport.update({
@@ -39,18 +47,35 @@ const AuthLoginRoute = AuthLoginRouteImport.update({
   path: "/login",
   getParentRoute: () => AuthRoute,
 } as any)
+const GroupsGroupIdEditRoute = GroupsGroupIdEditRouteImport.update({
+  id: "/groups/$groupId/edit",
+  path: "/groups/$groupId/edit",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GroupsGroupIdMeetingsMeetingIdEditRoute =
+  GroupsGroupIdMeetingsMeetingIdEditRouteImport.update({
+    id: "/groups/$groupId/meetings/$meetingId/edit",
+    path: "/groups/$groupId/meetings/$meetingId/edit",
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   "/": typeof IndexRoute
   "/login": typeof AuthLoginRoute
   "/reset-password": typeof AuthResetPasswordRoute
   "/sign-up": typeof AuthSignUpRoute
+  "/groups/create": typeof GroupsCreateRoute
+  "/groups/$groupId/edit": typeof GroupsGroupIdEditRoute
+  "/groups/$groupId/meetings/$meetingId/edit": typeof GroupsGroupIdMeetingsMeetingIdEditRoute
 }
 export interface FileRoutesByTo {
   "/": typeof IndexRoute
   "/login": typeof AuthLoginRoute
   "/reset-password": typeof AuthResetPasswordRoute
   "/sign-up": typeof AuthSignUpRoute
+  "/groups/create": typeof GroupsCreateRoute
+  "/groups/$groupId/edit": typeof GroupsGroupIdEditRoute
+  "/groups/$groupId/meetings/$meetingId/edit": typeof GroupsGroupIdMeetingsMeetingIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -59,12 +84,29 @@ export interface FileRoutesById {
   "/_auth/login": typeof AuthLoginRoute
   "/_auth/reset-password": typeof AuthResetPasswordRoute
   "/_auth/sign-up": typeof AuthSignUpRoute
+  "/groups/create": typeof GroupsCreateRoute
+  "/groups/$groupId/edit": typeof GroupsGroupIdEditRoute
+  "/groups/$groupId/meetings/$meetingId/edit": typeof GroupsGroupIdMeetingsMeetingIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: "/" | "/login" | "/reset-password" | "/sign-up"
+  fullPaths:
+    | "/"
+    | "/login"
+    | "/reset-password"
+    | "/sign-up"
+    | "/groups/create"
+    | "/groups/$groupId/edit"
+    | "/groups/$groupId/meetings/$meetingId/edit"
   fileRoutesByTo: FileRoutesByTo
-  to: "/" | "/login" | "/reset-password" | "/sign-up"
+  to:
+    | "/"
+    | "/login"
+    | "/reset-password"
+    | "/sign-up"
+    | "/groups/create"
+    | "/groups/$groupId/edit"
+    | "/groups/$groupId/meetings/$meetingId/edit"
   id:
     | "__root__"
     | "/"
@@ -72,11 +114,17 @@ export interface FileRouteTypes {
     | "/_auth/login"
     | "/_auth/reset-password"
     | "/_auth/sign-up"
+    | "/groups/create"
+    | "/groups/$groupId/edit"
+    | "/groups/$groupId/meetings/$meetingId/edit"
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRouteWithChildren
+  GroupsCreateRoute: typeof GroupsCreateRoute
+  GroupsGroupIdEditRoute: typeof GroupsGroupIdEditRoute
+  GroupsGroupIdMeetingsMeetingIdEditRoute: typeof GroupsGroupIdMeetingsMeetingIdEditRoute
 }
 
 declare module "@tanstack/react-router" {
@@ -93,6 +141,13 @@ declare module "@tanstack/react-router" {
       path: "/"
       fullPath: "/"
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/groups/create": {
+      id: "/groups/create"
+      path: "/groups/create"
+      fullPath: "/groups/create"
+      preLoaderRoute: typeof GroupsCreateRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/_auth/sign-up": {
@@ -116,6 +171,20 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AuthLoginRouteImport
       parentRoute: typeof AuthRoute
     }
+    "/groups/$groupId/edit": {
+      id: "/groups/$groupId/edit"
+      path: "/groups/$groupId/edit"
+      fullPath: "/groups/$groupId/edit"
+      preLoaderRoute: typeof GroupsGroupIdEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/groups/$groupId/meetings/$meetingId/edit": {
+      id: "/groups/$groupId/meetings/$meetingId/edit"
+      path: "/groups/$groupId/meetings/$meetingId/edit"
+      fullPath: "/groups/$groupId/meetings/$meetingId/edit"
+      preLoaderRoute: typeof GroupsGroupIdMeetingsMeetingIdEditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -136,6 +205,10 @@ const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
+  GroupsCreateRoute: GroupsCreateRoute,
+  GroupsGroupIdEditRoute: GroupsGroupIdEditRoute,
+  GroupsGroupIdMeetingsMeetingIdEditRoute:
+    GroupsGroupIdMeetingsMeetingIdEditRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

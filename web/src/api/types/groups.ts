@@ -55,3 +55,48 @@ export interface ParticipantSummary {
 export interface SearchParticipantsResponse {
   items: ParticipantSummary[];
 }
+
+export type GroupRecurrenceFrequency = "weekly" | "biweekly";
+
+export interface GroupFormDraft {
+  name: string;
+  description: string;
+  address: string;
+  startTime: string;
+  durationMinutes: number;
+  recurrenceFrequency: GroupRecurrenceFrequency;
+  recurrenceDaysOfWeek: number[];
+  publicMessage: string;
+  attendanceMessage: string;
+  adminUserIds: string[];
+  memberUserIds: string[];
+}
+
+export interface EditableGroupResponse {
+  groupId: string;
+  isActive: boolean;
+  name: string;
+  description: string;
+  address: string;
+  startTime: string;
+  durationMinutes: number;
+  recurrenceFrequency: GroupRecurrenceFrequency;
+  recurrenceDaysOfWeek: number[];
+  publicMessage: string;
+  attendanceMessage: string;
+  admins: ParticipantSummary[];
+  members: ParticipantSummary[];
+}
+
+export interface SaveGroupResponse {
+  groupId: string;
+  name: string;
+  isActive: boolean;
+}
+
+export interface CreateUpcomingMeetingResponse {
+  groupId: string;
+  meetingId: string;
+  redirectTo: string;
+  createdFromDefaults: true;
+}

@@ -70,6 +70,19 @@ export interface CreateGroupMemberInput {
   };
 }
 
+export interface SaveGroupMemberInput {
+  groupId: string | ObjectId;
+  userId: string | ObjectId;
+  role: GroupMemberRole;
+  invite: {
+    invitedBy: string | ObjectId;
+    invitedAt?: Date;
+    invitedUser?: string | ObjectId;
+    status: GroupMemberInviteStatus;
+    statusChangedAt?: Date;
+  };
+}
+
 export interface UpdateGroupMemberInput {
   role?: GroupMemberRole;
   invite?: {
@@ -135,6 +148,62 @@ export const createGroupMember = async (
   );
 
   return { ...payload, _id: result.insertedId };
+};
+
+export const saveGroupMember = async (
+  input: SaveGroupMemberInput,
+): Promise<GroupMemberDocument> => {
+  const collection = getGroupMembersCollection();
+  const groupId = toObjectId(input.groupId, "groupId");
+  const userId = toObjectId(input.userId, "userId");
+  const role = assertRole(input.role);
+  const inviteStatus = assertInviteStatus(input.invite.status);
+  const invitedAt = input.invite.invitedAt ?? new Date();
+  const statusChangedAt = input.invite.statusChangedAt ?? invitedAt;
+  const existing = await collection.findOne({ groupId, userId });
+
+  await assertOneOwnerIfRoleOwner(groupId, role, existing?._id);
+
+  const result = await collection.findOneAndUpdate(
+    {
+      groupId,
+      userId,
+    },
+    {
+      $set: {
+        role,
+        invite: {
+          invitedBy: toObjectId(input.invite.invitedBy, "invitedBy"),
+          invitedAt,
+          invitedUser: toObjectId(
+            input.invite.invitedUser ?? userId,
+            "invitedUser",
+          ),
+          status: inviteStatus,
+          statusChangedAt,
+        },
+        ...touchTimestamps(),
+      },
+      $setOnInsert: {
+        groupId,
+        userId,
+        ...createTimestamps(),
+      },
+      $unset: {
+        deletedAt: "",
+      },
+    },
+    {
+      upsert: true,
+      returnDocument: "after",
+    },
+  );
+
+  if (!result) {
+    throw new Error("Unable to save group member.");
+  }
+
+  return result;
 };
 
 export const getGroupMemberById = async (
@@ -239,6 +308,25 @@ export const softDeleteGroupMemberById = async (
   const result = await collection.updateOne(
     {
       _id: toObjectId(id, "groupMemberId"),
+      ...activeRecordFilter(),
+    },
+    {
+      $set: softDeletePatch(),
+    },
+  );
+
+  return result.modifiedCount === 1;
+};
+
+export const softDeleteGroupMemberByGroupAndUserId = async (
+  groupId: string | ObjectId,
+  userId: string | ObjectId,
+): Promise<boolean> => {
+  const collection = getGroupMembersCollection();
+  const result = await collection.updateOne(
+    {
+      groupId: toObjectId(groupId, "groupId"),
+      userId: toObjectId(userId, "userId"),
       ...activeRecordFilter(),
     },
     {

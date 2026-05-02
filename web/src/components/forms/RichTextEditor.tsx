@@ -23,6 +23,8 @@ import IconMinus from "~icons/mdi/minus";
 // import IconKeyboardReturn from "~icons/mdi/keyboard-return";
 import IconUndo from "~icons/mdi/undo";
 import IconRedo from "~icons/mdi/redo";
+import { ButtonGroup } from "../ui/button-group";
+import { Button } from "../ui/button";
 
 export type RichTextEditorProps = {
   value: string;
@@ -86,8 +88,8 @@ export const MenuBar = ({
         <CustomTooltip content="Bold" className="whitespace-nowrap">
           <Button
             color={editorState.isBold ? "dark" : "gray"}
-            outline={!editorState.isBold}
-            size="xs"
+            variant={!editorState.isBold ? "secondary" : "outline"}
+            size="sm"
             onClick={() => editor.chain().focus().toggleBold().run()}
             disabled={!editorState.canBold}
             aria-label="Bold"
@@ -98,8 +100,8 @@ export const MenuBar = ({
         <CustomTooltip content="Italic" className="whitespace-nowrap">
           <Button
             color={editorState.isItalic ? "dark" : "gray"}
-            outline={!editorState.isItalic}
-            size="xs"
+            variant={!editorState.isItalic ? "secondary" : "outline"}
+            size="sm"
             onClick={() => editor.chain().focus().toggleItalic().run()}
             disabled={!editorState.canItalic}
             aria-label="Italic"
@@ -110,8 +112,8 @@ export const MenuBar = ({
         <CustomTooltip content="Strike" className="whitespace-nowrap">
           <Button
             color={editorState.isStrike ? "dark" : "gray"}
-            outline={!editorState.isStrike}
-            size="xs"
+            variant={!editorState.isStrike ? "secondary" : "outline"}
+            size="sm"
             onClick={() => editor.chain().focus().toggleStrike().run()}
             disabled={!editorState.canStrike}
             aria-label="Strike"
@@ -124,8 +126,8 @@ export const MenuBar = ({
         <CustomTooltip content="Clear marks" className="whitespace-nowrap">
           <Button
             color="gray"
-            outline
-            size="xs"
+            variant="outline"
+            size="sm"
             onClick={() => editor.chain().focus().unsetAllMarks().run()}
             disabled={!editorState.canClearMarks}
             aria-label="Clear marks"
@@ -137,8 +139,8 @@ export const MenuBar = ({
           <CustomTooltip content="Clear nodes" className="whitespace-nowrap">
             <Button
               color="gray"
-              outline
-              size="xs"
+              variant="outline"
+              size="sm"
               onClick={() => editor.chain().focus().clearNodes().run()}
               disabled={!editorState.canClearNodes}
               aria-label="Clear nodes"
@@ -153,8 +155,8 @@ export const MenuBar = ({
           <CustomTooltip content="Paragraph" className="whitespace-nowrap">
             <Button
               color={editorState.isParagraph ? "dark" : "gray"}
-              outline={!editorState.isParagraph}
-              size="xs"
+              variant={!editorState.isParagraph ? "secondary" : "outline"}
+              size="sm"
               onClick={() => editor.chain().focus().setParagraph().run()}
               aria-label="Paragraph"
             >
@@ -164,8 +166,8 @@ export const MenuBar = ({
           <CustomTooltip content="H1" className="whitespace-nowrap">
             <Button
               color={editorState.isHeading1 ? "dark" : "gray"}
-              outline={!editorState.isHeading1}
-              size="xs"
+              variant={!editorState.isHeading1 ? "secondary" : "outline"}
+              size="sm"
               onClick={() =>
                 editor.chain().focus().toggleHeading({ level: 1 }).run()
               }
@@ -177,8 +179,8 @@ export const MenuBar = ({
           <CustomTooltip content="H2" className="whitespace-nowrap">
             <Button
               color={editorState.isHeading2 ? "dark" : "gray"}
-              outline={!editorState.isHeading2}
-              size="xs"
+              variant={!editorState.isHeading2 ? "secondary" : "outline"}
+              size="sm"
               onClick={() =>
                 editor.chain().focus().toggleHeading({ level: 2 }).run()
               }
@@ -190,8 +192,8 @@ export const MenuBar = ({
           <CustomTooltip content="H3" className="whitespace-nowrap">
             <Button
               color={editorState.isHeading3 ? "dark" : "gray"}
-              outline={!editorState.isHeading3}
-              size="xs"
+              variant={!editorState.isHeading3 ? "secondary" : "outline"}
+              size="sm"
               onClick={() =>
                 editor.chain().focus().toggleHeading({ level: 3 }).run()
               }
@@ -203,8 +205,8 @@ export const MenuBar = ({
           <CustomTooltip content="H4" className="whitespace-nowrap">
             <Button
               color={editorState.isHeading4 ? "dark" : "gray"}
-              outline={!editorState.isHeading4}
-              size="xs"
+              variant={!editorState.isHeading4 ? "secondary" : "outline"}
+              size="sm"
               onClick={() =>
                 editor.chain().focus().toggleHeading({ level: 4 }).run()
               }
@@ -216,8 +218,8 @@ export const MenuBar = ({
           {/* <CustomTooltip content="H5" className="whitespace-nowrap">
           <Button
             color={editorState.isHeading5 ? "dark" : "gray"}
-            outline={!editorState.isHeading5}
-            size="xs"
+            variant={!editorState.isHeading5 ? 'secondary' : 'outline'}
+            size="sm"
             onClick={() =>
               editor.chain().focus().toggleHeading({ level: 5 }).run()
             }
@@ -229,8 +231,8 @@ export const MenuBar = ({
         <CustomTooltip content="H6" className="whitespace-nowrap">
           <Button
             color={editorState.isHeading6 ? "dark" : "gray"}
-            outline={!editorState.isHeading6}
-            size="xs"
+            variant={!editorState.isHeading6 ? 'secondary' : 'outline'}
+            size="sm"
             onClick={() =>
               editor.chain().focus().toggleHeading({ level: 6 }).run()
             }
@@ -245,8 +247,8 @@ export const MenuBar = ({
         <CustomTooltip content="Bullet list" className="whitespace-nowrap">
           <Button
             color={editorState.isBulletList ? "dark" : "gray"}
-            outline={!editorState.isBulletList}
-            size="xs"
+            variant={!editorState.isBulletList ? "secondary" : "outline"}
+            size="sm"
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             aria-label="Bullet list"
           >
@@ -256,8 +258,8 @@ export const MenuBar = ({
         <CustomTooltip content="Ordered list" className="whitespace-nowrap">
           <Button
             color={editorState.isOrderedList ? "dark" : "gray"}
-            outline={!editorState.isOrderedList}
-            size="xs"
+            variant={!editorState.isOrderedList ? "secondary" : "outline"}
+            size="sm"
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
             aria-label="Ordered list"
           >
@@ -270,8 +272,8 @@ export const MenuBar = ({
           <CustomTooltip content="Code" className="whitespace-nowrap">
             <Button
               color={editorState.isCode ? "dark" : "gray"}
-              outline={!editorState.isCode}
-              size="xs"
+              variant={!editorState.isCode ? "secondary" : "outline"}
+              size="sm"
               onClick={() => editor.chain().focus().toggleCode().run()}
               disabled={!editorState.canCode}
               aria-label="Code"
@@ -282,8 +284,8 @@ export const MenuBar = ({
           <CustomTooltip content="Code block" className="whitespace-nowrap">
             <Button
               color={editorState.isCodeBlock ? "dark" : "gray"}
-              outline={!editorState.isCodeBlock}
-              size="xs"
+              variant={!editorState.isCodeBlock ? "secondary" : "outline"}
+              size="sm"
               onClick={() => editor.chain().focus().toggleCodeBlock().run()}
               aria-label="Code block"
             >
@@ -293,8 +295,8 @@ export const MenuBar = ({
           <CustomTooltip content="Blockquote" className="whitespace-nowrap">
             <Button
               color={editorState.isBlockquote ? "dark" : "gray"}
-              outline={!editorState.isBlockquote}
-              size="xs"
+              variant={!editorState.isBlockquote ? "secondary" : "outline"}
+              size="sm"
               onClick={() => editor.chain().focus().toggleBlockquote().run()}
               aria-label="Blockquote"
             >
@@ -311,8 +313,8 @@ export const MenuBar = ({
           >
             <Button
               color="gray"
-              outline
-              size="xs"
+              variant="outline"
+              size="sm"
               onClick={() => editor.chain().focus().setHorizontalRule().run()}
               aria-label="Horizontal rule"
             >
@@ -323,7 +325,7 @@ export const MenuBar = ({
           <Button
             color="gray"
             outline
-            size="xs"
+            size="sm"
             onClick={() => editor.chain().focus().setHardBreak().run()}
             aria-label="Hard break"
           >
@@ -336,8 +338,8 @@ export const MenuBar = ({
         <CustomTooltip content="Undo" className="whitespace-nowrap">
           <Button
             color="gray"
-            outline
-            size="xs"
+            variant="outline"
+            size="sm"
             onClick={() => editor.chain().focus().undo().run()}
             disabled={!editorState.canUndo}
             aria-label="Undo"
@@ -348,8 +350,8 @@ export const MenuBar = ({
         <CustomTooltip content="Redo" className="whitespace-nowrap">
           <Button
             color="gray"
-            outline
-            size="xs"
+            variant="outline"
+            size="sm"
             onClick={() => editor.chain().focus().redo().run()}
             disabled={!editorState.canRedo}
             aria-label="Redo"

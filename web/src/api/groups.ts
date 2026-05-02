@@ -1,9 +1,13 @@
 import { apiClient } from "../lib/apiClient";
 import { toApiError } from "./types";
 import type {
+  CreateUpcomingMeetingResponse,
+  EditableGroupResponse,
+  GroupFormDraft,
   GroupSummaryItem,
   ListMyGroupsInput,
   ListMyGroupsResponse,
+  SaveGroupResponse,
   SearchParticipantsResponse,
   UpdateGroupStateInput,
   UpdateGroupStateResponse,
@@ -65,6 +69,59 @@ export async function updateGroupState(
     const { data } = await apiClient.patch<UpdateGroupStateResponse>(
       `/groups/${groupId}`,
       input,
+    );
+    return data;
+  } catch (err) {
+    throw await toApiError(err);
+  }
+}
+
+export async function createGroup(
+  input: GroupFormDraft,
+): Promise<SaveGroupResponse> {
+  try {
+    const { data } = await apiClient.post<SaveGroupResponse>("/groups", input);
+    return data;
+  } catch (err) {
+    throw await toApiError(err);
+  }
+}
+
+export async function getGroupForm(
+  groupId: string,
+): Promise<EditableGroupResponse> {
+  try {
+    const { data } = await apiClient.get<EditableGroupResponse>(
+      `/groups/${groupId}`,
+    );
+    return data;
+  } catch (err) {
+    throw await toApiError(err);
+  }
+}
+
+export async function updateGroup(
+  groupId: string,
+  input: GroupFormDraft,
+): Promise<SaveGroupResponse> {
+  try {
+    const { data } = await apiClient.patch<SaveGroupResponse>(
+      `/groups/${groupId}`,
+      input,
+    );
+    return data;
+  } catch (err) {
+    throw await toApiError(err);
+  }
+}
+
+export async function createUpcomingMeeting(
+  groupId: string,
+): Promise<CreateUpcomingMeetingResponse> {
+  try {
+    const { data } = await apiClient.post<CreateUpcomingMeetingResponse>(
+      `/groups/${groupId}/meetings/upcoming`,
+      {},
     );
     return data;
   } catch (err) {
