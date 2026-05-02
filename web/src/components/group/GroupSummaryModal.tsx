@@ -1,4 +1,3 @@
-import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getGroupById } from "@/api/groups";
 import {
@@ -8,10 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  GroupMembersList,
-  type GroupMemberListItem,
-} from "@/components/group/GroupMembersList";
+import { GroupMembersList } from "@/components/group/GroupMembersList";
 
 export interface GroupSummaryModalProps {
   groupId: string;
@@ -29,26 +25,6 @@ export function GroupSummaryModal({
     queryFn: () => getGroupById(groupId),
     enabled: isOpen,
   });
-
-  const members = useMemo<GroupMemberListItem[]>(() => {
-    if (!data) {
-      return [];
-    }
-
-    return data.members
-      .filter((member) => member.status !== "removed")
-      .map((member) => ({
-        id: member._id ?? member.identifier,
-        name:
-          member.role === "admin"
-            ? `${member.name} (admin${member.status === "invited" ? ", invited" : ""})`
-            : member.status === "invited"
-              ? `${member.name} (invited)`
-              : member.name,
-        email: member.email ?? undefined,
-        avatar: member.avatarUrl ?? undefined,
-      }));
-  }, [data]);
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -95,7 +71,7 @@ export function GroupSummaryModal({
 
             <section className="space-y-2">
               <h3 className="text-sm font-semibold text-foreground">Members</h3>
-              <GroupMembersList members={members} variant="compact" />
+              <GroupMembersList members={data.members} variant="compact" />
             </section>
           </div>
         )}

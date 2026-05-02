@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { GroupFormMember } from "@/api/types/groups";
 
 export interface GroupMemberListItem {
   id: string;
@@ -7,12 +8,42 @@ export interface GroupMemberListItem {
   avatar?: string;
 }
 
+type GroupMembersInputItem = GroupMemberListItem | GroupFormMember;
+
 export interface GroupMembersListProps {
-  members: GroupMemberListItem[];
+  members: GroupMembersInputItem[];
   maxDisplay?: number;
   variant?: "compact" | "detailed";
   seeAllSlot?: ReactNode;
 }
+
+const isUnifiedMember = (
+  member: GroupMembersInputItem,
+): member is GroupFormMember => "identifier" in member && "role" in member;
+
+const normalizeMemberItem = (
+  member: GroupMembersInputItem,
+): GroupMemberListItem | null => {
+  if (!isUnifiedMember(member)) {
+    return member;
+  }
+
+  if (member.status === "removed") {
+    return null;
+  }
+
+  return {
+    id: member._id ?? member.identifier,
+    name:
+      member.role === "admin"
+        ? `${member.name} (admin${member.status === "invited" ? ", invited" : ""})`
+        : member.status === "invited"
+          ? `${member.name} (invited)`
+          : member.name,
+    email: member.email ?? undefined,
+    avatar: member.avatarUrl ?? undefined,
+  };
+};
 
 export function GroupMembersList({
   members,
@@ -20,8 +51,14 @@ export function GroupMembersList({
   variant = "compact",
   seeAllSlot = null,
 }: GroupMembersListProps) {
-  const visibleMembers = members.slice(0, maxDisplay);
-  const hiddenCount = Math.max(0, members.length - visibleMembers.length);
+  const normalizedMembers = members
+    .map(normalizeMemberItem)
+    .filter((member): member is GroupMemberListItem => member !== null);
+  const visibleMembers = normalizedMembers.slice(0, maxDisplay);
+  const hiddenCount = Math.max(
+    0,
+    normalizedMembers.length - visibleMembers.length,
+  );
 
   return (
     <div className="space-y-3">
@@ -58,7 +95,7 @@ export function GroupMembersList({
 
       {hiddenCount > 0 && (
         <div className="text-xs text-muted-foreground">
-          {seeAllSlot ?? `See all ${members.length} members`}
+          {seeAllSlot ?? `See all ${normalizedMembers.length} members`}
         </div>
       )}
     </div>
