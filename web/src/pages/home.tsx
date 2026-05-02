@@ -2,16 +2,40 @@ import { Link } from "@tanstack/react-router";
 import Logo from "../assets/logo-icon-md.png";
 import { useAuthStore } from "@/store/authStore";
 import { PageCard } from "@/components/layout/PageCard";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useHomeStore } from "@/store/homeStore";
+import { useCallback } from "react";
 export function Home() {
   const user = useAuthStore((state) => state.user);
   return user ? <HomeAuthenticated /> : <HomeUnauthenticated />;
 }
 
 const HomeAuthenticated = () => {
+  const { view, setView } = useHomeStore();
+
+  const onValueChange = useCallback(
+    (value: string) => {
+      setView(value as "meetings" | "groups");
+    },
+    [setView],
+  );
+
   return (
     <PageCard className="mt-6">
-      <div>Tabs</div>
-      <div>sdfsf</div>
+      <Tabs onValueChange={onValueChange} value={view}>
+        <div className="tabs-offset -mt-6 -mx-6">
+          <TabsList variant="cardTop">
+            <TabsTrigger value="meetings" size="lg" variant="cardTop">
+              My Meetings
+            </TabsTrigger>
+            <TabsTrigger value="groups" size="lg" variant="cardTop">
+              My Groups
+            </TabsTrigger>
+          </TabsList>
+        </div>
+        <TabsContent value="meetings">Meetings here</TabsContent>
+        <TabsContent value="groups">Groups here.</TabsContent>
+      </Tabs>
     </PageCard>
   );
 };

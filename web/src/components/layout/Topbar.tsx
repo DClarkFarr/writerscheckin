@@ -3,9 +3,10 @@ import { useAuthStore } from "../../store/authStore";
 import Logo from "../../assets/logo-sm.png";
 import IconLogin from "~icons/mdi/login";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
+import { AccountMenu } from "./AccountMenu";
 
 export function Topbar() {
-  const { isAuthenticated, clearUser } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
 
   return (
     <header className="flex items-center justify-between gap-6 px-4 py-4 sm:px-6">
@@ -30,17 +31,9 @@ export function Topbar() {
         </Link>
       </div>
       <div className="flex items-center justify-end gap-2 lg:w-1/3">
-        {isAuthenticated ? (
-          <>
-            <button
-              type="button"
-              onClick={clearUser}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-theme-100 hover:bg-theme-900/50 hover:text-red-300"
-            >
-              Log Out
-            </button>
-          </>
-        ) : (
+        {isAuthenticated && user ? (
+          <AccountMenu user={user} />
+        ) : isAuthenticated ? null : (
           <>
             <Tooltip>
               <TooltipTrigger asChild>
