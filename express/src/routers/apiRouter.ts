@@ -1,5 +1,6 @@
 import express from "express";
 import { authRouter } from "./authRouter";
+import { groupsRouter } from "./groupsRouter";
 import { applyNestedRouter } from "../utils/routes";
 
 // The 'mergeParams: true' option is crucial here.
@@ -10,3 +11,4 @@ apiRouter.use(express.json({ limit: "1mb" }));
 apiRouter.use(express.urlencoded({ extended: true }));
 
 applyNestedRouter(apiRouter, "/auth", authRouter);
+applyNestedRouter(apiRouter, "/groups", groupsRouter);

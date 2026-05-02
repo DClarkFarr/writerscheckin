@@ -5,6 +5,7 @@ import { PageCard } from "@/components/layout/PageCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useHomeStore } from "@/store/homeStore";
 import { useCallback } from "react";
+import { MyGroupsTab } from "@/components/home/MyGroupsTab";
 export function Home() {
   const user = useAuthStore((state) => state.user);
   return user ? <HomeAuthenticated /> : <HomeUnauthenticated />;
@@ -34,7 +35,9 @@ const HomeAuthenticated = () => {
           </TabsList>
         </div>
         <TabsContent value="meetings">Meetings here</TabsContent>
-        <TabsContent value="groups">Groups here.</TabsContent>
+        <TabsContent value="groups">
+          <MyGroupsTab />
+        </TabsContent>
       </Tabs>
     </PageCard>
   );
