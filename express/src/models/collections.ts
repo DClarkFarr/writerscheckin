@@ -7,14 +7,7 @@ export const getCollection = <T extends Document>(
 
 export const COLLECTIONS = {
   users: "users",
-  stories: "stories",
-  tags: "tags",
-  characters: "characters",
-  plots: "plots",
-  scenes: "scenes",
-  sections: "sections",
   sessions: "sessions",
   passwordResets: "passwordResets",
   authAttempts: "authAttempts",
-  colors: "colors",
 } as const;
