@@ -17,7 +17,7 @@ export function ResetPasswordForm({
   handleSubmit,
 }: ResetPasswordFormProps) {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 grow-1">
       <h2 className="text-2xl font-bold text-foreground text-center">
         Reset password
       </h2>
@@ -29,7 +29,7 @@ export function ResetPasswordForm({
               If the account exists, instructions have been sent to your email.
             </AlertDescription>
           </Alert>
-          <p className="text-sm text-center">
+          <p className="text-sm text-center ml-auto">
             <Link
               to="/login"
               search={{ redir: "" }}
@@ -43,7 +43,7 @@ export function ResetPasswordForm({
         <form
           onSubmit={handleSubmit}
           noValidate
-          className="flex flex-col gap-6"
+          className="flex flex-col gap-6 grow-1"
         >
           <p className="text-sm text-muted-foreground text-center">
             Enter your email address and we&apos;ll send a 6-digit reset code.
@@ -78,6 +78,7 @@ export function ResetPasswordForm({
             </Field>
           </FieldGroup>
 
+          <div className="mt-auto"></div>
           <Button
             type="submit"
             disabled={isSubmitting}
@@ -86,16 +87,6 @@ export function ResetPasswordForm({
           >
             {isSubmitting ? "Sending code..." : "Send reset code"}
           </Button>
-
-          <p className="text-sm text-center text-muted-foreground">
-            <Link
-              to="/login"
-              search={{ redir: "" }}
-              className="text-primary hover:underline font-medium"
-            >
-              Back to Log In
-            </Link>
-          </p>
         </form>
       )}
     </div>

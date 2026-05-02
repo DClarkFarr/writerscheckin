@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
@@ -16,7 +15,11 @@ export function SignUpForm({
   handleSubmit,
 }: SignUpFormProps) {
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
+    <form
+      onSubmit={handleSubmit}
+      noValidate
+      className="flex flex-col gap-6 grow-1"
+    >
       <h2 className="text-2xl font-bold text-foreground text-center">
         Create an account
       </h2>
@@ -111,6 +114,7 @@ export function SignUpForm({
         </Field>
       </FieldGroup>
 
+      <div className="mt-auto"></div>
       <Button
         type="submit"
         disabled={isSubmitting}
@@ -119,17 +123,6 @@ export function SignUpForm({
       >
         {isSubmitting ? "Creating account..." : "Create account"}
       </Button>
-
-      <p className="text-sm text-center text-muted-foreground">
-        Already have an account?{" "}
-        <Link
-          to="/login"
-          search={{ redir: "" }}
-          className="text-primary hover:underline font-medium"
-        >
-          Log in
-        </Link>
-      </p>
     </form>
   );
 }

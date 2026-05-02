@@ -11,9 +11,20 @@ export function Topbar() {
       <div>
         <Link
           to="/"
-          className="font-bold text-xl text-theme-100 hover:text-theme-200"
+          className="font-bold text-xl text-theme-100 hover:text-theme-200 flex gap-2 items-center"
         >
-          <img src={Logo} alt="Writers CheckIn Logo" className="h-12 w-auto" />
+          <span>
+            <img
+              src={Logo}
+              alt="Writers CheckIn Logo"
+              className="h-12 w-auto"
+            />
+          </span>
+          <span>
+            <span className="scroll-m-20 text-white text-center text-2xl font-extrabold tracking-tight">
+              Writers' CheckIn
+            </span>
+          </span>
         </Link>
       </div>
       <div className="flex items-center justify-end gap-2 lg:w-1/3">
