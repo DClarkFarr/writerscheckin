@@ -16,18 +16,21 @@ import { GroupRoleBadge } from "../group/GroupRoleBadge";
 import { GroupMemberActionsDropdown } from "../group/GroupMemberActionsDropdown";
 import { GroupSummaryModal } from "../group/GroupSummaryModal";
 import { GroupAdminActionsMenu } from "../group/GroupAdminActionsDropdown";
+import dayjs from "dayjs";
 
-const formatMeetingDate = (value: string | null): string => {
+const formatMeetingDate = (
+  value: string | null,
+  format: string = "MM/DD/YYYY",
+): string => {
   if (!value) {
     return "No upcoming meeting";
   }
 
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
+  const date = dayjs(value);
+  if (!date.isValid()) {
     return "No upcoming meeting";
   }
-
-  return date.toLocaleDateString();
+  return date.format(format);
 };
 
 export function MyGroupsTab() {
@@ -108,7 +111,10 @@ export function MyGroupsTab() {
         <p>
           Next upcoming meeting:{" "}
           <b className="text-gray-600">
-            {formatMeetingDate(group.nextUpcomingMeeting?.startsAt ?? null)}
+            {formatMeetingDate(
+              group.nextUpcomingMeeting?.startsAt ?? null,
+              "ddd, MMM D @ h:mm A",
+            )}
           </b>
         </p>
       </CardContent>
