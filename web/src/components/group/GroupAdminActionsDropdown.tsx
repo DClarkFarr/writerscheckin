@@ -14,11 +14,13 @@ import { useNavigate } from "@tanstack/react-router";
 
 export interface GroupAdminActionsMenuProps {
   group: GroupSummaryItem;
+  hideViewLink?: boolean;
   disabled?: boolean;
 }
 
 export function GroupAdminActionsMenu({
   group: { groupId, availableActions, nextUpcomingMeeting },
+  hideViewLink = false,
   disabled = false,
 }: GroupAdminActionsMenuProps) {
   const navigate = useNavigate();
@@ -47,17 +49,19 @@ export function GroupAdminActionsMenu({
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuLabel>Group Actions</DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          disabled={disabled}
-          onSelect={() =>
-            navigate({
-              to: "/groups/$groupId/view",
-              params: { groupId },
-            })
-          }
-        >
-          View Group
-        </DropdownMenuItem>
+        {!hideViewLink && (
+          <DropdownMenuItem
+            disabled={disabled}
+            onSelect={() =>
+              navigate({
+                to: "/groups/$groupId/view",
+                params: { groupId },
+              })
+            }
+          >
+            View Group
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem disabled={!availableActions.canActivate}>
           Activate Group
         </DropdownMenuItem>

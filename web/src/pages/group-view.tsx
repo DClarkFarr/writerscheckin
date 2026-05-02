@@ -2,7 +2,6 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import IconPencil from "~icons/mdi/pencil";
-import IconEyeOutline from "~icons/mdi/eye-outline";
 import { PageCard } from "@/components/layout/PageCard";
 import {
   Breadcrumb,
@@ -73,14 +72,6 @@ export function GroupViewPage() {
         {group &&
           (group.userRole === "member" ? (
             <div className="flex items-center gap-1">
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                onClick={() => setSummaryOpen(true)}
-              >
-                <IconEyeOutline />
-              </Button>
               <GroupMemberActionsDropdown group={group} />
             </div>
           ) : (
@@ -98,7 +89,7 @@ export function GroupViewPage() {
               >
                 <IconPencil />
               </Button>
-              <GroupAdminActionsMenu group={group} />
+              <GroupAdminActionsMenu hideViewLink group={group} />
             </div>
           ))}
       </div>
