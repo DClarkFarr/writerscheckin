@@ -8,7 +8,6 @@ import type {
   GroupSummaryItem,
   ListMyGroupsInput,
   ListMyGroupsResponse,
-  ParticipantSummary,
   SaveGroupResponse,
   SearchParticipantsResponse,
   UpdateGroupStateInput,
@@ -50,76 +49,29 @@ const normalizeListMyGroupsResponse = (
   nextCursor: data.nextCursor ?? null,
 });
 
-const toGroupFormMember = (
-  participant: ParticipantSummary,
-  role: GroupFormMember["role"],
-): GroupFormMember => ({
-  identifier: participant.userId,
-  userId: participant.userId,
-  email: null,
-  name: participant.displayName,
-  avatarUrl: participant.avatarUrl,
-  role,
-  status: "accepted",
-});
-
 const normalizeEditableGroupResponse = (
   data: EditableGroupResponse & {
-    admins?: ParticipantSummary[];
-    members?: GroupFormMember[] | ParticipantSummary[];
+    members?: GroupFormMember[];
   },
 ): EditableGroupResponse => {
-  const hasUnifiedMembers =
-    Array.isArray(data.members) &&
-    data.members.some(
-      (member): member is GroupFormMember =>
-        "identifier" in member && "role" in member,
-    );
-
-  const legacyMembers = (Array.isArray(data.members)
-    ? data.members
-    : []
-  ).filter(
-    (participant) => "userId" in participant && "displayName" in participant,
-  ) as unknown as ParticipantSummary[];
-
-  const normalizedMembers = hasUnifiedMembers
-    ? (data.members as GroupFormMember[]).map((member) => ({
-        _id: member._id,
-        identifier: member.identifier,
-        userId: member.userId ?? null,
-        email: member.email ?? null,
-        name: member.name,
-        avatarUrl: member.avatarUrl ?? null,
-        role: member.role,
-        status: member.status ?? "accepted",
-      }))
-    : [
-        ...(Array.isArray(data.admins)
-          ? data.admins.map((participant) =>
-              toGroupFormMember(participant, "admin"),
-            )
-          : []),
-        ...legacyMembers.map((participant) =>
-          toGroupFormMember(participant, "member"),
-        ),
-      ];
+  const normalizedMembers = (
+    Array.isArray(data.members) ? data.members : []
+  ).map((member) => ({
+    _id: member._id,
+    identifier: member.identifier,
+    userId: member.userId ?? null,
+    email: member.email ?? null,
+    name: member.name,
+    avatarUrl: member.avatarUrl ?? null,
+    role: member.role,
+    status: member.status ?? "accepted",
+  }));
 
   return {
     ...data,
     members: normalizedMembers,
   };
 };
-
-const toLegacyGroupPayload = (input: GroupFormDraft) => ({
-  ...input,
-  adminUserIds: input.members
-    .filter((member) => member.role === "admin")
-    .map((member) => member.identifier),
-  memberUserIds: input.members
-    .filter((member) => member.role === "member")
-    .map((member) => member.identifier),
-});
 
 export async function listMyGroups(
   input: ListMyGroupsInput = {},
@@ -153,10 +105,7 @@ export async function createGroup(
   input: GroupFormDraft,
 ): Promise<SaveGroupResponse> {
   try {
-    const { data } = await apiClient.post<SaveGroupResponse>(
-      "/groups",
-      toLegacyGroupPayload(input),
-    );
+    const { data } = await apiClient.post<SaveGroupResponse>("/groups", input);
     return data;
   } catch (err) {
     throw await toApiError(err);
@@ -196,7 +145,7 @@ export async function updateGroup(
   try {
     const { data } = await apiClient.patch<SaveGroupResponse>(
       `/groups/${groupId}`,
-      toLegacyGroupPayload(input),
+      input,
     );
     return data;
   } catch (err) {

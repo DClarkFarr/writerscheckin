@@ -35,21 +35,19 @@ export function GroupSummaryModal({
       return [];
     }
 
-    const adminMembers = data.admins.map((participant) => ({
-      id: participant.userId,
-      name: participant.displayName,
-      email: undefined,
-      avatar: participant.avatarUrl ?? undefined,
-    }));
-
-    const regularMembers = data.members.map((participant) => ({
-      id: participant.userId,
-      name: participant.displayName,
-      email: undefined,
-      avatar: participant.avatarUrl ?? undefined,
-    }));
-
-    return [...adminMembers, ...regularMembers];
+    return data.members
+      .filter((member) => member.status !== "removed")
+      .map((member) => ({
+        id: member._id ?? member.identifier,
+        name:
+          member.role === "admin"
+            ? `${member.name} (admin${member.status === "invited" ? ", invited" : ""})`
+            : member.status === "invited"
+              ? `${member.name} (invited)`
+              : member.name,
+        email: member.email ?? undefined,
+        avatar: member.avatarUrl ?? undefined,
+      }));
   }, [data]);
 
   return (

@@ -125,20 +125,19 @@ export function GroupViewPage() {
             <h2 className="text-sm font-semibold text-foreground">Members</h2>
             <GroupMembersList
               variant="detailed"
-              members={[
-                ...groupQuery.data.admins.map((participant) => ({
-                  id: `admin-${participant.userId}`,
-                  name: participant.displayName,
-                  email: undefined,
-                  avatar: participant.avatarUrl ?? undefined,
-                })),
-                ...groupQuery.data.members.map((participant) => ({
-                  id: `member-${participant.userId}`,
-                  name: participant.displayName,
-                  email: undefined,
-                  avatar: participant.avatarUrl ?? undefined,
-                })),
-              ]}
+              members={groupQuery.data.members
+                .filter((member) => member.status !== "removed")
+                .map((member) => ({
+                  id: member._id ?? member.identifier,
+                  name:
+                    member.role === "admin"
+                      ? `${member.name} (admin${member.status === "invited" ? ", invited" : ""})`
+                      : member.status === "invited"
+                        ? `${member.name} (invited)`
+                        : member.name,
+                  email: member.email ?? undefined,
+                  avatar: member.avatarUrl ?? undefined,
+                }))}
             />
           </section>
         </>
