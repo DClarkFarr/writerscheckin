@@ -190,7 +190,7 @@ const syncGroupParticipants = async (
     ...normalizedAdmins.map((userId) => ({
       userId,
       role: "admin" as GroupMemberRole,
-      status: "accepted" as GroupMemberInviteStatus,
+      status: "invited" as GroupMemberInviteStatus,
     })),
     ...normalizedMembers.map((userId) => ({
       userId,
