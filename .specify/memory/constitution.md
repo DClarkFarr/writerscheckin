@@ -1,20 +1,20 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.4.0 → 1.5.0 (MINOR — expanded ShadCN component extension rules with explicit anti-patterns for styling)
+Version change: 1.5.0 → 1.6.0 (MINOR — added dayjs as official date formatting library with centralized date utility)
 Modified sections:
-  - Extension Rules (major expansion) — added decision tree for component variants vs. composition vs. page-level styling
-  - Added FORBIDDEN PATTERNS section — explicitly prohibits utility classes in index.css for component styling and styling-only classNames
-Added sections: None
+  - Technology Stack — added dayjs; removed date-fns (competing library)
+  - Added Principle X: Date Formatting & Time Utilities — establishes dayjs as mandatory standard
+Added sections:
+  - Principle X (new)
 Removed sections: None
 Templates requiring updates:
   ✅ constitution.md — this file
   ✅ .specify/templates/plan-template.md — reviewed, no updates required
   ✅ .specify/templates/spec-template.md — reviewed, no updates required
   ✅ .specify/templates/tasks-template.md — reviewed, no updates required
-  ✅ .specify/templates/commands/*.md — not present in repository, no updates required
-  ✅ web/README.md — reviewed, no updates required
-  ✅ express/README.md — reviewed, no updates required
+  ✅ web/package.json — date-fns removed (was competing library)
+  ✅ web/src/lib/dateFormat.ts — created (centralized dayjs utility)
 Deferred TODOs: None
 -->
 
@@ -39,7 +39,7 @@ compiled SPA as a static fallback and exposes all API routes under `/api`.
 - **Backend**: Express 5, TypeScript (strict), MongoDB (native driver), express-session,
   bcryptjs, Nodemailer, Multer, Helmet, CORS
 - **Frontend**: React 19, TypeScript (strict), Vite 8, TanStack Router (file-based),
-  TanStack Query v5, Zustand, Axios, Tailwind CSS v4, ShadCN UI, TipTap, dnd-kit
+  TanStack Query v5, Zustand, Axios, Tailwind CSS v4, ShadCN UI, TipTap, dnd-kit, dayjs
 - **Deploy**: Bash scripts with git-pull-based CI, change detection, process restart
 
 ## Core Principles
@@ -269,6 +269,33 @@ Server-mutating operations MUST use `useMutation`. Read operations MUST use `use
 All authentication actions (signup, login, logout, reset-request, reset-confirm) MUST call
 `recordAuditEvent()` from `utils/audit.ts`. The audit record MUST include `action`, `userId`,
 `email`, and `ipAddress`. Extend `AuditAction` union type when adding new sensitive actions.
+
+### X. Date Formatting & Time Utilities
+
+dayjs MUST be used as the canonical date formatting and parsing library across the entire
+frontend. date-fns or any other date library MUST NOT be used.
+
+Frontend date handling rules:
+
+- **All date formatting**: Use the centralized `formatDate()`, `formatTime()`, `formatDateTime()`,
+  utilities from `web/src/lib/dateFormat.ts`. Import and call these
+  utilities instead of calling `dayjs().format()` directly in component code.
+- **Parsing dates**: Use `dayjs(value)` directly when parsing ISO strings, timestamps, or Date
+  objects. Always validate with `.isValid()` before formatting.
+- **Date constants**: Define common format strings as named exports in `dateFormat.ts` (e.g.,
+  `DISPLAY_DATE_FORMAT`, `ISO_FORMAT`). Do not hard-code format strings in components.
+- **Time zones**: If time zone handling is needed, configure it in `dateFormat.ts` using dayjs
+  plugins (e.g., `dayjs.extend(utc)`, `dayjs.extend(timezone)`). All time zone logic MUST be
+  centralized.
+- **Locale**: If locale-aware formatting is needed, configure dayjs locale plugins in
+  `dateFormat.ts` at initialization, never in individual components.
+
+Backend date handling (Express):
+
+- Store all dates in MongoDB as ISO strings or timestamps. Use consistent date storage strategy
+  (prefer ISO 8601 strings or Unix timestamps).
+- When returning dates in API responses, use ISO 8601 format (JavaScript `Date.toISOString()`).
+  The frontend will parse with dayjs as needed.
 
 ### XI. Product Design Imperatives (NON-NEGOTIABLE)
 
@@ -595,7 +622,7 @@ through `common.sh`. Shell scripts MUST use `set -euo pipefail` and source share
   This MUST always be the last router registered.
 - Email sending via Gmail SMTP (Nodemailer). Email templates MUST be plain functions in
   `services/emailTemplates/` that return `{ subject, text, html }` with NO external dependencies.
-- The `cn()` utility (`lib/utils.ts`) MUST be used for all conditional className composition
+- The `cn()` ut6.0 | **Ratified**: 2026-04-30 | **Last Amended**: 2026-05-02Name composition
   in the frontend (combines `clsx` + `tailwind-merge`).
 - The `COLLECTIONS` constant in `models/collections.ts` is the single source of truth for
   MongoDB collection names. New collections MUST be added here before use.

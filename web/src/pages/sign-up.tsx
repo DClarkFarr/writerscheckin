@@ -11,7 +11,7 @@ export function SignUpPage() {
   return (
     <PageCard
       footer={
-        <div className="flex justify-center pt-4 text-sm">
+        <div className="flex justify-center pb-4 text-sm">
           <span className="text-muted-foreground">
             Already have an account?{" "}
             <Link

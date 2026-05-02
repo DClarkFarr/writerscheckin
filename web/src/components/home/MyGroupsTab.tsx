@@ -16,22 +16,7 @@ import { GroupRoleBadge } from "../group/GroupRoleBadge";
 import { GroupMemberActionsDropdown } from "../group/GroupMemberActionsDropdown";
 import { GroupSummaryModal } from "../group/GroupSummaryModal";
 import { GroupAdminActionsMenu } from "../group/GroupAdminActionsDropdown";
-import dayjs from "dayjs";
-
-const formatMeetingDate = (
-  value: string | null,
-  format: string = "MM/DD/YYYY",
-): string => {
-  if (!value) {
-    return "No upcoming meeting";
-  }
-
-  const date = dayjs(value);
-  if (!date.isValid()) {
-    return "No upcoming meeting";
-  }
-  return date.format(format);
-};
+import { formatDate } from "@/lib/dateFormat";
 
 export function MyGroupsTab() {
   const navigate = useNavigate();
@@ -111,10 +96,7 @@ export function MyGroupsTab() {
         <p>
           Next upcoming meeting:{" "}
           <b className="text-gray-600">
-            {formatMeetingDate(
-              group.nextUpcomingMeeting?.startsAt ?? null,
-              "ddd, MMM D @ h:mm A",
-            )}
+            {formatDate.full(group.nextUpcomingMeeting?.startsAt ?? null)}
           </b>
         </p>
       </CardContent>
