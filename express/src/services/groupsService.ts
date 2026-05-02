@@ -17,6 +17,8 @@ import {
   listGroupMembersByGroupId,
   saveGroupMember,
   softDeleteGroupMemberByGroupAndUserId,
+  getUserGroupMembership,
+  updateGroupMemberById,
 } from "../models/groupMembers";
 import { listGroupMeetingsByGroupId } from "../models/groupMeetings";
 import { ensureObjectId } from "../models/types";
@@ -28,6 +30,8 @@ import {
   type MeetingTimeOfDay,
 } from "../models/groupModelCommon";
 import { AuthError } from "./authService";
+
+import { recordAuditEvent } from "../utils/audit";
 
 export interface ListMyGroupsInput {
   userId: string;
@@ -487,5 +491,56 @@ export const updateManagedGroup = async (
     groupId: updatedGroup._id.toHexString(),
     name: updatedGroup.name,
     isActive: !updatedGroup.deletedAt,
+  });
+};
+
+export const leaveGroup = async (
+  groupId: string,
+  userId: string,
+): Promise<void> => {
+  const group = await getGroupById(groupId);
+
+  if (!group) {
+    throw new AuthError("Group not found", 404);
+  }
+
+  // Find the user's membership in the group
+  const membership = await getUserGroupMembership(userId, groupId);
+
+  if (!membership) {
+    throw new AuthError("You are not a member of this group", 403);
+  }
+
+  // Verify the member has accepted their invite
+  if (membership.invite.status === "cancelled") {
+    throw new AuthError("You have already left this group", 409);
+  }
+
+  if (membership.invite.status !== "accepted") {
+    throw new AuthError(
+      "Cannot leave a group without an accepted membership",
+      409,
+    );
+  }
+
+  // Update membership status to 'cancelled'
+  const updated = await updateGroupMemberById(membership._id, {
+    invite: {
+      status: "cancelled",
+      statusChangedAt: new Date(),
+    },
+  });
+
+  if (!updated) {
+    throw new Error("Failed to update group membership");
+  }
+
+  // Record audit event
+  recordAuditEvent({
+    action: "user_left_group",
+    userId,
+    metadata: {
+      groupId,
+    },
   });
 };

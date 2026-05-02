@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -9,10 +9,13 @@ import {
 } from "@/components/ui/card";
 import IconPlusBox from "~icons/mdi/plus-box";
 import IconPencil from "~icons/mdi/pencil";
-import { GroupCardActionsMenu } from "./GroupCardActionsMenu";
+import IconEyeOutline from "~icons/mdi/eye-outline";
 import { useMyGroupsQuery } from "@/hooks/useMyGroupsQuery";
 import { useNavigate } from "@tanstack/react-router";
 import { GroupRoleBadge } from "../group/GroupRoleBadge";
+import { GroupMemberActionsDropdown } from "../group/GroupMemberActionsDropdown";
+import { GroupSummaryModal } from "../group/GroupSummaryModal";
+import { GroupAdminActionsMenu } from "../group/GroupAdminActionsDropdown";
 
 const formatMeetingDate = (value: string | null): string => {
   if (!value) {
@@ -29,9 +32,15 @@ const formatMeetingDate = (value: string | null): string => {
 
 export function MyGroupsTab() {
   const navigate = useNavigate();
+  const [summaryGroupId, setSummaryGroupId] = useState<string | null>(null);
 
   const { groups, isLoading, isError, errorMessage, refetch } =
     useMyGroupsQuery();
+
+  const selectedGroup = useMemo(
+    () => groups.find((group) => group.groupId === summaryGroupId) ?? null,
+    [groups, summaryGroupId],
+  );
 
   const hasGroups = groups.length > 0;
 
@@ -45,24 +54,42 @@ export function MyGroupsTab() {
           <span>{group.name}</span>
         </CardTitle>
         <CardAction>
-          <Button
-            type="button"
-            size="icon"
-            variant="ghost"
-            onClick={() =>
-              navigate({
-                to: "/groups/$groupId/edit",
-                params: { groupId: group.groupId },
-              })
-            }
-          >
-            <IconPencil />
-          </Button>
-          <GroupCardActionsMenu
-            groupId={group.groupId}
-            availableActions={group.availableActions}
-            nextUpcomingMeeting={group.nextUpcomingMeeting}
-          />
+          {group.userRole === "member" && (
+            <>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                onClick={() =>
+                  navigate({
+                    to: "/groups/$groupId/view",
+                    params: { groupId: group.groupId },
+                  })
+                }
+              >
+                <IconEyeOutline />
+              </Button>
+              <GroupMemberActionsDropdown group={group} />
+            </>
+          )}
+          {group.userRole !== "member" && (
+            <>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                onClick={() =>
+                  navigate({
+                    to: "/groups/$groupId/edit",
+                    params: { groupId: group.groupId },
+                  })
+                }
+              >
+                <IconPencil />
+              </Button>
+              <GroupAdminActionsMenu group={group} />
+            </>
+          )}
         </CardAction>
       </CardHeader>
       <CardContent className="space-y-1 text-xs text-muted-foreground">
@@ -138,6 +165,13 @@ export function MyGroupsTab() {
         <p className="py-6 text-sm text-muted-foreground">Loading groups...</p>
       )}
       {!isLoading && content}
+      {selectedGroup && (
+        <GroupSummaryModal
+          groupId={selectedGroup.groupId}
+          isOpen={Boolean(selectedGroup)}
+          onClose={() => setSummaryGroupId(null)}
+        />
+      )}
     </div>
   );
 }

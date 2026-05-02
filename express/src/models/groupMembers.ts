@@ -216,6 +216,18 @@ export const getGroupMemberById = async (
     ...activeRecordFilter(),
   });
 };
+export const getUserGroupMembership = async (
+  userId: string | ObjectId,
+  groupId: string | ObjectId,
+): Promise<GroupMemberDocument | null> => {
+  const collection = getGroupMembersCollection();
+
+  return collection.findOne({
+    userId: toObjectId(userId, "userId"),
+    groupId: toObjectId(groupId, "groupId"),
+    ...activeRecordFilter(),
+  });
+};
 
 export const listGroupMembersByGroupId = async (
   groupId: string | ObjectId,

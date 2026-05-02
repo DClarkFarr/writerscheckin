@@ -7,27 +7,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import type {
-  GroupSummaryAvailableActions,
-  GroupSummaryUpcomingMeeting,
-} from "@/api/types/groups";
+import type { GroupSummaryItem } from "@/api/types/groups";
 import { createUpcomingMeeting } from "@/api/groups";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 
-export interface GroupCardActionsMenuProps {
-  groupId: string;
-  availableActions: GroupSummaryAvailableActions;
-  nextUpcomingMeeting: GroupSummaryUpcomingMeeting | null;
+export interface GroupAdminActionsMenuProps {
+  group: GroupSummaryItem;
   disabled?: boolean;
 }
 
-export function GroupCardActionsMenu({
-  groupId,
-  availableActions,
-  nextUpcomingMeeting,
+export function GroupAdminActionsMenu({
+  group: { groupId, availableActions, nextUpcomingMeeting },
   disabled = false,
-}: GroupCardActionsMenuProps) {
+}: GroupAdminActionsMenuProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const createMeetingMutation = useMutation({
@@ -65,8 +58,12 @@ export function GroupCardActionsMenu({
         >
           Edit Group
         </DropdownMenuItem>
-        <DropdownMenuItem disabled>Activate Group</DropdownMenuItem>
-        <DropdownMenuItem disabled>Deactivate Group</DropdownMenuItem>
+        <DropdownMenuItem disabled={!availableActions.canActivate}>
+          Activate Group
+        </DropdownMenuItem>
+        <DropdownMenuItem disabled={!availableActions.canDeactivate}>
+          Deactivate Group
+        </DropdownMenuItem>
         <DropdownMenuItem
           disabled={
             disabled ||

@@ -3,7 +3,8 @@ export type AuditAction =
   | "login"
   | "logout"
   | "reset-request"
-  | "reset-confirm";
+  | "reset-confirm"
+  | "user_left_group";
 
 export interface AuditEvent {
   action: AuditAction;

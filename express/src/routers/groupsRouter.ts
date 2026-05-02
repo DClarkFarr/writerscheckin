@@ -4,6 +4,7 @@ import { AuthSession } from "../services/authService";
 import {
   createManagedGroup,
   getManagedGroupForm,
+  leaveGroup,
   listMyGroupsSummary,
   searchGroupParticipants,
   updateManagedGroup,
@@ -154,6 +155,21 @@ const applyGroupRoutes = () => {
       );
 
       res.status(200).json(data);
+    }),
+  );
+
+  groupsRouter.patch(
+    "/:id/leave",
+    handleAsync(async (req, res) => {
+      const userId = getAuthenticatedUserId(req);
+      const groupId = getRouteParam(req.params.id, "id");
+
+      await leaveGroup(groupId, userId);
+
+      res.status(200).json({
+        success: true,
+        message: "You have left the group",
+      });
     }),
   );
 

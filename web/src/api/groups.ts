@@ -100,6 +100,19 @@ export async function getGroupForm(
   }
 }
 
+export async function getGroupById(
+  groupId: string,
+): Promise<EditableGroupResponse> {
+  try {
+    const { data } = await apiClient.get<EditableGroupResponse>(
+      `/groups/${groupId}`,
+    );
+    return data;
+  } catch (err) {
+    throw await toApiError(err);
+  }
+}
+
 export async function updateGroup(
   groupId: string,
   input: GroupFormDraft,
@@ -138,6 +151,22 @@ export async function searchGroupParticipants(
       {
         params: { q: query },
       },
+    );
+    return data;
+  } catch (err) {
+    throw await toApiError(err);
+  }
+}
+
+export interface LeaveGroupResponse {
+  success: boolean;
+  message: string;
+}
+
+export async function leaveGroup(groupId: string): Promise<LeaveGroupResponse> {
+  try {
+    const { data } = await apiClient.patch<LeaveGroupResponse>(
+      `/groups/${groupId}/leave`,
     );
     return data;
   } catch (err) {

@@ -36,7 +36,7 @@
 - [x] T008 [P] Implement group summary mapper for counts and action eligibility in `express/src/services/groupSummaryMapper.ts`
 - [x] T009 Add `GET /api/groups/mine` route handler shell wired to services in `express/src/routers/groupsRouter.ts`
 - [x] T010 Implement shared UI shape normalization for group summary payloads in `web/src/api/groups.ts`
-- [x] T011 Create reusable action dropdown component shell for group cards in `web/src/components/home/GroupCardActionsMenu.tsx`
+- [x] T011 Create reusable action dropdown component shell for group cards in `web/src/components/home/GroupAdminActionsMenu.tsx`
 
 **Checkpoint**: Foundation complete; story implementation can proceed.
 
@@ -94,9 +94,9 @@
 - [ ] T027 [P] [US3] Add state transition API method in `web/src/api/groups.ts`
 - [ ] T028 [US3] Add Create New Group CTA with navigation to `/groups/create` in `web/src/components/home/MyGroupsTab.tsx`
 - [ ] T029 [US3] Wire Edit action navigation to `/groups/:groupId/edit` in `web/src/components/home/MyGroupsTab.tsx`
-- [ ] T030 [US3] Implement actions dropdown rendering rules for activate/deactivate and meeting actions in `web/src/components/home/GroupCardActionsMenu.tsx`
+- [ ] T030 [US3] Implement actions dropdown rendering rules for activate/deactivate and meeting actions in `web/src/components/home/GroupAdminActionsMenu.tsx`
 - [ ] T031 [US3] Implement optimistic state refresh after activate/deactivate in `web/src/hooks/useMyGroupsInfiniteQuery.ts`
-- [ ] T032 [US3] Add view-upcoming-meeting navigation action handling in `web/src/components/home/GroupCardActionsMenu.tsx`
+- [ ] T032 [US3] Add view-upcoming-meeting navigation action handling in `web/src/components/home/GroupAdminActionsMenu.tsx`
 
 **Checkpoint**: User Stories 1-3 are independently usable and action-complete for list-level operations.
 
@@ -127,7 +127,7 @@
 - [x] T047 [US4] Add TanStack file route for `/groups/create` in `web/src/routes/groups/create.tsx`
 - [x] T048 [US4] Add TanStack file route for `/groups/:groupId/edit` in `web/src/routes/groups/$groupId/edit.tsx`
 - [x] T049 [US4] Add TanStack file route for `/groups/:groupId/meetings/:meetingId/edit` in `web/src/routes/groups/$groupId/meetings/$meetingId/edit.tsx`
-- [x] T050 [US4] Wire create-manual-meeting action to create endpoint and redirect target in `web/src/components/home/GroupCardActionsMenu.tsx`
+- [x] T050 [US4] Wire create-manual-meeting action to create endpoint and redirect target in `web/src/components/home/GroupAdminActionsMenu.tsx`
 
 **Checkpoint**: All user stories are functionally complete with canonical routes and form workflows.
 
@@ -200,7 +200,7 @@ Task: "T022 [P] [US2] Add intersection observer trigger in web/src/components/ho
 
 ```bash
 Task: "T027 [P] [US3] Add group state API client method in web/src/api/groups.ts"
-Task: "T030 [US3] Implement action availability rendering in web/src/components/home/GroupCardActionsMenu.tsx"
+Task: "T030 [US3] Implement action availability rendering in web/src/components/home/GroupAdminActionsMenu.tsx"
 ```
 
 ## Parallel Example: User Story 4
