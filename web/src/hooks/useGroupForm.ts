@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useState,
   type ChangeEvent,
   type FocusEvent,
@@ -43,12 +44,12 @@ export type GroupFormInitialValues = Omit<
       | "recurrenceDaysOfWeek"
       | "publicMessage"
       | "attendanceMessage"
-      | "members"
     >
   >,
   "durationMinutes"
 > & {
   durationMinutes?: string | number;
+  members?: GroupFormMember[];
 };
 
 export interface UseGroupFormOptions {
@@ -198,6 +199,41 @@ export function useGroupForm(
   const { updateMemberRole, removeMember } = useGroupMemberMutations();
   const { mutateAsync: updateMemberRoleAsync } = updateMemberRole;
   const { mutateAsync: removeMemberAsync } = removeMember;
+
+  useEffect(() => {
+    if (!Array.isArray(options.existingGroup?.members)) {
+      return;
+    }
+
+    queueMicrotask(() => {
+      setSelectedGroupMembers((current) => {
+        const nextById = new Map(
+          options.existingGroup?.members?.map((member) => [
+            member._id ?? member.identifier,
+            member,
+          ]),
+        );
+
+        const merged = [...current];
+        for (const member of nextById.values()) {
+          const key = member._id ?? member.identifier;
+          const existingIndex = merged.findIndex(
+            (item) => (item._id ?? item.identifier) === key,
+          );
+          if (existingIndex === -1) {
+            merged.push(member);
+          } else {
+            merged[existingIndex] = {
+              ...merged[existingIndex],
+              ...member,
+            };
+          }
+        }
+
+        return merged;
+      });
+    });
+  }, [options.existingGroup?.members]);
 
   const handleFieldChange = (
     event: ChangeEvent<

@@ -19,6 +19,7 @@ import {
   ModelInsertInput,
   touchTimestamps,
 } from "./types";
+import { normalizePageSize, type DecodedCursor } from "../utils/pagination";
 
 export interface GroupMeetingDefinition extends BaseModelBlueprint {
   groupId: ObjectId;
@@ -263,24 +264,31 @@ export const listGroupMeetingsByGroupId = async (
 
 export interface ListGroupMeetingsByGroupIdPaginatedProps {
   groupId: string | ObjectId;
+  cursor?: DecodedCursor | null;
   limit?: number;
-  offset?: number;
   futureOnly?: boolean;
   pastOnly?: boolean;
+  statuses?: GroupMeetingStatus[];
 }
 export const listGroupMeetingsByGroupIdPaginated = async ({
   groupId,
+  cursor,
   futureOnly,
   pastOnly,
-  limit = 10,
-  offset = 0,
+  limit,
+  statuses,
 }: ListGroupMeetingsByGroupIdPaginatedProps) => {
   const collection = getGroupMeetingsCollection();
+  const pageSize = normalizePageSize(limit);
 
   const filters: Filter<GroupMeetingDocument> = {
     groupId: toObjectId(groupId, "groupId"),
     ...activeRecordFilter(),
   };
+
+  if (Array.isArray(statuses) && statuses.length > 0) {
+    filters.status = { $in: statuses };
+  }
 
   if (futureOnly) {
     filters.occursAt = { $gte: new Date() };
@@ -288,18 +296,48 @@ export const listGroupMeetingsByGroupIdPaginated = async ({
     filters.occursAt = { $lt: new Date() };
   }
 
+  const hasCursorDate =
+    cursor?.createdAt instanceof Date &&
+    !Number.isNaN(cursor.createdAt.getTime()) &&
+    Boolean(cursor.id);
+
+  if (hasCursorDate) {
+    const cursorDate = cursor.createdAt as Date;
+    const cursorId =
+      typeof cursor?.id === "string" && ObjectId.isValid(cursor.id)
+        ? new ObjectId(cursor.id)
+        : null;
+
+    filters.$or = cursorId
+      ? [
+          { occursAt: { $lt: cursorDate } },
+          { occursAt: cursorDate, _id: { $lt: cursorId } },
+        ]
+      : [{ occursAt: { $lt: cursorDate } }];
+  }
+
   const items = await collection
     .find(filters)
-    .sort({ occursAt: -1, createdAt: -1 })
-    .skip(offset)
-    .limit(limit)
+    .sort({ occursAt: -1, _id: -1 })
+    .limit(pageSize + 1)
     .toArray();
 
-  const totalCount = await collection.countDocuments(filters);
+  const hasMore = items.length > pageSize;
+  const pageItems = hasMore ? items.slice(0, pageSize) : items;
+
+  let nextCursor: DecodedCursor | null = null;
+  const lastItem = pageItems.at(-1);
+  if (lastItem && hasMore) {
+    const occursAt = lastItem.occursAt ?? lastItem.createdAt;
+    nextCursor = {
+      createdAt: new Date(occursAt),
+      id: lastItem._id.toHexString(),
+    };
+  }
 
   return {
-    items,
-    totalCount,
+    items: pageItems,
+    nextCursor,
   };
 };
 

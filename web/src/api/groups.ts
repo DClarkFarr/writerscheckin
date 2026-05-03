@@ -5,7 +5,7 @@ import type {
   EditableGroupResponse,
   GroupEventsResponse,
   GroupFormDraft,
-  GroupFormMember,
+  GroupMembersResponse,
   GroupSummaryItem,
   ListMyGroupsInput,
   ListMyGroupsResponse,
@@ -51,23 +51,8 @@ const normalizeListMyGroupsResponse = (
 });
 
 const normalizeEditableGroupResponse = (
-  data: EditableGroupResponse & {
-    members?: GroupFormMember[];
-  },
+  data: EditableGroupResponse,
 ): EditableGroupResponse => {
-  const normalizedMembers = (
-    Array.isArray(data.members) ? data.members : []
-  ).map((member) => ({
-    _id: member._id,
-    identifier: member.identifier,
-    userId: member.userId ?? null,
-    email: member.email ?? null,
-    name: member.name,
-    avatarUrl: member.avatarUrl ?? null,
-    role: member.role,
-    status: member.status ?? "accepted",
-  }));
-
   return {
     ...data,
     recurrence: data.recurrence ?? data.recurrenceFrequency ?? "weekly",
@@ -90,9 +75,26 @@ const normalizeEditableGroupResponse = (
       canCreateManualMeeting:
         data.availableActions?.canCreateManualMeeting ?? false,
     },
-    members: normalizedMembers,
   };
 };
+
+const normalizeGroupMembersResponse = (
+  data: GroupMembersResponse,
+): GroupMembersResponse => ({
+  rows: Array.isArray(data.rows)
+    ? data.rows.map((member) => ({
+        _id: member._id,
+        identifier: member.identifier,
+        userId: member.userId ?? null,
+        email: member.email ?? null,
+        name: member.name,
+        avatarUrl: member.avatarUrl ?? null,
+        role: member.role,
+        status: member.status ?? "accepted",
+      }))
+    : [],
+  nextCursor: data.nextCursor ?? null,
+});
 
 export async function listMyGroups(
   input: ListMyGroupsInput = {},
@@ -169,6 +171,34 @@ export async function updateGroup(
       input,
     );
     return data;
+  } catch (err) {
+    throw await toApiError(err);
+  }
+}
+
+export interface GetGroupMembersProps {
+  groupId: string;
+  cursor?: string;
+  limit?: number;
+}
+
+export async function getGroupMembers({
+  groupId,
+  cursor,
+  limit,
+}: GetGroupMembersProps): Promise<GroupMembersResponse> {
+  try {
+    const { data } = await apiClient.get<GroupMembersResponse>(
+      `/groups/${groupId}/members`,
+      {
+        params: {
+          cursor,
+          limit,
+        },
+      },
+    );
+
+    return normalizeGroupMembersResponse(data);
   } catch (err) {
     throw await toApiError(err);
   }
@@ -298,14 +328,12 @@ export async function updateGroupMemberRole(
 export interface GetGroupMeetingsProps {
   groupId: string;
   cursor?: string;
-  futureOnly?: boolean;
-  pastOnly?: boolean;
+  limit?: number;
 }
 export async function getGroupMeetings({
   groupId,
   cursor,
-  futureOnly,
-  pastOnly,
+  limit,
 }: GetGroupMeetingsProps) {
   try {
     const { data } = await apiClient.get<GroupEventsResponse>(
@@ -313,8 +341,7 @@ export async function getGroupMeetings({
       {
         params: {
           cursor,
-          futureOnly,
-          pastOnly,
+          limit,
         },
       },
     );

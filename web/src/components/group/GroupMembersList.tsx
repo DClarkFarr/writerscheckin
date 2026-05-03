@@ -60,7 +60,7 @@ const normalizeMemberItem = (
 
 export function GroupMembersList({
   members,
-  maxDisplay = 10,
+  maxDisplay = Number.MAX_SAFE_INTEGER,
   variant = "compact",
   seeAllSlot = null,
 }: GroupMembersListProps) {

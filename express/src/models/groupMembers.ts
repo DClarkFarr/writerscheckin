@@ -361,6 +361,75 @@ export const listGroupMembersByGroupId = async (
   return collection.find(filters).sort({ createdAt: 1 }).limit(limit).toArray();
 };
 
+export interface ListGroupMembersByGroupIdPaginatedProps extends ListGroupMembersOptions {
+  groupId: string | ObjectId;
+  cursor?: DecodedCursor | null;
+}
+
+export const listGroupMembersByGroupIdPaginated = async ({
+  groupId,
+  cursor,
+  includeDeleted,
+  role,
+  status,
+  limit,
+}: ListGroupMembersByGroupIdPaginatedProps) => {
+  const collection = getGroupMembersCollection();
+  const pageSize = normalizePageSize(limit);
+  const filters: Filter<GroupMemberDocument> = {
+    groupId: toObjectId(groupId, "groupId"),
+    ...activeRecordFilter(includeDeleted),
+  };
+
+  if (role) {
+    filters.role = role;
+  }
+  if (status) {
+    filters.status = status;
+  }
+
+  const hasCursorDate =
+    cursor?.createdAt instanceof Date &&
+    !Number.isNaN(cursor.createdAt.getTime()) &&
+    Boolean(cursor.id);
+
+  if (hasCursorDate) {
+    const createdAt = cursor.createdAt as Date;
+    const cursorId =
+      typeof cursor?.id === "string" && ObjectId.isValid(cursor.id)
+        ? new ObjectId(cursor.id)
+        : null;
+
+    filters.$or = cursorId
+      ? [
+          { createdAt: { $lt: createdAt } },
+          { createdAt, _id: { $lt: cursorId } },
+        ]
+      : [{ createdAt: { $lt: createdAt } }];
+  }
+
+  const results = await collection
+    .find(filters)
+    .sort({ createdAt: -1, _id: -1 })
+    .limit(pageSize + 1)
+    .toArray();
+
+  const hasMore = results.length > pageSize;
+  const rows = hasMore ? results.slice(0, pageSize) : results;
+  const lastItem = rows.at(-1);
+
+  return {
+    rows,
+    nextCursor:
+      hasMore && lastItem
+        ? {
+            createdAt: new Date(lastItem.createdAt),
+            id: lastItem._id.toHexString(),
+          }
+        : null,
+  };
+};
+
 export const getGroupOwnerByGroupId = async (
   groupId: string | ObjectId,
 ): Promise<GroupMemberDocument | null> => {

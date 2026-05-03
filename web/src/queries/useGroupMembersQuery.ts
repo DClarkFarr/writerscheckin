@@ -1,31 +1,28 @@
 import { useMemo } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { ApiError } from "@/api/types";
-import { listMyGroups } from "@/api/groups";
+import { getGroupMembers } from "@/api/groups";
+import type { GroupFormMember } from "@/api/types/groups";
 import type { BaseQueryOptions } from "@/types/query.types";
-import type { GroupMemberStatus, GroupSummaryItem } from "@/api/types/groups";
 
 const mapErrorMessage = (error: unknown): string => {
   if (error instanceof ApiError) {
-    return error.serverMessage ?? "Unable to load your groups.";
+    return error.serverMessage ?? "Unable to load group members.";
   }
 
-  return "Unable to load your groups.";
+  return "Unable to load group members.";
 };
 
-export const myGroupQueryKey = (status?: string) =>
-  ["my-groups", status ?? "all"] as const;
-
-type UseMyGroupsQueryProps = {
-  status?: GroupMemberStatus;
+export type UseGroupMembersQueryProps = {
+  groupId: string | undefined;
+  limit?: number;
 };
 
-const flattenGroupPages = (
-  pages: Array<{ items: GroupSummaryItem[] }>,
-): GroupSummaryItem[] => pages.flatMap((page) => page.items ?? []);
+export const groupMembersQueryKey = (groupId: string | undefined) =>
+  ["group-members", groupId] as const;
 
-export const useMyGroupsQuery = (
-  { status }: UseMyGroupsQueryProps,
+export const useGroupMembersQuery = (
+  { groupId, limit }: UseGroupMembersQueryProps,
   { enabled }: BaseQueryOptions = {},
 ) => {
   const {
@@ -38,21 +35,24 @@ export const useMyGroupsQuery = (
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: myGroupQueryKey(status),
+    queryKey: groupMembersQueryKey(groupId),
     queryFn: ({ pageParam }) =>
-      listMyGroups({
-        status,
+      getGroupMembers({
+        groupId: groupId ?? "",
         cursor:
           typeof pageParam === "string" && pageParam.length > 0
             ? pageParam
             : undefined,
+        limit,
       }),
-    enabled: enabled !== false,
+    enabled: enabled !== false && !!groupId,
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
   });
 
-  const groups = data?.pages ? flattenGroupPages(data.pages) : [];
+  const members: GroupFormMember[] = data?.pages
+    ? data.pages.flatMap((page) => page.rows ?? [])
+    : [];
 
   const errorMessage = useMemo(
     () => (error ? mapErrorMessage(error) : null),
@@ -60,15 +60,15 @@ export const useMyGroupsQuery = (
   );
 
   return {
-    groups,
+    members,
     isLoading,
-    hasNextPage,
-    isFetchingNextPage,
-    fetchNextPage,
     isError,
     errorMessage,
     refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
   };
 };
 
-useMyGroupsQuery.key = myGroupQueryKey;
+useGroupMembersQuery.key = groupMembersQueryKey;

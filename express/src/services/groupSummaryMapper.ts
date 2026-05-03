@@ -21,7 +21,6 @@ export interface GroupSummaryItem {
     startsAt: string;
   } | null;
   availableActions: GroupSummaryAvailableActions;
-  createdAt: string;
 }
 
 export interface GroupSummaryMapperInput {
@@ -67,6 +66,5 @@ export const mapToGroupSummaryItem = (
       input.isActive,
       Boolean(nextUpcomingMeeting),
     ),
-    createdAt: new Date().toISOString(),
   };
 };

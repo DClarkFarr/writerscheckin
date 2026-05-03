@@ -12,10 +12,13 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
 import { useHomeStore } from "@/store/homeStore";
+import { GroupMeetingsSection } from "@/components/group/GroupMeetingsSection";
 import { GroupMembersList } from "@/components/group/GroupMembersList";
 import { GroupSummaryModal } from "@/components/group/GroupSummaryModal";
 import { GroupMemberActionsDropdown } from "@/components/group/GroupMemberActionsDropdown";
 import { GroupAdminActionsMenu } from "@/components/group/GroupAdminActionsDropdown";
+import { useGroupMeetingsQuery } from "@/queries/useGroupMeetingsQuery";
+import { useGroupMembersQuery } from "@/queries/useGroupMembersQuery";
 import { useGroupQuery } from "@/queries/useGroupQuery";
 
 export function GroupViewPage() {
@@ -24,6 +27,24 @@ export function GroupViewPage() {
   const [isSummaryOpen, setSummaryOpen] = useState(false);
 
   const { data: group, error, isLoading } = useGroupQuery({ groupId });
+  const {
+    members,
+    isLoading: isMembersLoading,
+    isError: isMembersError,
+    errorMessage: membersErrorMessage,
+    fetchNextPage: loadMoreMembers,
+    hasNextPage: hasMoreMembers,
+    isFetchingNextPage: isFetchingMoreMembers,
+  } = useGroupMembersQuery({ groupId, limit: 20 });
+  const {
+    meetings,
+    isLoading: isMeetingsLoading,
+    isError: isMeetingsError,
+    errorMessage: meetingsErrorMessage,
+    fetchNextPage: loadMoreMeetings,
+    hasNextPage: hasMoreMeetings,
+    isFetchingNextPage: isFetchingMoreMeetings,
+  } = useGroupMeetingsQuery({ groupId, limit: 20 });
 
   const header = (
     <Breadcrumb variant="light">
@@ -128,7 +149,41 @@ export function GroupViewPage() {
 
       <section className="space-y-2">
         <h2 className="text-sm font-semibold text-foreground">Members</h2>
-        <GroupMembersList variant="detailed" members={group.members} />
+        {isMembersLoading && members.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Loading members...</p>
+        ) : isMembersError && members.length === 0 ? (
+          <p className="text-sm text-destructive">
+            {membersErrorMessage ?? "Unable to load members."}
+          </p>
+        ) : (
+          <>
+            <GroupMembersList variant="detailed" members={members} />
+            {hasMoreMembers && (
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => void loadMoreMembers()}
+                disabled={isFetchingMoreMembers}
+              >
+                {isFetchingMoreMembers ? "Loading..." : "Load More"}
+              </Button>
+            )}
+          </>
+        )}
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="text-sm font-semibold text-foreground">Meetings</h2>
+        <GroupMeetingsSection
+          meetings={meetings}
+          isLoading={isMeetingsLoading}
+          isError={isMeetingsError}
+          errorMessage={meetingsErrorMessage}
+          hasNextPage={hasMoreMeetings}
+          isFetchingNextPage={isFetchingMoreMeetings}
+          onLoadMore={() => void loadMoreMeetings()}
+        />
       </section>
 
       <GroupSummaryModal

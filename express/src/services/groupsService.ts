@@ -1,6 +1,8 @@
 import { ObjectId } from "mongodb";
 import {
+  decodeOpaqueCursor,
   encodeCursor,
+  encodeOpaqueCursor,
   normalizePageSize,
   type DecodedCursor,
 } from "../utils/pagination";
@@ -27,12 +29,14 @@ import {
 import {
   countGroupMeetingsByGroupId,
   getNextUpcomingMeetingByGroupId,
+  listGroupMeetingsByGroupIdPaginated,
 } from "../models/groupMeetings";
 import { ensureObjectId } from "../models/types";
 import { listUsers, listUsersByIds } from "../models/users";
 import {
   assertTimeOfDay,
   type GroupMemberInviteStatus,
+  type GroupMeetingStatus,
   type MeetingTimeOfDay,
 } from "../models/groupModelCommon";
 import { AuthError } from "./authService";
@@ -114,7 +118,37 @@ export interface EditableGroupFormResult {
   recurrenceDaysOfWeek: number[];
   publicMessage: string;
   attendanceMessage: string;
-  members: EditableGroupFormMember[];
+}
+
+export interface GroupMeetingListItem {
+  meetingId: string;
+  name: string;
+  occursAt: string;
+  status: GroupMeetingStatus;
+}
+
+export interface ListManagedGroupMembersProps {
+  groupId: string;
+  userId: string;
+  cursor?: string;
+  limit?: number;
+}
+
+export interface ListManagedGroupMembersResult {
+  rows: EditableGroupFormMember[];
+  nextCursor: string | null;
+}
+
+export interface ListManagedGroupMeetingsProps {
+  groupId: string;
+  userId: string;
+  cursor?: DecodedCursor | null;
+  limit?: number;
+}
+
+export interface ListManagedGroupMeetingsResult {
+  rows: GroupMeetingListItem[];
+  nextCursor: string | null;
 }
 
 export interface SaveGroupResult {
@@ -125,6 +159,92 @@ export interface SaveGroupResult {
 
 const DEFAULT_PUBLISH_HOURS_BEFORE = 24;
 const DEFAULT_ATTENDANCE_HOURS_BEFORE = 2;
+
+type MemberCursorPayload = {
+  rolePriority: number;
+  label: string;
+  id: string;
+};
+
+const getRolePriority = (role: "owner" | "admin" | "member"): number => {
+  if (role === "owner") {
+    return 0;
+  }
+  if (role === "admin") {
+    return 1;
+  }
+  return 2;
+};
+
+const compareMemberSortKeys = (
+  left: MemberCursorPayload,
+  right: MemberCursorPayload,
+): number => {
+  if (left.rolePriority !== right.rolePriority) {
+    return left.rolePriority - right.rolePriority;
+  }
+  if (left.label !== right.label) {
+    return left.label.localeCompare(right.label);
+  }
+  return left.id.localeCompare(right.id);
+};
+
+const memberToSortLabel = (
+  member: GroupMemberDocument,
+  usersById: Map<
+    string,
+    { name: string; email: string; avatarUrl: string | null; userId: string }
+  >,
+): string => {
+  const userSummary = member.userId
+    ? usersById.get(member.userId.toHexString())
+    : null;
+
+  const label =
+    userSummary?.name?.trim() ||
+    userSummary?.email?.trim() ||
+    member.email?.trim() ||
+    member.userId?.toHexString() ||
+    member._id.toHexString();
+
+  return label.toLowerCase();
+};
+
+const mapEditableMembers = (
+  members: GroupMemberDocument[],
+  usersById: Map<
+    string,
+    { name: string; email: string; avatarUrl: string | null; userId: string }
+  >,
+): EditableGroupFormMember[] => {
+  return members.flatMap((member) => {
+    const userSummary = member.userId
+      ? usersById.get(member.userId.toHexString())
+      : null;
+    const identifier = member.userId?.toHexString() ?? member.email;
+
+    if (!identifier) {
+      return [];
+    }
+
+    return [
+      {
+        _id: member._id.toHexString(),
+        identifier,
+        role: member.role,
+        userId: member.userId?.toHexString() ?? null,
+        email: member.email ?? userSummary?.email ?? null,
+        name:
+          userSummary?.name ??
+          member.email ??
+          member.userId?.toHexString() ??
+          "Member",
+        avatarUrl: userSummary?.avatarUrl ?? null,
+        status: member.status,
+      },
+    ];
+  });
+};
 
 const parseTimeString = (value: string): MeetingTimeOfDay => {
   if (!/^\d{2}:\d{2}$/.test(value)) {
@@ -496,51 +616,6 @@ export const getManagedGroupForm = async (
     }),
     getNextUpcomingMeetingByGroupId(group._id),
   ]);
-  const participantUsers = await listUsersByIds(
-    members.flatMap((member) => (member.userId ? [member.userId] : [])),
-  );
-  const usersById = new Map(
-    participantUsers.map((participant) => [
-      participant._id.toHexString(),
-      {
-        userId: participant._id.toHexString(),
-        name:
-          `${participant.firstName} ${participant.lastName}`.trim() ||
-          participant.email,
-        email: participant.email,
-        avatarUrl: null,
-      },
-    ]),
-  );
-
-  const editableMembers = members.flatMap((member) => {
-    const userSummary = member.userId
-      ? usersById.get(member.userId.toHexString())
-      : null;
-    const identifier = member.userId?.toHexString() ?? member.email;
-
-    if (!identifier) {
-      return [];
-    }
-
-    return [
-      {
-        _id: member._id.toHexString(),
-        identifier,
-        role: member.role,
-        userId: member.userId?.toHexString() ?? null,
-        email: member.email ?? userSummary?.email ?? null,
-        name:
-          userSummary?.name ??
-          member.email ??
-          member.userId?.toHexString() ??
-          "Member",
-        avatarUrl: userSummary?.avatarUrl ?? null,
-        status: member.status,
-      },
-    ];
-  });
-
   return {
     groupId: group._id.toHexString(),
     isActive: !group.deletedAt,
@@ -572,7 +647,119 @@ export const getManagedGroupForm = async (
     recurrenceDaysOfWeek: group.recurrenceRule.daysOfWeek,
     publicMessage: group.publishEmailMessage,
     attendanceMessage: group.attendanceEmailMessage,
-    members: editableMembers,
+  };
+};
+
+export const listManagedGroupMembersPaginated = async ({
+  groupId,
+  userId,
+  cursor,
+  limit,
+}: ListManagedGroupMembersProps): Promise<ListManagedGroupMembersResult> => {
+  await assertCanViewGroup(groupId, userId);
+
+  const pageSize = normalizePageSize(limit);
+  const members = await listGroupMembersByGroupId(groupId, {
+    limit: 1000,
+    status: {
+      $ne: "removed",
+    },
+  });
+
+  const participantUsers = await listUsersByIds(
+    members.flatMap((member) => (member.userId ? [member.userId] : [])),
+  );
+  const usersById = new Map(
+    participantUsers.map((participant) => [
+      participant._id.toHexString(),
+      {
+        userId: participant._id.toHexString(),
+        name:
+          `${participant.firstName} ${participant.lastName}`.trim() ||
+          participant.email,
+        email: participant.email,
+        avatarUrl: null,
+      },
+    ]),
+  );
+
+  const sorted = [...members].sort((left, right) => {
+    const leftKey: MemberCursorPayload = {
+      rolePriority: getRolePriority(left.role),
+      label: memberToSortLabel(left, usersById),
+      id: left._id.toHexString(),
+    };
+    const rightKey: MemberCursorPayload = {
+      rolePriority: getRolePriority(right.role),
+      label: memberToSortLabel(right, usersById),
+      id: right._id.toHexString(),
+    };
+
+    return compareMemberSortKeys(leftKey, rightKey);
+  });
+
+  const decodedCursor = decodeOpaqueCursor<MemberCursorPayload>(cursor);
+  const filtered = decodedCursor
+    ? sorted.filter((member) => {
+        const key: MemberCursorPayload = {
+          rolePriority: getRolePriority(member.role),
+          label: memberToSortLabel(member, usersById),
+          id: member._id.toHexString(),
+        };
+        return compareMemberSortKeys(key, decodedCursor) > 0;
+      })
+    : sorted;
+
+  const pageItems = filtered.slice(0, pageSize);
+  const hasMore = filtered.length > pageSize;
+  const lastItem = pageItems.at(-1);
+
+  const nextCursor =
+    hasMore && lastItem
+      ? encodeOpaqueCursor({
+          rolePriority: getRolePriority(lastItem.role),
+          label: memberToSortLabel(lastItem, usersById),
+          id: lastItem._id.toHexString(),
+        })
+      : null;
+
+  return {
+    rows: mapEditableMembers(pageItems, usersById),
+    nextCursor,
+  };
+};
+
+export const listManagedGroupMeetingsPaginated = async ({
+  groupId,
+  userId,
+  cursor,
+  limit,
+}: ListManagedGroupMeetingsProps): Promise<ListManagedGroupMeetingsResult> => {
+  await assertCanViewGroup(groupId, userId);
+
+  const membership = await getMembershipByGroup(userId, groupId);
+  if (!membership || membership.status !== "accepted") {
+    throw new AuthError("Forbidden", 403);
+  }
+
+  const statuses: GroupMeetingStatus[] =
+    membership.role === "member" ? ["published"] : ["draft", "published"];
+
+  const { items, nextCursor } = await listGroupMeetingsByGroupIdPaginated({
+    groupId,
+    ...(cursor ? { cursor } : {}),
+    ...(typeof limit === "number" ? { limit } : {}),
+    statuses,
+  });
+
+  return {
+    rows: items.map((meeting) => ({
+      meetingId: meeting._id.toHexString(),
+      name: meeting.name,
+      occursAt: (meeting.occursAt ?? meeting.createdAt).toISOString(),
+      status: meeting.status,
+    })),
+    nextCursor: nextCursor ? encodeCursor(nextCursor) : null,
   };
 };
 

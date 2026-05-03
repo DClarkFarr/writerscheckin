@@ -6,6 +6,9 @@ export interface DecodedCursor {
   id: string;
 }
 
+type CursorValue = string | number | boolean | null;
+export type OpaqueCursorPayload = Record<string, CursorValue>;
+
 export const normalizePageSize = (limit?: number): number => {
   if (typeof limit !== "number" || Number.isNaN(limit)) {
     return DEFAULT_GROUP_PAGE_SIZE;
@@ -43,6 +46,31 @@ export const decodeCursor = (value?: string): DecodedCursor | null => {
       createdAt: new Date(parsed.createdAt),
       id: parsed.id,
     };
+  } catch {
+    return null;
+  }
+};
+
+export const encodeOpaqueCursor = (payload: OpaqueCursorPayload): string => {
+  const raw = JSON.stringify(payload);
+  return Buffer.from(raw, "utf8").toString("base64url");
+};
+
+export const decodeOpaqueCursor = <T extends OpaqueCursorPayload>(
+  value?: string,
+): T | null => {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    const raw = Buffer.from(value, "base64url").toString("utf8");
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return null;
+    }
+
+    return parsed as T;
   } catch {
     return null;
   }

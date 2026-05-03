@@ -101,7 +101,11 @@ export interface EditableGroupResponse extends GroupSummaryItem {
   recurrenceDaysOfWeek: number[];
   publicMessage: string;
   attendanceMessage: string;
-  members: GroupFormMember[];
+}
+
+export interface GroupMembersResponse {
+  rows: GroupFormMember[];
+  nextCursor: string | null;
 }
 
 export interface SaveGroupResponse {
@@ -119,7 +123,9 @@ export interface CreateUpcomingMeetingResponse {
 
 export type GroupMeeting = {
   meetingId: string;
-  // TODO: Implement this to match document response
+  name: string;
+  occursAt: string;
+  status: "draft" | "published";
 };
 
 export interface GroupEventsResponse {

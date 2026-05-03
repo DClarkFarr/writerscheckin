@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -22,10 +22,52 @@ export function MyGroupsTab() {
   const navigate = useNavigate();
   const [summaryGroupId, setSummaryGroupId] = useState<string | null>(null);
 
-  const { groups, isLoading, isError, errorMessage, refetch } =
-    useMyGroupsQuery({
+  const {
+    groups,
+    isLoading,
+    isError,
+    errorMessage,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useMyGroupsQuery(
+    {
       status: "accepted",
-    });
+    },
+    { enabled: true },
+  );
+
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!hasNextPage || isFetchingNextPage) {
+      return;
+    }
+
+    const sentinel = sentinelRef.current;
+    if (!sentinel) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry?.isIntersecting) {
+          void fetchNextPage();
+        }
+      },
+      {
+        rootMargin: "180px",
+      },
+    );
+
+    observer.observe(sentinel);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   const selectedGroup = useMemo(
     () => groups.find((group) => group.groupId === summaryGroupId) ?? null,
@@ -155,6 +197,10 @@ export function MyGroupsTab() {
         <p className="py-6 text-sm text-muted-foreground">Loading groups...</p>
       )}
       {!isLoading && content}
+      <div ref={sentinelRef} />
+      {isFetchingNextPage && (
+        <p className="text-sm text-muted-foreground">Loading more groups...</p>
+      )}
       {selectedGroup && (
         <GroupSummaryModal
           groupId={selectedGroup.groupId}

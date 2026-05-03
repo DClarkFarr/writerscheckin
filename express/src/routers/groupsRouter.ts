@@ -3,6 +3,8 @@ import { handleAsync } from "../utils/asyncHandler";
 import { AuthSession } from "../services/authService";
 import {
   createManagedGroup,
+  listManagedGroupMeetingsPaginated,
+  listManagedGroupMembersPaginated,
   getManagedGroupForm,
   leaveGroup,
   listMyGroupsSummary,
@@ -262,17 +264,56 @@ const applyGroupRoutes = () => {
   groupsRouter.get(
     "/:groupId/meetings",
     handleAsync(async (req, res) => {
-      getAuthenticatedUserId(req);
+      const userId = getAuthenticatedUserId(req);
       const groupId = getRouteParam(req.params.groupId, "groupId");
-      const cursor = req.query.cursor?.toString();
-      const futureOnly = getRouteBooleanParam(
-        req.query.futureOnly?.toString(),
-        "futureOnly",
-      );
-      const pastOnly = getRouteBooleanParam(
-        req.query.pastOnly?.toString(),
-        "pastOnly",
-      );
+      const cursor =
+        typeof req.query.cursor === "string"
+          ? decodeCursor(req.query.cursor)
+          : null;
+      const parsedLimit =
+        typeof req.query.limit === "string"
+          ? Number.parseInt(req.query.limit, 10)
+          : undefined;
+      const limit =
+        typeof parsedLimit === "number" && !Number.isNaN(parsedLimit)
+          ? parsedLimit
+          : undefined;
+
+      const data = await listManagedGroupMeetingsPaginated({
+        groupId,
+        userId,
+        ...(cursor ? { cursor } : {}),
+        ...(typeof limit === "number" ? { limit } : {}),
+      });
+
+      res.status(200).json(data);
+    }),
+  );
+
+  groupsRouter.get(
+    "/:groupId/members",
+    handleAsync(async (req, res) => {
+      const userId = getAuthenticatedUserId(req);
+      const groupId = getRouteParam(req.params.groupId, "groupId");
+      const cursor =
+        typeof req.query.cursor === "string" ? req.query.cursor : undefined;
+      const parsedLimit =
+        typeof req.query.limit === "string"
+          ? Number.parseInt(req.query.limit, 10)
+          : undefined;
+      const limit =
+        typeof parsedLimit === "number" && !Number.isNaN(parsedLimit)
+          ? parsedLimit
+          : undefined;
+
+      const data = await listManagedGroupMembersPaginated({
+        groupId,
+        userId,
+        ...(cursor ? { cursor } : {}),
+        ...(typeof limit === "number" ? { limit } : {}),
+      });
+
+      res.status(200).json(data);
     }),
   );
 };
