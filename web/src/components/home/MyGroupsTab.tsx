@@ -10,7 +10,7 @@ import {
 import IconPlusBox from "~icons/mdi/plus-box";
 import IconPencil from "~icons/mdi/pencil";
 import IconEyeOutline from "~icons/mdi/eye-outline";
-import { useMyGroupsQuery } from "@/hooks/useMyGroupsQuery";
+import { useMyGroupsQuery } from "@/queries/useMyGroupsQuery";
 import { useNavigate } from "@tanstack/react-router";
 import { GroupRoleBadge } from "../group/GroupRoleBadge";
 import { GroupMemberActionsDropdown } from "../group/GroupMemberActionsDropdown";

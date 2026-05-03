@@ -2,9 +2,6 @@ import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ApiError } from "@/api/types";
 import { listMyGroups } from "@/api/groups";
-import type { GroupSummaryItem } from "@/api/types/groups";
-
-const MY_GROUPS_QUERY_KEY = ["my-groups", "initial"] as const;
 
 const mapErrorMessage = (error: unknown): string => {
   if (error instanceof ApiError) {
@@ -14,17 +11,11 @@ const mapErrorMessage = (error: unknown): string => {
   return "Unable to load your groups.";
 };
 
-export interface UseMyGroupsQueryResult {
-  groups: GroupSummaryItem[];
-  isLoading: boolean;
-  isError: boolean;
-  errorMessage: string | null;
-  refetch: () => Promise<unknown>;
-}
+export const myGroupQueryKey = () => ["my-groups"];
 
-export const useMyGroupsQuery = (): UseMyGroupsQueryResult => {
+export const useMyGroupsQuery = () => {
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: MY_GROUPS_QUERY_KEY,
+    queryKey: myGroupQueryKey(),
     queryFn: () => listMyGroups(),
   });
 
@@ -43,3 +34,5 @@ export const useMyGroupsQuery = (): UseMyGroupsQueryResult => {
     refetch,
   };
 };
+
+useMyGroupsQuery.key = myGroupQueryKey;

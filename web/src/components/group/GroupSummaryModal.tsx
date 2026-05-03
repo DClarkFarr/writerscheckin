@@ -6,7 +6,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { GroupMembersList } from "@/components/group/GroupMembersList";
-import { useGroupQuery } from "@/queries/use-group-query";
+import { useGroupQuery } from "@/queries/useGroupQuery";
 
 export interface GroupSummaryModalProps {
   groupId: string;

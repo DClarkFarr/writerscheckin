@@ -16,7 +16,7 @@ import { GroupMembersList } from "@/components/group/GroupMembersList";
 import { GroupSummaryModal } from "@/components/group/GroupSummaryModal";
 import { GroupMemberActionsDropdown } from "@/components/group/GroupMemberActionsDropdown";
 import { GroupAdminActionsMenu } from "@/components/group/GroupAdminActionsDropdown";
-import { useGroupQuery } from "@/queries/use-group-query";
+import { useGroupQuery } from "@/queries/useGroupQuery";
 
 export function GroupViewPage() {
   const { groupId } = useParams({ from: "/groups/$groupId/view" });
