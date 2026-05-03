@@ -1,7 +1,6 @@
 import { useCallback } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { logout } from "@/api/auth";
 import { ApiError } from "@/api/types";
+import { useLogoutMutation } from "@/queries/useLogoutMutation";
 import { useAuthStore } from "@/store/authStore";
 
 function mapLogoutError(error: unknown): string {
@@ -23,22 +22,18 @@ export interface UseLogoutMenuActionResult {
 export function useLogoutMenuAction(): UseLogoutMenuActionResult {
   const clearUser = useAuthStore((state) => state.clearUser);
 
-  const { mutateAsync, isPending, error, reset } = useMutation({
-    mutationFn: logout,
-    onSuccess: () => {
-      clearUser();
-    },
-  });
+  const { mutateAsync, isPending, error, reset } = useLogoutMutation();
 
   const handleLogout = useCallback(async () => {
     reset();
 
     try {
       await mutateAsync();
+      clearUser();
     } catch {
       // Error text is exposed via errorMessage; no throw to keep menu interaction stable.
     }
-  }, [mutateAsync, reset]);
+  }, [clearUser, mutateAsync, reset]);
 
   return {
     handleLogout,

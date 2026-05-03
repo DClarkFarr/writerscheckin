@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import type { EditableGroupResponse } from "@/api/types/groups";
 import { PageCard } from "@/components/layout/PageCard";
 import {
   Breadcrumb,
@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { GroupForm } from "@/components/forms/GroupForm";
 import { useGroupForm } from "@/hooks/useGroupForm";
-import { getGroupForm } from "@/api/groups";
+import { useGroupFormQuery } from "@/queries/useGroupFormQuery";
 import { useHomeStore } from "@/store/homeStore";
 
 export interface GroupEditPageProps {
@@ -19,10 +19,7 @@ export interface GroupEditPageProps {
 }
 
 export function GroupEditPage({ groupId }: GroupEditPageProps) {
-  const groupQuery = useQuery({
-    queryKey: ["group-form", groupId],
-    queryFn: () => getGroupForm(groupId),
-  });
+  const groupQuery = useGroupFormQuery({ groupId });
 
   const header = (
     <Breadcrumb variant="light">
@@ -69,9 +66,7 @@ export function GroupEditPage({ groupId }: GroupEditPageProps) {
 
 interface LoadedGroupEditFormProps {
   groupId: string;
-  existingGroup: NonNullable<
-    ReturnType<typeof getGroupForm> extends Promise<infer T> ? T : never
-  >;
+  existingGroup: EditableGroupResponse;
 }
 
 function LoadedGroupEditForm({

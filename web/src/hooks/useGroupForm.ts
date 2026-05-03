@@ -4,14 +4,9 @@ import {
   type FocusEvent,
   type FormEvent,
 } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "@/api/types";
-import {
-  createGroup,
-  updateGroup,
-  removeGroupMember as apiRemoveGroupMember,
-  updateGroupMemberRole as apiUpdateGroupMemberRole,
-} from "@/api/groups";
+import { useGroupMemberMutations } from "@/queries/useGroupMemberMutations";
+import { useSaveGroupMutation } from "@/queries/useSaveGroupMutation";
 import type {
   EditableGroupResponse,
   GroupFormDraft,
@@ -165,7 +160,6 @@ const mapApiError = (error: unknown): string => {
 export function useGroupForm(
   options: UseGroupFormOptions = {},
 ): GroupFormProps {
-  const queryClient = useQueryClient();
   const [fields, setFields] = useState<Fields>({
     ...DEFAULT_FIELDS,
     name: options.existingGroup?.name ?? DEFAULT_FIELDS.name,
@@ -196,43 +190,13 @@ export function useGroupForm(
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitNotice, setSubmitNotice] = useState<string | null>(null);
-
-  const { mutate, isPending } = useMutation({
-    mutationFn: async (values: GroupFormDraft) => {
-      if (options.mode === "edit") {
-        if (!options.groupId) {
-          throw new Error("Group ID is required.");
-        }
-
-        return updateGroup(options.groupId, values);
-      }
-
-      return createGroup(values);
-    },
-    onSuccess: async (result) => {
-      await queryClient.invalidateQueries({ queryKey: ["my-groups"] });
-      if (options.groupId) {
-        await queryClient.invalidateQueries({
-          queryKey: ["group-form", options.groupId],
-        });
-      }
-
-      setFormError(null);
-
-      if (options.onSuccess) {
-        await options.onSuccess(result);
-        return;
-      }
-
-      setSubmitNotice(
-        options.mode === "edit" ? "Group changes saved." : "Group created.",
-      );
-    },
-    onError: (error) => {
-      setSubmitNotice(null);
-      setFormError(mapApiError(error));
-    },
+  const saveGroupMutation = useSaveGroupMutation({
+    mode: options.mode ?? "create",
+    groupId: options.groupId,
   });
+  const { updateMemberRole, removeMember } = useGroupMemberMutations();
+
+  const isPending = saveGroupMutation.isPending;
 
   const handleFieldChange = (
     event: ChangeEvent<
@@ -317,7 +281,7 @@ export function useGroupForm(
       return;
     }
 
-    mutate({
+    const payload: GroupFormDraft = {
       name: fields.name.trim(),
       description: fields.description,
       address: fields.address.trim(),
@@ -328,6 +292,25 @@ export function useGroupForm(
       publicMessage: fields.publicMessage.trim(),
       attendanceMessage: fields.attendanceMessage.trim(),
       members: selectedGroupMembers,
+    };
+
+    saveGroupMutation.mutate(payload, {
+      onSuccess: async (result) => {
+        setFormError(null);
+
+        if (options.onSuccess) {
+          await options.onSuccess(result);
+          return;
+        }
+
+        setSubmitNotice(
+          options.mode === "edit" ? "Group changes saved." : "Group created.",
+        );
+      },
+      onError: (error) => {
+        setSubmitNotice(null);
+        setFormError(mapApiError(error));
+      },
     });
   };
 
@@ -375,7 +358,11 @@ export function useGroupForm(
         options.groupId &&
         memberId.length === 24
       ) {
-        void apiUpdateGroupMemberRole(options.groupId, memberId, role);
+        updateMemberRole.mutate({
+          groupId: options.groupId,
+          memberId,
+          role,
+        });
       }
     },
     handleMemberDelete: (memberId: string) => {
@@ -389,7 +376,10 @@ export function useGroupForm(
         options.groupId &&
         memberId.length === 24
       ) {
-        void apiRemoveGroupMember(options.groupId, memberId);
+        removeMember.mutate({
+          groupId: options.groupId,
+          memberId,
+        });
       }
     },
     handleSubmit,

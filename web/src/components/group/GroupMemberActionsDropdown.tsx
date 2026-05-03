@@ -25,7 +25,7 @@ export function GroupMemberActionsDropdown({
   });
 
   const onLeaveClick = () => {
-    leaveGroup.mutate(groupId);
+    leaveGroup(groupId);
   };
 
   return (

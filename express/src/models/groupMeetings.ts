@@ -1,4 +1,4 @@
-import { Collection, ObjectId } from "mongodb";
+import { Collection, Filter, ObjectId } from "mongodb";
 import { COLLECTIONS, getCollection } from "./collections";
 import {
   activeRecordFilter,
@@ -259,6 +259,48 @@ export const listGroupMeetingsByGroupId = async (
     .sort({ createdAt: -1 })
     .limit(limit)
     .toArray();
+};
+
+export interface ListGroupMeetingsByGroupIdPaginatedProps {
+  groupId: string | ObjectId;
+  limit?: number;
+  offset?: number;
+  futureOnly?: boolean;
+  pastOnly?: boolean;
+}
+export const listGroupMeetingsByGroupIdPaginated = async ({
+  groupId,
+  futureOnly,
+  pastOnly,
+  limit = 10,
+  offset = 0,
+}: ListGroupMeetingsByGroupIdPaginatedProps) => {
+  const collection = getGroupMeetingsCollection();
+
+  const filters: Filter<GroupMeetingDocument> = {
+    groupId: toObjectId(groupId, "groupId"),
+    ...activeRecordFilter(),
+  };
+
+  if (futureOnly) {
+    filters.occursAt = { $gte: new Date() };
+  } else if (pastOnly) {
+    filters.occursAt = { $lt: new Date() };
+  }
+
+  const items = await collection
+    .find(filters)
+    .sort({ occursAt: -1, createdAt: -1 })
+    .skip(offset)
+    .limit(limit)
+    .toArray();
+
+  const totalCount = await collection.countDocuments(filters);
+
+  return {
+    items,
+    totalCount,
+  };
 };
 
 export const countGroupMeetingsByGroupId = async (

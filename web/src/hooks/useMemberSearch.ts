@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { searchMembers, type MemberSearchResult } from "@/api/groups";
+import type { MemberSearchResult } from "@/api/groups";
+import { useMemberSearchQuery } from "@/queries/useMemberSearchQuery";
 
 const DEBOUNCE_MS = 250;
 const MIN_QUERY_LENGTH = 2;
@@ -47,14 +47,14 @@ export function useMemberSearch(
 
   const hasQuery = debouncedQuery.length >= MIN_QUERY_LENGTH;
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["members", "search", debouncedQuery, options.groupId],
-    queryFn: () =>
-      searchMembers(debouncedQuery, options.groupId, options.limit),
-    staleTime: 5 * 60_000,
-    gcTime: 10 * 60_000,
-    enabled: hasQuery,
-  });
+  const { data, isLoading, error } = useMemberSearchQuery(
+    {
+      query: debouncedQuery,
+      groupId: options.groupId,
+      limit: options.limit,
+    },
+    { enabled: hasQuery },
+  );
 
   return {
     data,

@@ -3,6 +3,7 @@ import { toApiError } from "./types";
 import type {
   CreateUpcomingMeetingResponse,
   EditableGroupResponse,
+  GroupEventsResponse,
   GroupFormDraft,
   GroupFormMember,
   GroupSummaryItem,
@@ -287,6 +288,35 @@ export async function updateGroupMemberRole(
     const { data } = await apiClient.patch<UpdateMemberRoleResponse>(
       `/groups/${groupId}/members/${memberId}/role`,
       { role },
+    );
+    return data;
+  } catch (err) {
+    throw await toApiError(err);
+  }
+}
+
+export interface GetGroupMeetingsProps {
+  groupId: string;
+  cursor?: string;
+  futureOnly?: boolean;
+  pastOnly?: boolean;
+}
+export async function getGroupMeetings({
+  groupId,
+  cursor,
+  futureOnly,
+  pastOnly,
+}: GetGroupMeetingsProps) {
+  try {
+    const { data } = await apiClient.get<GroupEventsResponse>(
+      `/groups/${groupId}/meetings`,
+      {
+        params: {
+          cursor,
+          futureOnly,
+          pastOnly,
+        },
+      },
     );
     return data;
   } catch (err) {

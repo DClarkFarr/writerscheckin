@@ -18,6 +18,15 @@ Note: This will impact Vite dev & build performances.
 Create a `.env` file in the `web/` directory with the following setting:
 
 ```
+
+## Query Wrapper and Optimistic Mutation Guidelines
+
+- Do not call `@/api/*` read methods directly from pages/components.
+- Put read hooks in `web/src/queries/*` and export a `.key` factory for each hook.
+- Reuse centralized query keys from `web/src/queries/queryKeys.ts`.
+- Keep mutation orchestration in wrappers/hooks, not in component event handlers.
+- Default to optimistic mutation behavior: snapshot, patch minimal scope, rollback on error, reconcile on settle.
+- Prefer targeted `setQueryData` updates before broad `invalidateQueries` fallback.
 VITE_CDN_BASE_URL=http://localhost:4000
 ```
 

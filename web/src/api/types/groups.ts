@@ -59,7 +59,7 @@ export interface SearchParticipantsResponse {
 }
 
 export type GroupRecurrenceFrequency = "weekly" | "biweekly";
-export type GroupMemberRole = "admin" | "member";
+export type GroupMemberRole = "admin" | "member" | "owner";
 export type GroupMemberStatus =
   | "invited"
   | "accepted"
@@ -114,4 +114,14 @@ export interface CreateUpcomingMeetingResponse {
   meetingId: string;
   redirectTo: string;
   createdFromDefaults: true;
+}
+
+export type GroupMeeting = {
+  meetingId: string;
+  // TODO: Implement this to match document response
+};
+
+export interface GroupEventsResponse {
+  rows: GroupMeeting[];
+  nextCursor: string | null;
 }

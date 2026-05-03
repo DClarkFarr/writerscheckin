@@ -1,13 +1,11 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.6.0 → 1.7.0 (MINOR — added index naming rules for partial filter expressions + frontend query hook architecture)
+Version change: 1.8.0 → 1.8.1 (PATCH — clarified query key ownership and optimistic wrapper usage guidance)
 Modified sections:
-  - Principle II (Layer 1 — Models) — added subsection on Index Naming and Partial Filter Expressions
-  - Added Principle XII: Frontend Query Hooks vs Direct API Calls — establishes mandatory query hook wrapping for all API calls
+  - Principle XII: Frontend Query Hooks vs Direct API Calls — clarified query key ownership through shared helpers and wrapper expectations
 Added sections:
-  - Index Naming and Partial Filter Expressions subsection (in Principle II)
-  - Principle XII (new)
+  - None
 Removed sections: None
 Templates requiring updates:
   ✅ constitution.md — this file
@@ -639,6 +637,19 @@ All query hooks MUST:
 - Use `useQuery` or `useSuspenseQuery` from TanStack Query v5 with a consistent `queryKey`.
 - Wrap the `queryFn` call to the corresponding `@/api/*` function with try/catch and error mapping.
 - Return typed data with appropriate `enabled` state for conditional fetching.
+- Prefer shared key factories (for example `queryKeys.*`) so key ownership is centralized and reusable across query and mutation wrappers.
+
+When a hook-managed flow mutates server-backed state, optimistic updates MUST be treated as the
+default behavior. The UI SHOULD reflect the user's action immediately while the request is in
+flight, with deterministic rollback behavior if the request fails.
+
+Optimistic update patterns MUST:
+
+- Apply updates only to the smallest affected cache scope.
+- Capture pre-change state before applying optimistic changes.
+- Restore prior state if the mutation fails.
+- Reconcile optimistic state with confirmed server state after success.
+- Avoid direct component-level mutation calls that bypass the shared hook contract.
 
 Pattern (from `useGroupQuery.ts`):
 
@@ -722,4 +733,4 @@ All new features and changes MUST comply with these principles. Any amendment re
 - MINOR bump: new principle or section added.
 - PATCH bump: clarifications, wording fixes, non-semantic refinements.
 
-**Version**: 1.7.0 | **Ratified**: 2026-04-30 | **Last Amended**: 2026-05-02
+**Version**: 1.8.1 | **Ratified**: 2026-04-30 | **Last Amended**: 2026-05-02

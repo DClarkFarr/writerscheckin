@@ -42,6 +42,21 @@ const getRouteParam = (
   return value;
 };
 
+const getRouteBooleanParam = (
+  value: string | string[] | undefined,
+  label: string,
+): boolean | null => {
+  const stringBoolean = getRouteParam(value, label);
+
+  if (stringBoolean === "true") {
+    return true;
+  } else if (stringBoolean === "false") {
+    return false;
+  }
+
+  return null;
+};
+
 const applyGroupRoutes = () => {
   groupsRouter.post(
     "/",
@@ -222,6 +237,23 @@ const applyGroupRoutes = () => {
         role: updated.role,
         updatedAt: updated.updatedAt,
       });
+    }),
+  );
+
+  groupsRouter.get(
+    "/:groupId/meetings",
+    handleAsync(async (req, res) => {
+      getAuthenticatedUserId(req);
+      const groupId = getRouteParam(req.params.groupId, "groupId");
+      const cursor = req.query.cursor?.toString();
+      const futureOnly = getRouteBooleanParam(
+        req.query.futureOnly?.toString(),
+        "futureOnly",
+      );
+      const pastOnly = getRouteBooleanParam(
+        req.query.pastOnly?.toString(),
+        "pastOnly",
+      );
     }),
   );
 };
