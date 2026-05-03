@@ -41,6 +41,8 @@ const normalizeMemberItem = (
 
   if (member.role === "admin") {
     badges.push({ label: "Admin", colorClassName: "bg-green-500" });
+  } else if (member.role === "owner") {
+    badges.push({ label: "Owner", colorClassName: "bg-purple-500" });
   }
 
   if (member.status === "invited") {

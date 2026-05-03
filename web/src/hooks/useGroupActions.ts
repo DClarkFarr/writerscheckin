@@ -1,5 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { leaveGroup } from "@/api/groups";
+import { useLeaveGroupMutation } from "@/queries/useLeaveGroupMutation";
 import { ApiError } from "@/api/types";
 import { alert } from "@/utils/alert";
 
@@ -22,49 +21,27 @@ export interface UseGroupActionsOptions {
   onLeaveError?: (error: Error) => void;
 }
 
-export interface UseGroupActionsResult {
-  leaveGroup: {
-    mutate: (groupId: string) => void;
-    isPending: boolean;
-    error: Error | null;
-    isSuccess: boolean;
+export function useGroupActions(options: UseGroupActionsOptions = {}) {
+  const { mutateAsync, ...rest } = useLeaveGroupMutation();
+
+  const leaveGroup = (groupId: string) => {
+    mutateAsync(groupId, {
+      onSuccess: () => {
+        alert.success("You have left the group");
+        options.onLeaveSuccess?.();
+      },
+      onError: (error) => {
+        const message = mapLeaveGroupError(error);
+        alert.error(message);
+        options.onLeaveError?.(
+          error instanceof Error ? error : new Error(message),
+        );
+      },
+    });
   };
-}
-
-export function useGroupActions(
-  options: UseGroupActionsOptions = {},
-): UseGroupActionsResult {
-  const queryClient = useQueryClient();
-
-  const mutation = useMutation({
-    mutationFn: leaveGroup,
-    onSuccess: async (_data, groupId) => {
-      await queryClient.invalidateQueries({ queryKey: ["groups"] });
-      await queryClient.invalidateQueries({ queryKey: ["groups", groupId] });
-      await queryClient.invalidateQueries({ queryKey: ["my-groups"] });
-      alert.success("You have left the group");
-      options.onLeaveSuccess?.();
-    },
-    onError: (error) => {
-      const message = mapLeaveGroupError(error);
-      alert.error(message);
-      options.onLeaveError?.(
-        error instanceof Error ? error : new Error(message),
-      );
-    },
-  });
 
   return {
-    leaveGroup: {
-      mutate: mutation.mutate,
-      isPending: mutation.isPending,
-      error:
-        mutation.error instanceof Error
-          ? mutation.error
-          : mutation.error
-            ? new Error(mapLeaveGroupError(mutation.error))
-            : null,
-      isSuccess: mutation.isSuccess,
-    },
+    leaveGroup,
+    ...rest,
   };
 }

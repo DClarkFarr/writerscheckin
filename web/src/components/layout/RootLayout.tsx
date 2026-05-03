@@ -1,9 +1,8 @@
 import { Outlet, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useAuthStore } from "../../store/authStore";
-import { getMe } from "../../api/auth";
-import { ApiError } from "../../api/types";
+import { ApiError } from "@/api/types";
+import { useMeQuery } from "@/queries/useMeQuery";
+import { useAuthStore } from "@/store/authStore";
 import { Topbar } from "./Topbar";
 
 export function RootLayout() {
@@ -11,12 +10,7 @@ export function RootLayout() {
 
   const navigate = useNavigate();
 
-  const { data, isSuccess, error, isLoading } = useQuery({
-    queryKey: ["me"],
-    queryFn: getMe,
-    retry: false,
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data, isSuccess, error, isLoading } = useMeQuery();
 
   useEffect(() => {
     if (isSuccess && data) {

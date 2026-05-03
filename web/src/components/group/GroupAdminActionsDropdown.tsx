@@ -8,8 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import type { GroupSummaryItem } from "@/api/types/groups";
-import { createUpcomingMeeting } from "@/api/groups";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCreateUpcomingMeetingMutation } from "@/queries/useCreateUpcomingMeetingMutation";
 import { useNavigate } from "@tanstack/react-router";
 
 export interface GroupAdminActionsMenuProps {
@@ -24,20 +23,21 @@ export function GroupAdminActionsMenu({
   disabled = false,
 }: GroupAdminActionsMenuProps) {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const createMeetingMutation = useMutation({
-    mutationFn: () => createUpcomingMeeting(groupId),
-    onSuccess: async (result) => {
-      await queryClient.invalidateQueries({ queryKey: ["my-groups"] });
-      navigate({
-        to: "/groups/$groupId/meetings/$meetingId/edit",
-        params: {
-          groupId: result.groupId,
-          meetingId: result.meetingId,
-        },
-      });
-    },
-  });
+  const { mutateAsync, isPending } = useCreateUpcomingMeetingMutation();
+  const handleCreateMeeting = async () => {
+    const result = await mutateAsync(groupId);
+    navigate({
+      to: "/groups/$groupId/meetings/$meetingId/edit",
+      params: {
+        groupId: result.groupId,
+        meetingId: result.meetingId,
+      },
+    });
+  };
+
+  const createMeeting = () => {
+    void handleCreateMeeting();
+  };
 
   return (
     <DropdownMenu>
@@ -92,17 +92,13 @@ export function GroupAdminActionsMenu({
         </DropdownMenuItem>
         <DropdownMenuItem
           disabled={
-            disabled ||
-            !availableActions.canCreateManualMeeting ||
-            createMeetingMutation.isPending
+            disabled || !availableActions.canCreateManualMeeting || isPending
           }
           onSelect={() => {
-            void createMeetingMutation.mutateAsync();
+            createMeeting();
           }}
         >
-          {createMeetingMutation.isPending
-            ? "Creating Meeting..."
-            : "Create Manual Meeting"}
+          {isPending ? "Creating Meeting..." : "Create Manual Meeting"}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
