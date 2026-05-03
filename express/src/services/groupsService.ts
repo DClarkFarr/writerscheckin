@@ -1,6 +1,7 @@
 import { ObjectId } from "mongodb";
 import {
   decodeCursor,
+  encodeCursor,
   normalizePageSize,
   type DecodedCursor,
 } from "./groupsPagination";
@@ -278,8 +279,19 @@ export const listMyGroupsSummary = async (
   const decodedCursor = decodeCursor(input.cursor);
   const userObjectId = ensureObjectId(input.userId, "userId");
 
-  const groups = await listGroups({ limit: 500 });
-  const items: GroupSummaryItem[] = [];
+  const groups = await listGroups({
+    limit: 500,
+    ...(decodedCursor
+      ? {
+          cursorCreatedAt: decodedCursor.createdAt,
+          cursorId: decodedCursor.id,
+        }
+      : {}),
+  });
+  const itemsWithCursor: Array<{
+    item: GroupSummaryItem;
+    cursor: DecodedCursor;
+  }> = [];
 
   for (const group of groups) {
     const members = await listGroupMembersByGroupId(group._id, { limit: 500 });
@@ -315,8 +327,8 @@ export const listMyGroupsSummary = async (
     );
     const userRole = userMember?.role ?? "member";
 
-    items.push(
-      mapToGroupSummaryItem({
+    itemsWithCursor.push({
+      item: mapToGroupSummaryItem({
         groupId: group._id.toHexString(),
         name: group.name,
         recurrence: group.recurrenceRule.frequency,
@@ -334,16 +346,28 @@ export const listMyGroupsSummary = async (
             }
           : null,
       }),
-    );
+      cursor: {
+        createdAt: group.createdAt,
+        id: group._id.toHexString(),
+      },
+    });
 
-    if (items.length >= pageSize) {
+    if (itemsWithCursor.length > pageSize) {
       break;
     }
   }
 
+  const hasMore = itemsWithCursor.length > pageSize;
+  const pagedItems = hasMore
+    ? itemsWithCursor.slice(0, pageSize)
+    : itemsWithCursor;
+  const lastPagedItem = pagedItems.at(-1);
+  const nextCursor =
+    hasMore && lastPagedItem ? encodeCursor(lastPagedItem.cursor) : null;
+
   return {
-    items,
-    nextCursor: null,
+    items: pagedItems.map((entry) => entry.item),
+    nextCursor,
     pageSize,
     decodedCursor,
   };

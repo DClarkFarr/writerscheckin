@@ -1,4 +1,4 @@
-import { Collection, ObjectId } from "mongodb";
+import { Collection, ObjectId, type Filter } from "mongodb";
 import { COLLECTIONS, getCollection } from "./collections";
 import {
   activeRecordFilter,
@@ -66,6 +66,8 @@ export interface UpdateGroupInput {
 export interface ListGroupsOptions {
   limit?: number;
   includeDeleted?: boolean;
+  cursorCreatedAt?: Date;
+  cursorId?: string;
 }
 
 export const getGroupsCollection = (): Collection<GroupDocument> =>
@@ -208,12 +210,28 @@ export const listGroups = async (
 ): Promise<GroupDocument[]> => {
   const collection = getGroupsCollection();
   const limit = options.limit ?? 50;
+  const filter: Filter<GroupDocument> = {
+    ...activeRecordFilter(options.includeDeleted),
+  };
 
-  return collection
-    .find({ ...activeRecordFilter(options.includeDeleted) })
-    .sort({ createdAt: -1 })
-    .limit(limit)
-    .toArray();
+  const hasCursorDate =
+    options.cursorCreatedAt instanceof Date &&
+    !Number.isNaN(options.cursorCreatedAt.getTime());
+
+  if (hasCursorDate) {
+    const createdAt = options.cursorCreatedAt as Date;
+
+    if (options.cursorId && ObjectId.isValid(options.cursorId)) {
+      filter.$or = [
+        { createdAt: { $lt: createdAt } },
+        { createdAt, _id: { $lt: new ObjectId(options.cursorId) } },
+      ];
+    } else {
+      filter.$or = [{ createdAt: { $lt: createdAt } }];
+    }
+  }
+
+  return collection.find(filter).sort({ createdAt: -1 }).limit(limit).toArray();
 };
 
 export const updateGroupById = async (
