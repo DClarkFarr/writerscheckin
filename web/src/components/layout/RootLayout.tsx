@@ -5,12 +5,14 @@ import { useMeQuery } from "@/queries/useMeQuery";
 import { useAuthStore } from "@/store/authStore";
 import { Topbar } from "./Topbar";
 
+const nonAuthPaths = ["/login", "/signup", "/reset-password", "/"];
+
 export function RootLayout() {
   const { setUser, clearUser } = useAuthStore();
 
   const navigate = useNavigate();
 
-  const { data, isSuccess, error, isLoading } = useMeQuery();
+  const { data, isSuccess, error } = useMeQuery();
 
   useEffect(() => {
     if (isSuccess && data) {
@@ -28,17 +30,19 @@ export function RootLayout() {
           error.stack,
         );
         clearUser();
+
+        // check if is already on login page
+        if (!nonAuthPaths.includes(window.location.pathname)) {
+          navigate({
+            to: "/login",
+            search: {
+              redir: window.location.pathname + window.location.search,
+            },
+          });
+        }
       }
     }
-  }, [error, clearUser]);
-
-  useEffect(() => {
-    if (!data && !isLoading) {
-      navigate({
-        to: "/",
-      });
-    }
-  }, [data, isLoading, navigate]);
+  }, [error, clearUser, navigate]);
 
   return (
     <div className="min-h-screen flex flex-col bg-theme-950">

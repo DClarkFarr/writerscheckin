@@ -177,14 +177,17 @@ export function GroupUserMultiSelect({
 
       {selected.length > 0 ? (
         <ul className="space-y-2 rounded-xl border border-border/70 bg-muted/20 p-3">
-          {selected.map((member) => (
-            <GroupMemberListItem
-              key={member._id ?? member.identifier}
-              member={member}
-              onRoleChange={onMemberRoleChange}
-              onDelete={onMemberDelete}
-            />
-          ))}
+          {selected.map(
+            (member) =>
+              member.role !== "owner" && (
+                <GroupMemberListItem
+                  key={member._id ?? member.identifier}
+                  member={member}
+                  onRoleChange={onMemberRoleChange}
+                  onDelete={onMemberDelete}
+                />
+              ),
+          )}
         </ul>
       ) : null}
     </div>
