@@ -95,6 +95,7 @@ export interface EditableGroupFormResult {
   userRole: "owner" | "admin" | "member";
   name: string;
   recurrence: string;
+  createdAt: string;
   counts: {
     activeMembers: number;
     invitedMembers: number;
@@ -122,9 +123,22 @@ export interface EditableGroupFormResult {
 
 export interface GroupMeetingListItem {
   meetingId: string;
+  groupId: string;
   name: string;
   occursAt: string;
+  description: string;
+  address: string;
+  startTime: {
+    hours: number;
+    minutes: number;
+  };
+  durationMinutes: number;
+  publishHoursBefore: number;
+  notifyAttendanceHoursBefore: number;
   status: GroupMeetingStatus;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
 }
 
 export interface ListManagedGroupMembersProps {
@@ -491,6 +505,7 @@ export const populateGroupsasSummaryItems = async (
         groupId: group._id.toHexString(),
         name: group.name,
         recurrence: group.recurrenceRule.frequency,
+        createdAt: group.createdAt.toISOString(),
         isActive: !group.deletedAt,
         userRole,
         activeMembers,
@@ -622,6 +637,7 @@ export const getManagedGroupForm = async (
     userRole,
     name: group.name,
     recurrence: group.recurrenceRule.frequency,
+    createdAt: group.createdAt.toISOString(),
     counts: {
       activeMembers,
       invitedMembers,
@@ -755,9 +771,21 @@ export const listManagedGroupMeetingsPaginated = async ({
   return {
     rows: items.map((meeting) => ({
       meetingId: meeting._id.toHexString(),
+      groupId: meeting.groupId.toHexString(),
       name: meeting.name,
       occursAt: (meeting.occursAt ?? meeting.createdAt).toISOString(),
+      description: meeting.description,
+      address: meeting.address,
+      startTime: meeting.startTime,
+      durationMinutes: meeting.durationMinutes,
+      publishHoursBefore: meeting.publishHoursBefore,
+      notifyAttendanceHoursBefore: meeting.notifyAttendanceHoursBefore,
       status: meeting.status,
+      createdAt: meeting.createdAt.toISOString(),
+      updatedAt: (meeting.updatedAt ?? meeting.createdAt).toISOString(),
+      ...(meeting.deletedAt
+        ? { deletedAt: meeting.deletedAt.toISOString() }
+        : {}),
     })),
     nextCursor: nextCursor ? encodeCursor(nextCursor) : null,
   };

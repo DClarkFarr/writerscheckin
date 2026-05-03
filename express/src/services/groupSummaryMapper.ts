@@ -9,6 +9,7 @@ export interface GroupSummaryItem {
   groupId: string;
   name: string;
   recurrence: string;
+  createdAt: string;
   isActive: boolean;
   userRole: string;
   counts: {
@@ -27,6 +28,7 @@ export interface GroupSummaryMapperInput {
   groupId: string;
   name: string;
   recurrence: string;
+  createdAt: string;
   isActive: boolean;
   userRole: string;
   activeMembers?: number;
@@ -54,6 +56,7 @@ export const mapToGroupSummaryItem = (
     groupId: input.groupId,
     name: input.name,
     recurrence: input.recurrence,
+    createdAt: input.createdAt,
     isActive: input.isActive,
     userRole: input.userRole,
     counts: {

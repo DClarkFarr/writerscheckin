@@ -1,9 +1,9 @@
-import type { GroupMeeting } from "@/api/types/groups";
+import type { GroupMeetingPublic } from "@/api/types/groups";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/dateFormat";
 
 export interface GroupMeetingsSectionProps {
-  meetings: GroupMeeting[];
+  meetings: GroupMeetingPublic[];
   isLoading: boolean;
   isError: boolean;
   errorMessage?: string | null;

@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import type {
   EditableGroupResponse,
   GroupFormMember,
-  GroupMeeting,
+  GroupMeetingPublic,
 } from "@/api/types/groups";
 import { PageCard } from "@/components/layout/PageCard";
 import {
@@ -83,7 +83,7 @@ interface LoadedGroupEditFormProps {
   groupId: string;
   existingGroup: EditableGroupResponse;
   members: GroupFormMember[];
-  meetings: GroupMeeting[];
+  meetings: GroupMeetingPublic[];
   membersQuery: ReturnType<typeof useGroupMembersQuery>;
   meetingsQuery: ReturnType<typeof useGroupMeetingsQuery>;
 }

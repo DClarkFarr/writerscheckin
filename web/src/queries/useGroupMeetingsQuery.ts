@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { ApiError } from "@/api/types";
 import { getGroupMeetings } from "@/api/groups";
-import type { GroupMeeting } from "@/api/types/groups";
+import type { GroupMeetingPublic } from "@/api/types/groups";
 import type { BaseQueryOptions } from "@/types/query.types";
 
 const mapErrorMessage = (error: unknown): string => {
@@ -50,7 +50,7 @@ export const useGroupMeetingsQuery = (
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
   });
 
-  const meetings: GroupMeeting[] = data?.pages
+  const meetings: GroupMeetingPublic[] = data?.pages
     ? data.pages.flatMap((page) => page.rows ?? [])
     : [];
 

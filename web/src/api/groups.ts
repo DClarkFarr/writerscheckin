@@ -5,6 +5,7 @@ import type {
   EditableGroupResponse,
   GroupEventsResponse,
   GroupFormDraft,
+  GroupMeetingPublic,
   GroupMembersResponse,
   GroupSummaryItem,
   ListMyGroupsInput,
@@ -20,6 +21,7 @@ const normalizeGroupSummaryItem = (
 ): GroupSummaryItem => ({
   ...item,
   recurrence: item.recurrence ?? "weekly",
+  createdAt: item.createdAt ?? new Date(0).toISOString(),
   counts: {
     activeMembers: item.counts?.activeMembers ?? 0,
     invitedMembers: item.counts?.invitedMembers ?? 0,
@@ -92,6 +94,32 @@ const normalizeGroupMembersResponse = (
         role: member.role,
         status: member.status ?? "accepted",
       }))
+    : [],
+  nextCursor: data.nextCursor ?? null,
+});
+
+const normalizeGroupEventsResponse = (
+  data: GroupEventsResponse,
+): GroupEventsResponse => ({
+  rows: Array.isArray(data.rows)
+    ? data.rows.map(
+        (meeting): GroupMeetingPublic => ({
+          meetingId: meeting.meetingId,
+          groupId: meeting.groupId,
+          name: meeting.name,
+          occursAt: meeting.occursAt,
+          description: meeting.description ?? "",
+          address: meeting.address ?? "",
+          startTime: meeting.startTime,
+          durationMinutes: meeting.durationMinutes,
+          publishHoursBefore: meeting.publishHoursBefore,
+          notifyAttendanceHoursBefore: meeting.notifyAttendanceHoursBefore,
+          status: meeting.status,
+          createdAt: meeting.createdAt,
+          updatedAt: meeting.updatedAt,
+          ...(meeting.deletedAt ? { deletedAt: meeting.deletedAt } : {}),
+        }),
+      )
     : [],
   nextCursor: data.nextCursor ?? null,
 });
@@ -334,7 +362,7 @@ export async function getGroupMeetings({
   groupId,
   cursor,
   limit,
-}: GetGroupMeetingsProps) {
+}: GetGroupMeetingsProps): Promise<GroupEventsResponse> {
   try {
     const { data } = await apiClient.get<GroupEventsResponse>(
       `/groups/${groupId}/meetings`,
@@ -345,7 +373,7 @@ export async function getGroupMeetings({
         },
       },
     );
-    return data;
+    return normalizeGroupEventsResponse(data);
   } catch (err) {
     throw await toApiError(err);
   }

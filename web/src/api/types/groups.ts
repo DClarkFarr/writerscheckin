@@ -21,6 +21,7 @@ export interface GroupSummaryItem {
   groupId: string;
   name: string;
   recurrence: string;
+  createdAt: string;
   isActive: boolean;
   userRole: GroupUserRole;
   counts: GroupSummaryCounts;
@@ -121,14 +122,27 @@ export interface CreateUpcomingMeetingResponse {
   createdFromDefaults: true;
 }
 
-export type GroupMeeting = {
+export type GroupMeetingPublic = {
   meetingId: string;
+  groupId: string;
   name: string;
   occursAt: string;
+  description: string;
+  address: string;
+  startTime: {
+    hours: number;
+    minutes: number;
+  };
+  durationMinutes: number;
+  publishHoursBefore: number;
+  notifyAttendanceHoursBefore: number;
   status: "draft" | "published";
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string;
 };
 
 export interface GroupEventsResponse {
-  rows: GroupMeeting[];
+  rows: GroupMeetingPublic[];
   nextCursor: string | null;
 }
