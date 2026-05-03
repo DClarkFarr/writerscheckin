@@ -174,6 +174,28 @@ const dedupeMembers = (
   return Array.from(uniqueMembers.values());
 };
 
+const assertCanViewGroup = async (
+  groupId: string,
+  userId: string,
+): Promise<void> => {
+  const group = await getGroupById(groupId);
+
+  if (!group) {
+    throw new Error("Group not found.");
+  }
+
+  const userObjectId = ensureObjectId(userId, "userId");
+  const memberships = await listGroupMembersByGroupId(groupId, { limit: 500 });
+  const managerMembership = memberships.find(
+    (member) =>
+      member.userId?.equals(userObjectId) && member.status === "accepted",
+  );
+
+  if (!managerMembership) {
+    throw new AuthError("Forbidden", 403);
+  }
+};
+
 const assertCanManageGroup = async (
   groupId: string,
   userId: string,
@@ -466,7 +488,7 @@ export const getManagedGroupForm = async (
   groupId: string,
   userId: string,
 ): Promise<EditableGroupFormResult> => {
-  await assertCanManageGroup(groupId, userId);
+  await assertCanViewGroup(groupId, userId);
 
   const group = await getGroupById(groupId);
   if (!group) {
