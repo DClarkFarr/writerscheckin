@@ -18,6 +18,7 @@ import {
 } from "../models/groups";
 import {
   listGroupMembersByGroupId,
+  getMembershipByGroup,
   getUserGroupMembership,
   updateGroupMemberById,
   listGroupMembershipsByUserIdPaginated,
@@ -178,20 +179,10 @@ const assertCanViewGroup = async (
   groupId: string,
   userId: string,
 ): Promise<void> => {
-  const group = await getGroupById(groupId);
+  const membership = await getMembershipByGroup(userId, groupId);
+  const canView = Boolean(membership && membership.status === "accepted");
 
-  if (!group) {
-    throw new Error("Group not found.");
-  }
-
-  const userObjectId = ensureObjectId(userId, "userId");
-  const memberships = await listGroupMembersByGroupId(groupId, { limit: 500 });
-  const managerMembership = memberships.find(
-    (member) =>
-      member.userId?.equals(userObjectId) && member.status === "accepted",
-  );
-
-  if (!managerMembership) {
+  if (!canView) {
     throw new AuthError("Forbidden", 403);
   }
 };
@@ -200,22 +191,14 @@ const assertCanManageGroup = async (
   groupId: string,
   userId: string,
 ): Promise<void> => {
-  const group = await getGroupById(groupId);
-
-  if (!group) {
-    throw new Error("Group not found.");
-  }
-
-  const userObjectId = ensureObjectId(userId, "userId");
-  const memberships = await listGroupMembersByGroupId(groupId, { limit: 500 });
-  const managerMembership = memberships.find(
-    (member) =>
-      member.userId?.equals(userObjectId) &&
-      (member.role === "owner" ||
-        (member.role === "admin" && member.status === "accepted")),
+  const membership = await getMembershipByGroup(userId, groupId);
+  const canManage = Boolean(
+    membership &&
+    (membership.role === "owner" ||
+      (membership.role === "admin" && membership.status === "accepted")),
   );
 
-  if (!managerMembership) {
+  if (!canManage) {
     throw new AuthError("Forbidden", 403);
   }
 };

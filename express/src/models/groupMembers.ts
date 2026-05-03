@@ -285,7 +285,8 @@ export const getGroupMemberById = async (
     ...activeRecordFilter(),
   });
 };
-export const getUserGroupMembership = async (
+
+export const getMembershipByGroup = async (
   userId: string | ObjectId,
   groupId: string | ObjectId,
 ): Promise<GroupMemberDocument | null> => {
@@ -297,6 +298,11 @@ export const getUserGroupMembership = async (
     ...activeRecordFilter(),
   });
 };
+
+export const getUserGroupMembership = async (
+  userId: string | ObjectId,
+  groupId: string | ObjectId,
+): Promise<GroupMemberDocument | null> => getMembershipByGroup(userId, groupId);
 
 export const getEmailGroupMembership = async (
   email: string,
