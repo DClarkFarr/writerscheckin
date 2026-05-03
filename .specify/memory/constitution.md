@@ -1,20 +1,19 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.5.0 → 1.6.0 (MINOR — added dayjs as official date formatting library with centralized date utility)
+Version change: 1.6.0 → 1.7.0 (MINOR — added index naming rules for partial filter expressions + frontend query hook architecture)
 Modified sections:
-  - Technology Stack — added dayjs; removed date-fns (competing library)
-  - Added Principle X: Date Formatting & Time Utilities — establishes dayjs as mandatory standard
+  - Principle II (Layer 1 — Models) — added subsection on Index Naming and Partial Filter Expressions
+  - Added Principle XII: Frontend Query Hooks vs Direct API Calls — establishes mandatory query hook wrapping for all API calls
 Added sections:
-  - Principle X (new)
+  - Index Naming and Partial Filter Expressions subsection (in Principle II)
+  - Principle XII (new)
 Removed sections: None
 Templates requiring updates:
   ✅ constitution.md — this file
-  ✅ .specify/templates/plan-template.md — reviewed, no updates required
-  ✅ .specify/templates/spec-template.md — reviewed, no updates required
-  ✅ .specify/templates/tasks-template.md — reviewed, no updates required
-  ✅ web/package.json — date-fns removed (was competing library)
-  ✅ web/src/lib/dateFormat.ts — created (centralized dayjs utility)
+  ✅ .specify/templates/plan-template.md — no updates needed (existing patterns remain valid)
+  ✅ .specify/templates/spec-template.md — no updates needed
+  ✅ .specify/templates/tasks-template.md — no updates needed
 Deferred TODOs: None
 -->
 
@@ -96,6 +95,37 @@ MUST register their collection name in `COLLECTIONS` before writing any model co
 
 `models/types.ts` MUST NOT be modified to add entity-specific types; those belong in each
 entity's own model file.
+
+**Index Naming and Partial Filter Expressions**
+
+When creating a MongoDB index that uses `partialFilterExpression`, the index MUST have an
+explicit `name` specified. This prevents confusion and ensures deterministic index management.
+
+Supported syntax for partial filter expressions:
+
+```javascript
+{
+  key: { fieldName: 1 },
+  partialFilterExpression: {
+    fieldName: { $exists: true },
+  },
+  name: "idx_fieldName_exists",
+}
+```
+
+The inverse (checking for non-existence) MUST NOT use `{ $exists: false }`. Instead, use:
+
+```javascript
+{
+  key: { fieldName: 1 },
+  partialFilterExpression: {
+    fieldName: null,
+  },
+  name: "idx_fieldName_null",
+}
+```
+
+All sparse or conditional indexes MUST be named explicitly in the index definition.
 
 #### Layer 2 — Services (`express/src/services/`)
 
@@ -594,7 +624,51 @@ responsive behavior):
   variant/prop that is required by the feature. Always justify the change in a code comment or
   commit message.
 
-### X. Deployment & Change Detection
+### XII. Frontend Query Hooks vs Direct API Calls
+
+Frontend components and hooks MUST NOT directly call XHR/HTTP methods from `@/api/*` modules.
+Instead, all data fetching MUST be wrapped in custom query hooks defined in `@/queries/*`.
+
+Rationale: This separation ensures that caching, reuse, and error handling are centralized in
+one place, reducing duplication and making the data-fetching contract explicit.
+
+All query hooks MUST:
+
+- Export a `.key` method that generates the query key array (e.g., `useGroupQuery.key(groupId)`).
+  This ensures consistency between hook invocations and allows cache invalidation from other hooks.
+- Use `useQuery` or `useSuspenseQuery` from TanStack Query v5 with a consistent `queryKey`.
+- Wrap the `queryFn` call to the corresponding `@/api/*` function with try/catch and error mapping.
+- Return typed data with appropriate `enabled` state for conditional fetching.
+
+Pattern (from `useGroupQuery.ts`):
+
+```typescript
+export const groupQueryKey = (groupId: string | undefined) => [
+  "groups",
+  groupId,
+];
+
+export const useGroupQuery = (
+  { groupId }: UseGroupQueryProps,
+  { enabled }: BaseQueryOptions = {},
+) => {
+  return useQuery({
+    queryKey: groupQueryKey(groupId),
+    queryFn: () => getGroupById(groupId ?? ""),
+    enabled: enabled !== false && !!groupId,
+  });
+};
+
+useGroupQuery.key = groupQueryKey;
+```
+
+Mutations to server state MUST use `useMutation` from TanStack Query and wrap the corresponding
+`@/api/*` function. Do not call API functions directly from components or event handlers.
+
+Pages and top-level route components may instantiate these hooks. Lower-level components receive
+query results as props or via context, never directly calling hooks or API functions.
+
+### XIII. Deployment & Change Detection
 
 Deployment is fully scripted via `deploy.sh`. The script:
 
@@ -622,8 +696,7 @@ through `common.sh`. Shell scripts MUST use `set -euo pipefail` and source share
   This MUST always be the last router registered.
 - Email sending via Gmail SMTP (Nodemailer). Email templates MUST be plain functions in
   `services/emailTemplates/` that return `{ subject, text, html }` with NO external dependencies.
-- The `cn()` ut6.0 | **Ratified**: 2026-04-30 | **Last Amended**: 2026-05-02Name composition
-  in the frontend (combines `clsx` + `tailwind-merge`).
+- The `cn()` utility for class name composition in the frontend (combines `clsx` + `tailwind-merge`).
 - The `COLLECTIONS` constant in `models/collections.ts` is the single source of truth for
   MongoDB collection names. New collections MUST be added here before use.
 
@@ -649,4 +722,4 @@ All new features and changes MUST comply with these principles. Any amendment re
 - MINOR bump: new principle or section added.
 - PATCH bump: clarifications, wording fixes, non-semantic refinements.
 
-**Version**: 1.5.0 | **Ratified**: 2026-04-30 | **Last Amended**: 2026-05-01
+**Version**: 1.7.0 | **Ratified**: 2026-04-30 | **Last Amended**: 2026-05-02

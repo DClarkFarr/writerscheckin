@@ -73,7 +73,7 @@ export interface GroupFormMemberInput {
 export interface EditableGroupFormMember {
   _id: string;
   identifier: string;
-  role: "admin" | "member";
+  role: "admin" | "member" | "owner";
   userId: string | null;
   email: string | null;
   name: string;
@@ -472,10 +472,6 @@ export const getManagedGroupForm = async (
   );
 
   const editableMembers = members.flatMap((member) => {
-    if (member.role === "owner") {
-      return [];
-    }
-
     const userSummary = member.userId
       ? usersById.get(member.userId.toHexString())
       : null;
