@@ -1,6 +1,8 @@
 import { leaveGroup } from "@/api/groups";
 import { cancelAndSnapshot, rollbackSnapshot } from "@/queries/optimisticCache";
-import { queryKeys } from "@/queries/queryKeys";
+import { groupFormQueryKey } from "@/queries/useGroupFormQuery";
+import { groupQueryKey } from "@/queries/useGroupQuery";
+import { myGroupQueryKey } from "@/queries/useMyGroupsQuery";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export const useLeaveGroupMutation = () => {
@@ -10,12 +12,12 @@ export const useLeaveGroupMutation = () => {
     mutationFn: (groupId: string) => leaveGroup(groupId),
     onMutate: async (groupId) => {
       const snapshots = await cancelAndSnapshot(queryClient, [
-        queryKeys.myGroups(),
-        queryKeys.groupById(groupId),
-        queryKeys.groupForm(groupId),
+        myGroupQueryKey(),
+        groupQueryKey(groupId),
+        groupFormQueryKey(groupId),
       ]);
 
-      queryClient.setQueryData(queryKeys.myGroups(), (current: unknown) => {
+      queryClient.setQueryData(myGroupQueryKey(), (current: unknown) => {
         if (
           !current ||
           typeof current !== "object" ||
@@ -36,8 +38,8 @@ export const useLeaveGroupMutation = () => {
         };
       });
 
-      queryClient.setQueryData(queryKeys.groupById(groupId), undefined);
-      queryClient.setQueryData(queryKeys.groupForm(groupId), undefined);
+      queryClient.setQueryData(groupQueryKey(groupId), undefined);
+      queryClient.setQueryData(groupFormQueryKey(groupId), undefined);
 
       return { snapshots };
     },
@@ -45,12 +47,12 @@ export const useLeaveGroupMutation = () => {
       rollbackSnapshot(queryClient, context?.snapshots);
     },
     onSettled: async (_result, _error, groupId) => {
-      await queryClient.invalidateQueries({ queryKey: queryKeys.myGroups() });
+      await queryClient.invalidateQueries({ queryKey: myGroupQueryKey() });
       await queryClient.invalidateQueries({
-        queryKey: queryKeys.groupById(groupId),
+        queryKey: groupQueryKey(groupId),
       });
       await queryClient.invalidateQueries({
-        queryKey: queryKeys.groupForm(groupId),
+        queryKey: groupFormQueryKey(groupId),
       });
     },
   });

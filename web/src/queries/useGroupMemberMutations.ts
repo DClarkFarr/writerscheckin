@@ -1,7 +1,8 @@
 import { removeGroupMember, updateGroupMemberRole } from "@/api/groups";
 import type { GroupMemberRole } from "@/api/types/groups";
 import { cancelAndSnapshot, rollbackSnapshot } from "@/queries/optimisticCache";
-import { queryKeys } from "@/queries/queryKeys";
+import { groupFormQueryKey } from "@/queries/useGroupFormQuery";
+import { myGroupQueryKey } from "@/queries/useMyGroupsQuery";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 type UpdateRoleInput = {
@@ -22,7 +23,7 @@ export const useGroupMemberMutations = () => {
     mutationFn: ({ groupId, memberId, role }: UpdateRoleInput) =>
       updateGroupMemberRole(groupId, memberId, role),
     onMutate: async ({ groupId, memberId, role }) => {
-      const key = queryKeys.groupForm(groupId);
+      const key = groupFormQueryKey(groupId);
       const snapshots = await cancelAndSnapshot(queryClient, [key]);
 
       queryClient.setQueryData(key, (current: unknown) => {
@@ -59,7 +60,7 @@ export const useGroupMemberMutations = () => {
     },
     onSettled: async (_result, _error, { groupId }) => {
       await queryClient.invalidateQueries({
-        queryKey: queryKeys.groupForm(groupId),
+        queryKey: groupFormQueryKey(groupId),
       });
     },
   });
@@ -68,7 +69,7 @@ export const useGroupMemberMutations = () => {
     mutationFn: ({ groupId, memberId }: RemoveMemberInput) =>
       removeGroupMember(groupId, memberId),
     onMutate: async ({ groupId, memberId }) => {
-      const key = queryKeys.groupForm(groupId);
+      const key = groupFormQueryKey(groupId);
       const snapshots = await cancelAndSnapshot(queryClient, [key]);
 
       queryClient.setQueryData(key, (current: unknown) => {
@@ -99,9 +100,9 @@ export const useGroupMemberMutations = () => {
     },
     onSettled: async (_result, _error, { groupId }) => {
       await queryClient.invalidateQueries({
-        queryKey: queryKeys.groupForm(groupId),
+        queryKey: groupFormQueryKey(groupId),
       });
-      await queryClient.invalidateQueries({ queryKey: queryKeys.myGroups() });
+      await queryClient.invalidateQueries({ queryKey: myGroupQueryKey() });
     },
   });
 

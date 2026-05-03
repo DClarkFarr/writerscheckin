@@ -65,7 +65,7 @@ export function useResetPasswordForm(
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
 
-  const { mutate, isPending, isSuccess } = useMutation({
+  const { mutateAsync, isPending, isSuccess } = useMutation({
     mutationFn: resetPasswordRequest,
     onSuccess: (_data, variables) => {
       opts.onResetSuccess(variables.email);
@@ -105,7 +105,15 @@ export function useResetPasswordForm(
     setFieldErrors(errors);
     if (hasErrors(errors)) return;
     setFormError(null);
-    mutate({ email: fields.email.trim() });
+    const submit = async () => {
+      try {
+        await mutateAsync({ email: fields.email.trim() });
+      } catch {
+        // Mutation error handling is managed in onError.
+      }
+    };
+
+    void submit();
   };
 
   return {

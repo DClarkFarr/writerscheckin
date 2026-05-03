@@ -1,5 +1,4 @@
 import { searchMembers } from "@/api/groups";
-import { queryKeys } from "@/queries/queryKeys";
 import type {
   BaseQueryOptions,
   RefetchBehaviorOptions,
@@ -13,7 +12,7 @@ export type UseMemberSearchQueryProps = {
 };
 
 export const memberSearchQueryKey = (query: string, groupId?: string) =>
-  queryKeys.memberSearch(query, groupId);
+  ["members", "search", query, groupId] as const;
 
 export const useMemberSearchQuery = (
   { query, groupId, limit }: UseMemberSearchQueryProps,

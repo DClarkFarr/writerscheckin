@@ -1,7 +1,9 @@
 import { createGroup, updateGroup } from "@/api/groups";
 import type { GroupFormDraft } from "@/api/types/groups";
 import { cancelAndSnapshot, rollbackSnapshot } from "@/queries/optimisticCache";
-import { queryKeys } from "@/queries/queryKeys";
+import { groupFormQueryKey } from "@/queries/useGroupFormQuery";
+import { groupQueryKey } from "@/queries/useGroupQuery";
+import { myGroupQueryKey } from "@/queries/useMyGroupsQuery";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export type UseSaveGroupMutationOptions = {
@@ -33,12 +35,12 @@ export const useSaveGroupMutation = ({
       }
 
       const snapshots = await cancelAndSnapshot(queryClient, [
-        queryKeys.myGroups(),
-        queryKeys.groupForm(groupId),
+        myGroupQueryKey(),
+        groupFormQueryKey(groupId),
       ]);
 
       queryClient.setQueryData(
-        queryKeys.groupForm(groupId),
+        groupFormQueryKey(groupId),
         (current: unknown) => {
           if (!current || typeof current !== "object") {
             return current;
@@ -52,7 +54,7 @@ export const useSaveGroupMutation = ({
         },
       );
 
-      queryClient.setQueryData(queryKeys.myGroups(), (current: unknown) => {
+      queryClient.setQueryData(myGroupQueryKey(), (current: unknown) => {
         if (
           !current ||
           typeof current !== "object" ||
@@ -83,14 +85,14 @@ export const useSaveGroupMutation = ({
     onSettled: async (result) => {
       const resolvedGroupId = result?.groupId ?? groupId;
 
-      await queryClient.invalidateQueries({ queryKey: queryKeys.myGroups() });
+      await queryClient.invalidateQueries({ queryKey: myGroupQueryKey() });
 
       if (resolvedGroupId) {
         await queryClient.invalidateQueries({
-          queryKey: queryKeys.groupForm(resolvedGroupId),
+          queryKey: groupFormQueryKey(resolvedGroupId),
         });
         await queryClient.invalidateQueries({
-          queryKey: queryKeys.groupById(resolvedGroupId),
+          queryKey: groupQueryKey(resolvedGroupId),
         });
       }
     },

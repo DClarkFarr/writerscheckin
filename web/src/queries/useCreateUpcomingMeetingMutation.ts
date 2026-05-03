@@ -1,6 +1,7 @@
 import { createUpcomingMeeting } from "@/api/groups";
 import { cancelAndSnapshot, rollbackSnapshot } from "@/queries/optimisticCache";
-import { queryKeys } from "@/queries/queryKeys";
+import { groupQueryKey } from "@/queries/useGroupQuery";
+import { myGroupQueryKey } from "@/queries/useMyGroupsQuery";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export const useCreateUpcomingMeetingMutation = () => {
@@ -10,10 +11,10 @@ export const useCreateUpcomingMeetingMutation = () => {
     mutationFn: (groupId: string) => createUpcomingMeeting(groupId),
     onMutate: async (groupId) => {
       const snapshots = await cancelAndSnapshot(queryClient, [
-        queryKeys.myGroups(),
+        myGroupQueryKey(),
       ]);
 
-      queryClient.setQueryData(queryKeys.myGroups(), (current: unknown) => {
+      queryClient.setQueryData(myGroupQueryKey(), (current: unknown) => {
         if (
           !current ||
           typeof current !== "object" ||
@@ -55,9 +56,9 @@ export const useCreateUpcomingMeetingMutation = () => {
       rollbackSnapshot(queryClient, context?.snapshots);
     },
     onSettled: async (_result, _error, groupId) => {
-      await queryClient.invalidateQueries({ queryKey: queryKeys.myGroups() });
+      await queryClient.invalidateQueries({ queryKey: myGroupQueryKey() });
       await queryClient.invalidateQueries({
-        queryKey: queryKeys.groupById(groupId),
+        queryKey: groupQueryKey(groupId),
       });
     },
   });

@@ -1,12 +1,11 @@
 import { getMe } from "@/api/auth";
-import { queryKeys } from "@/queries/queryKeys";
 import type {
   BaseQueryOptions,
   RefetchBehaviorOptions,
 } from "@/types/query.types";
 import { useQuery } from "@tanstack/react-query";
 
-export const meQueryKey = () => queryKeys.me();
+export const meQueryKey = () => ["me"] as const;
 
 export const useMeQuery = (
   { enabled }: BaseQueryOptions = {},

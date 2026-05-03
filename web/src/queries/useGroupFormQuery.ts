@@ -1,5 +1,4 @@
 import { getGroupForm } from "@/api/groups";
-import { queryKeys } from "@/queries/queryKeys";
 import type { BaseQueryOptions } from "@/types/query.types";
 import { useQuery } from "@tanstack/react-query";
 
@@ -8,7 +7,7 @@ export type UseGroupFormQueryProps = {
 };
 
 export const groupFormQueryKey = (groupId: string | undefined) =>
-  queryKeys.groupForm(groupId);
+  ["group-form", groupId] as const;
 
 export const useGroupFormQuery = (
   { groupId }: UseGroupFormQueryProps,

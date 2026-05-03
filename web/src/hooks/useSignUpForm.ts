@@ -100,7 +100,7 @@ export function useSignUpForm(opts: UseSignUpFormOptions): SignUpFormProps {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
 
-  const { mutate, isPending } = useMutation({
+  const { mutateAsync, isPending } = useMutation({
     mutationFn: signup,
     onSuccess: (user) => {
       setUser(user);
@@ -145,12 +145,20 @@ export function useSignUpForm(opts: UseSignUpFormOptions): SignUpFormProps {
     setFieldErrors(errors);
     if (hasErrors(errors)) return;
     setFormError(null);
-    mutate({
-      firstName: fields.firstName.trim(),
-      lastName: fields.lastName.trim(),
-      email: fields.email.trim(),
-      password: fields.password,
-    });
+    const submit = async () => {
+      try {
+        await mutateAsync({
+          firstName: fields.firstName.trim(),
+          lastName: fields.lastName.trim(),
+          email: fields.email.trim(),
+          password: fields.password,
+        });
+      } catch {
+        // Mutation error handling is managed in onError.
+      }
+    };
+
+    void submit();
   };
 
   return {

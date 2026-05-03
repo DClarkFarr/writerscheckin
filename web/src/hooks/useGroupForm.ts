@@ -194,9 +194,10 @@ export function useGroupForm(
     mode: options.mode ?? "create",
     groupId: options.groupId,
   });
+  const { mutateAsync: saveGroupAsync, isPending } = saveGroupMutation;
   const { updateMemberRole, removeMember } = useGroupMemberMutations();
-
-  const isPending = saveGroupMutation.isPending;
+  const { mutateAsync: updateMemberRoleAsync } = updateMemberRole;
+  const { mutateAsync: removeMemberAsync } = removeMember;
 
   const handleFieldChange = (
     event: ChangeEvent<
@@ -294,8 +295,9 @@ export function useGroupForm(
       members: selectedGroupMembers,
     };
 
-    saveGroupMutation.mutate(payload, {
-      onSuccess: async (result) => {
+    const submit = async () => {
+      try {
+        const result = await saveGroupAsync(payload);
         setFormError(null);
 
         if (options.onSuccess) {
@@ -306,12 +308,13 @@ export function useGroupForm(
         setSubmitNotice(
           options.mode === "edit" ? "Group changes saved." : "Group created.",
         );
-      },
-      onError: (error) => {
+      } catch (error) {
         setSubmitNotice(null);
         setFormError(mapApiError(error));
-      },
-    });
+      }
+    };
+
+    void submit();
   };
 
   return {
@@ -358,11 +361,20 @@ export function useGroupForm(
         options.groupId &&
         memberId.length === 24
       ) {
-        updateMemberRole.mutate({
-          groupId: options.groupId,
-          memberId,
-          role,
-        });
+        const groupId = options.groupId;
+        const updateRole = async () => {
+          try {
+            await updateMemberRoleAsync({
+              groupId,
+              memberId,
+              role,
+            });
+          } catch {
+            // Local optimistic UI handles the immediate update; cache rollback is handled in mutation wrapper.
+          }
+        };
+
+        void updateRole();
       }
     },
     handleMemberDelete: (memberId: string) => {
@@ -376,10 +388,19 @@ export function useGroupForm(
         options.groupId &&
         memberId.length === 24
       ) {
-        removeMember.mutate({
-          groupId: options.groupId,
-          memberId,
-        });
+        const groupId = options.groupId;
+        const deleteMember = async () => {
+          try {
+            await removeMemberAsync({
+              groupId,
+              memberId,
+            });
+          } catch {
+            // Local optimistic UI handles immediate removal; cache rollback is handled in mutation wrapper.
+          }
+        };
+
+        void deleteMember();
       }
     },
     handleSubmit,

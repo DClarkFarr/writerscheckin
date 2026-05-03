@@ -1,9 +1,9 @@
 <!--
 SYNC IMPACT REPORT
 ==================
-Version change: 1.8.0 → 1.8.1 (PATCH — clarified query key ownership and optimistic wrapper usage guidance)
+Version change: 1.8.1 → 1.8.2 (PATCH — clarified query-key method ownership, mutateAsync usage, and no-barrel policy for query modules)
 Modified sections:
-  - Principle XII: Frontend Query Hooks vs Direct API Calls — clarified query key ownership through shared helpers and wrapper expectations
+  - Principle XII: Frontend Query Hooks vs Direct API Calls — clarified key ownership via per-hook methods, mutateAsync-first usage, and no-barrel query exports
 Added sections:
   - None
 Removed sections: None
@@ -637,7 +637,15 @@ All query hooks MUST:
 - Use `useQuery` or `useSuspenseQuery` from TanStack Query v5 with a consistent `queryKey`.
 - Wrap the `queryFn` call to the corresponding `@/api/*` function with try/catch and error mapping.
 - Return typed data with appropriate `enabled` state for conditional fetching.
-- Prefer shared key factories (for example `queryKeys.*`) so key ownership is centralized and reusable across query and mutation wrappers.
+- Own their query key method next to the hook (for example `groupQueryKey(...)` in the same file as `useGroupQuery`).
+
+Mutation wrappers MUST:
+
+- Use `mutateAsync` as the default invocation style when asynchronous flow control is needed.
+- Destructure mutation utilities from wrapper hooks where practical (for example `const { mutateAsync } = useXMutation()`).
+- Use query key methods exported by query hooks when performing cache reads/writes/invalidation.
+
+Query modules MUST NOT rely on barrel export files for imports/exports. Import query hooks by explicit file path.
 
 When a hook-managed flow mutates server-backed state, optimistic updates MUST be treated as the
 default behavior. The UI SHOULD reflect the user's action immediately while the request is in
@@ -733,4 +741,4 @@ All new features and changes MUST comply with these principles. Any amendment re
 - MINOR bump: new principle or section added.
 - PATCH bump: clarifications, wording fixes, non-semantic refinements.
 
-**Version**: 1.8.1 | **Ratified**: 2026-04-30 | **Last Amended**: 2026-05-02
+**Version**: 1.8.2 | **Ratified**: 2026-04-30 | **Last Amended**: 2026-05-02

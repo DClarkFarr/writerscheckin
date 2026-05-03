@@ -22,26 +22,28 @@ export interface UseGroupActionsOptions {
 }
 
 export function useGroupActions(options: UseGroupActionsOptions = {}) {
-  const { mutateAsync, ...rest } = useLeaveGroupMutation();
+  const { mutateAsync, isPending, isSuccess, error, reset } =
+    useLeaveGroupMutation();
 
-  const leaveGroup = (groupId: string) => {
-    mutateAsync(groupId, {
-      onSuccess: () => {
-        alert.success("You have left the group");
-        options.onLeaveSuccess?.();
-      },
-      onError: (error) => {
-        const message = mapLeaveGroupError(error);
-        alert.error(message);
-        options.onLeaveError?.(
-          error instanceof Error ? error : new Error(message),
-        );
-      },
-    });
+  const leaveGroup = async (groupId: string) => {
+    try {
+      await mutateAsync(groupId);
+      alert.success("You have left the group");
+      options.onLeaveSuccess?.();
+    } catch (error) {
+      const message = mapLeaveGroupError(error);
+      alert.error(message);
+      options.onLeaveError?.(
+        error instanceof Error ? error : new Error(message),
+      );
+    }
   };
 
   return {
     leaveGroup,
-    ...rest,
+    isPending,
+    isSuccess,
+    error,
+    reset,
   };
 }

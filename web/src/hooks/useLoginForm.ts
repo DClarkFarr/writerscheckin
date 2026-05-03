@@ -78,7 +78,7 @@ export function useLoginForm(opts: UseLoginFormOptions): LoginFormProps {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
 
-  const { mutate, isPending } = useMutation({
+  const { mutateAsync, isPending } = useMutation({
     mutationFn: login,
     onSuccess: (user) => {
       setUser(user);
@@ -117,7 +117,18 @@ export function useLoginForm(opts: UseLoginFormOptions): LoginFormProps {
     setFieldErrors(errors);
     if (hasErrors(errors)) return;
     setFormError(null);
-    mutate({ email: fields.email.trim(), password: fields.password });
+    const submit = async () => {
+      try {
+        await mutateAsync({
+          email: fields.email.trim(),
+          password: fields.password,
+        });
+      } catch {
+        // Mutation error handling is managed in onError.
+      }
+    };
+
+    void submit();
   };
 
   return {
