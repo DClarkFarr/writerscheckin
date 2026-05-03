@@ -13,6 +13,7 @@ import {
 import {
   createGroup,
   getGroupById,
+  getGroupsCollection,
   listGroups,
   updateGroupById,
 } from "../models/groups";
@@ -279,35 +280,30 @@ export const listMyGroupsSummary = async (
   const decodedCursor = decodeCursor(input.cursor);
   const userObjectId = ensureObjectId(input.userId, "userId");
 
-  const groups = await listGroups({
-    limit: 500,
-    ...(decodedCursor
+  const items: Array<GroupSummaryItem> = [];
+
+  let currentCursor = decodedCursor;
+
+  const { groups, countAfter } = await listGroups({
+    limit: pageSize,
+    ...(currentCursor
       ? {
-          cursorCreatedAt: decodedCursor.createdAt,
-          cursorId: decodedCursor.id,
+          cursorCreatedAt: currentCursor.createdAt,
+          cursorId: currentCursor.id,
         }
       : {}),
   });
-  const itemsWithCursor: Array<{
-    item: GroupSummaryItem;
-    cursor: DecodedCursor;
-  }> = [];
 
   for (const group of groups) {
-    const members = await listGroupMembersByGroupId(group._id, { limit: 500 });
-
-    const hasMembership = members.some(
-      (member) =>
-        member.userId?.equals(userObjectId) &&
-        (member.role === "owner" || member.status === "accepted"),
-    );
-
-    if (!hasMembership) {
-      continue;
-    }
+    const members = await listGroupMembersByGroupId(group._id, {
+      limit: 500,
+      status: {
+        $in: ["accepted", "invited"],
+      },
+    });
 
     const activeMembers = members.filter(
-      (member) => member.role === "owner" || member.status === "accepted",
+      (member) => member.status === "accepted",
     ).length;
 
     const invitedMembers = members.filter(
@@ -327,8 +323,8 @@ export const listMyGroupsSummary = async (
     );
     const userRole = userMember?.role ?? "member";
 
-    itemsWithCursor.push({
-      item: mapToGroupSummaryItem({
+    items.push(
+      mapToGroupSummaryItem({
         groupId: group._id.toHexString(),
         name: group.name,
         recurrence: group.recurrenceRule.frequency,
@@ -346,27 +342,35 @@ export const listMyGroupsSummary = async (
             }
           : null,
       }),
-      cursor: {
-        createdAt: group.createdAt,
-        id: group._id.toHexString(),
-      },
-    });
+    );
 
-    if (itemsWithCursor.length > pageSize) {
-      break;
+    // Update cursor for next batch
+    const lastGroup = groups.at(-1);
+    if (lastGroup) {
+      currentCursor = {
+        createdAt: lastGroup.createdAt,
+        id: lastGroup._id.toHexString(),
+      };
     }
   }
 
-  const hasMore = itemsWithCursor.length > pageSize;
-  const pagedItems = hasMore
-    ? itemsWithCursor.slice(0, pageSize)
-    : itemsWithCursor;
-  const lastPagedItem = pagedItems.at(-1);
-  const nextCursor =
-    hasMore && lastPagedItem ? encodeCursor(lastPagedItem.cursor) : null;
+  // Determine if there are more items after the last one by checking if more groups exist after cursor
+  const lastItem = items.at(-1);
+  let nextCursor: string | null = null;
+
+  if (lastItem) {
+    // Check if there are more groups after the last item's cursor
+
+    if (countAfter > 0) {
+      nextCursor = encodeCursor({
+        createdAt: new Date(lastItem.createdAt),
+        id: lastItem.groupId,
+      });
+    }
+  }
 
   return {
-    items: pagedItems.map((entry) => entry.item),
+    items: items,
     nextCursor,
     pageSize,
     decodedCursor,

@@ -1,4 +1,4 @@
-import { Collection, ObjectId } from "mongodb";
+import { Collection, Filter, ObjectId } from "mongodb";
 import { normalizeEmail } from "./users";
 import { COLLECTIONS, getCollection } from "./collections";
 import {
@@ -110,6 +110,8 @@ export interface UpdateGroupMemberInput {
 
 export interface ListGroupMembersOptions {
   includeDeleted?: boolean;
+  role?: Filter<GroupMemberDocument>["role"];
+  status?: Filter<GroupMemberDocument>["status"];
   limit?: number;
 }
 
@@ -315,14 +317,19 @@ export const listGroupMembersByEmail = async (
   const collection = getGroupMembersCollection();
   const limit = options.limit ?? 200;
 
-  return collection
-    .find({
-      email: normalizeEmail(email),
-      ...activeRecordFilter(options.includeDeleted),
-    })
-    .sort({ createdAt: 1 })
-    .limit(limit)
-    .toArray();
+  const filters: Filter<GroupMemberDocument> = {
+    email: normalizeEmail(email),
+    ...activeRecordFilter(options.includeDeleted),
+  };
+
+  if (options.role) {
+    filters.role = options.role;
+  }
+  if (options.status) {
+    filters.status = options.status;
+  }
+
+  return collection.find(filters).sort({ createdAt: 1 }).limit(limit).toArray();
 };
 
 export const listGroupMembersByGroupId = async (
@@ -332,14 +339,19 @@ export const listGroupMembersByGroupId = async (
   const collection = getGroupMembersCollection();
   const limit = options.limit ?? 200;
 
-  return collection
-    .find({
-      groupId: toObjectId(groupId, "groupId"),
-      ...activeRecordFilter(options.includeDeleted),
-    })
-    .sort({ createdAt: 1 })
-    .limit(limit)
-    .toArray();
+  const filters: Filter<GroupMemberDocument> = {
+    groupId: toObjectId(groupId, "groupId"),
+    ...activeRecordFilter(options.includeDeleted),
+  };
+
+  if (options.role) {
+    filters.role = options.role;
+  }
+  if (options.status) {
+    filters.status = options.status;
+  }
+
+  return collection.find(filters).sort({ createdAt: 1 }).limit(limit).toArray();
 };
 
 export const getGroupOwnerByGroupId = async (

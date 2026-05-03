@@ -205,33 +205,58 @@ export const getGroupById = async (
   });
 };
 
-export const listGroups = async (
-  options: ListGroupsOptions = {},
-): Promise<GroupDocument[]> => {
+export const listGroups = async ({
+  limit = 50,
+  includeDeleted,
+  cursorCreatedAt,
+  cursorId,
+}: ListGroupsOptions = {}) => {
   const collection = getGroupsCollection();
-  const limit = options.limit ?? 50;
   const filter: Filter<GroupDocument> = {
-    ...activeRecordFilter(options.includeDeleted),
+    ...activeRecordFilter(includeDeleted),
   };
 
   const hasCursorDate =
-    options.cursorCreatedAt instanceof Date &&
-    !Number.isNaN(options.cursorCreatedAt.getTime());
+    cursorCreatedAt instanceof Date && !Number.isNaN(cursorCreatedAt.getTime());
 
   if (hasCursorDate) {
-    const createdAt = options.cursorCreatedAt as Date;
+    const createdAt = cursorCreatedAt as Date;
 
-    if (options.cursorId && ObjectId.isValid(options.cursorId)) {
+    if (cursorId && ObjectId.isValid(cursorId)) {
       filter.$or = [
         { createdAt: { $lt: createdAt } },
-        { createdAt, _id: { $lt: new ObjectId(options.cursorId) } },
+        { createdAt, _id: { $lt: new ObjectId(cursorId) } },
       ];
     } else {
       filter.$or = [{ createdAt: { $lt: createdAt } }];
     }
   }
 
-  return collection.find(filter).sort({ createdAt: -1 }).limit(limit).toArray();
+  const groups = await collection
+    .find(filter)
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .toArray();
+
+  const lastItem = groups.at(-1);
+
+  let countAfter = 0;
+  if (lastItem) {
+    countAfter = await collection.countDocuments({
+      ...activeRecordFilter(includeDeleted),
+      $or: [
+        { createdAt: { $lt: lastItem.createdAt } },
+        {
+          createdAt: lastItem.createdAt,
+          _id: { $lt: lastItem._id },
+        },
+      ],
+    });
+  }
+
+  const total = await collection.countDocuments(filter);
+
+  return { groups, total, countAfter };
 };
 
 export const updateGroupById = async (
