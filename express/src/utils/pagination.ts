@@ -1,10 +1,10 @@
+export const DEFAULT_GROUP_PAGE_SIZE = 20;
+export const MAX_GROUP_PAGE_SIZE = 50;
+
 export interface DecodedCursor {
   createdAt: Date;
   id: string;
 }
-
-export const DEFAULT_GROUP_PAGE_SIZE = 20;
-export const MAX_GROUP_PAGE_SIZE = 50;
 
 export const normalizePageSize = (limit?: number): number => {
   if (typeof limit !== "number" || Number.isNaN(limit)) {

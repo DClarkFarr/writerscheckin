@@ -19,6 +19,7 @@ import {
   ModelInsertInput,
   touchTimestamps,
 } from "./types";
+import { DecodedCursor } from "../utils/pagination";
 
 export interface GroupDefinition extends BaseModelBlueprint {
   name: string;
@@ -61,13 +62,6 @@ export interface UpdateGroupInput {
   startTime?: MeetingTimeOfDay;
   durationMinutes?: number;
   recurrenceRule?: RecurrenceRule;
-}
-
-export interface ListGroupsOptions {
-  limit?: number;
-  includeDeleted?: boolean;
-  cursorCreatedAt?: Date;
-  cursorId?: string;
 }
 
 export const getGroupsCollection = (): Collection<GroupDocument> =>
@@ -205,58 +199,32 @@ export const getGroupById = async (
   });
 };
 
-export const listGroups = async ({
-  limit = 50,
+export interface ListGroupsByIdsProps {
+  groupIds: (string | ObjectId)[];
+  limit?: number;
+  includeDeleted?: boolean;
+}
+
+export const listGroupsByIds = async ({
+  limit,
   includeDeleted,
-  cursorCreatedAt,
-  cursorId,
-}: ListGroupsOptions = {}) => {
+  groupIds,
+}: ListGroupsByIdsProps) => {
   const collection = getGroupsCollection();
   const filter: Filter<GroupDocument> = {
     ...activeRecordFilter(includeDeleted),
+    _id: {
+      $in: groupIds.map((id) => toObjectId(id, "groupId")),
+    },
   };
-
-  const hasCursorDate =
-    cursorCreatedAt instanceof Date && !Number.isNaN(cursorCreatedAt.getTime());
-
-  if (hasCursorDate) {
-    const createdAt = cursorCreatedAt as Date;
-
-    if (cursorId && ObjectId.isValid(cursorId)) {
-      filter.$or = [
-        { createdAt: { $lt: createdAt } },
-        { createdAt, _id: { $lt: new ObjectId(cursorId) } },
-      ];
-    } else {
-      filter.$or = [{ createdAt: { $lt: createdAt } }];
-    }
-  }
 
   const groups = await collection
     .find(filter)
     .sort({ createdAt: -1 })
-    .limit(limit)
+    .limit(limit ?? 0)
     .toArray();
 
-  const lastItem = groups.at(-1);
-
-  let countAfter = 0;
-  if (lastItem) {
-    countAfter = await collection.countDocuments({
-      ...activeRecordFilter(includeDeleted),
-      $or: [
-        { createdAt: { $lt: lastItem.createdAt } },
-        {
-          createdAt: lastItem.createdAt,
-          _id: { $lt: lastItem._id },
-        },
-      ],
-    });
-  }
-
-  const total = await collection.countDocuments(filter);
-
-  return { groups, total, countAfter };
+  return groups;
 };
 
 export const updateGroupById = async (

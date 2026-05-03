@@ -1,10 +1,9 @@
 import { ObjectId } from "mongodb";
 import {
-  decodeCursor,
   encodeCursor,
   normalizePageSize,
   type DecodedCursor,
-} from "./groupsPagination";
+} from "../utils/pagination";
 import {
   buildActionAvailability,
   mapToGroupSummaryItem,
@@ -13,14 +12,16 @@ import {
 import {
   createGroup,
   getGroupById,
-  getGroupsCollection,
-  listGroups,
+  GroupDocument,
+  listGroupsByIds,
   updateGroupById,
 } from "../models/groups";
 import {
   listGroupMembersByGroupId,
   getUserGroupMembership,
   updateGroupMemberById,
+  listGroupMembershipsByUserIdPaginated,
+  GroupMemberDocument,
 } from "../models/groupMembers";
 import {
   countGroupMeetingsByGroupId,
@@ -38,19 +39,6 @@ import { createNextUpcomingMeetingFromGroupDefaults } from "./groupMeetingsServi
 import { addGroupMember, removeGroupMember } from "./groupMembersService";
 
 import { recordAuditEvent } from "../utils/audit";
-
-export interface ListMyGroupsInput {
-  userId: string;
-  cursor?: string;
-  limit?: number;
-}
-
-export interface ListMyGroupsResult {
-  items: GroupSummaryItem[];
-  nextCursor: string | null;
-  pageSize: number;
-  decodedCursor: DecodedCursor | null;
-}
 
 export interface SearchGroupParticipantsInput {
   query?: string;
@@ -273,34 +261,89 @@ const toSaveResult = (input: {
   isActive: input.isActive,
 });
 
-export const listMyGroupsSummary = async (
-  input: ListMyGroupsInput,
-): Promise<ListMyGroupsResult> => {
+export interface ListMyGroupsProps {
+  userId: string;
+  cursor?: DecodedCursor | null;
+  limit?: number | undefined;
+  status?: GroupMemberInviteStatus | undefined;
+}
+
+export const listMyGroupsSummary = async (input: ListMyGroupsProps) => {
   const pageSize = normalizePageSize(input.limit);
-  const decodedCursor = decodeCursor(input.cursor);
-  const userObjectId = ensureObjectId(input.userId, "userId");
+  const userId = ensureObjectId(input.userId, "userId");
+  const cursor = input.cursor ?? null;
 
-  const items: Array<GroupSummaryItem> = [];
+  const { userMemberships, countAfter } =
+    await listGroupMembershipsByUserIdPaginated({
+      userId,
+      limit: pageSize,
+      cursor,
+      status: input.status,
+    });
 
-  let currentCursor = decodedCursor;
-
-  const { groups, countAfter } = await listGroups({
-    limit: pageSize,
-    ...(currentCursor
-      ? {
-          cursorCreatedAt: currentCursor.createdAt,
-          cursorId: currentCursor.id,
-        }
-      : {}),
+  const groups = await listGroupsByIds({
+    groupIds: userMemberships.map((membership) => membership.groupId),
   });
 
+  const groupsWithMembers = await populateGroupsasSummaryItems(
+    groups,
+    userMemberships,
+  );
+
+  // Update cursor for next batch
+  const lastGroup = groups.at(-1);
+  if (lastGroup) {
+  }
+  // Determine if there are more items after the last one by checking if more groups exist after cursor
+  const lastMembership = userMemberships.at(-1);
+  let nextCursor: string | null = null;
+
+  if (lastMembership) {
+    // Check if there are more groups after the last item's cursor
+
+    if (countAfter > 0) {
+      nextCursor = encodeCursor({
+        createdAt: new Date(lastMembership.createdAt),
+        id: lastMembership._id.toHexString(),
+      });
+    }
+  }
+
+  return {
+    items: groupsWithMembers,
+    nextCursor,
+    pageSize,
+    decodedCursor: cursor,
+  };
+};
+
+export const populateGroupsasSummaryItems = async (
+  groups: GroupDocument[],
+  userMemberships: GroupMemberDocument[],
+) => {
+  const userMembershipsMap = new Map<string, GroupMemberDocument>(
+    userMemberships.map((membership) => [
+      membership.groupId.toHexString(),
+      membership,
+    ]),
+  );
+
+  const summaryItems: Array<GroupSummaryItem> = [];
+
   for (const group of groups) {
-    const members = await listGroupMembersByGroupId(group._id, {
-      limit: 500,
-      status: {
-        $in: ["accepted", "invited"],
-      },
-    });
+    const [pastMeetings, nextUpcomingMeeting, members] = await Promise.all([
+      countGroupMeetingsByGroupId(group._id, {
+        status: "published",
+        onlyPast: true,
+      }),
+      getNextUpcomingMeetingByGroupId(group._id),
+      listGroupMembersByGroupId(group._id, {
+        limit: 500,
+        status: {
+          $in: ["accepted", "invited"],
+        },
+      }),
+    ]);
 
     const activeMembers = members.filter(
       (member) => member.status === "accepted",
@@ -310,20 +353,15 @@ export const listMyGroupsSummary = async (
       (member) => member.status === "invited",
     ).length;
 
-    const [pastMeetings, nextUpcomingMeeting] = await Promise.all([
-      countGroupMeetingsByGroupId(group._id, {
-        status: "published",
-        onlyPast: true,
-      }),
-      getNextUpcomingMeetingByGroupId(group._id),
-    ]);
+    const userMembership = userMembershipsMap.get(group._id.toHexString());
+    if (!userMembership) {
+      throw new Error(
+        `User membership not found for group ${group._id.toHexString()}: ${group.name}`,
+      );
+    }
+    const userRole = userMembership?.role ?? "member";
 
-    const userMember = members.find((member) =>
-      member.userId?.equals(userObjectId),
-    );
-    const userRole = userMember?.role ?? "member";
-
-    items.push(
+    summaryItems.push(
       mapToGroupSummaryItem({
         groupId: group._id.toHexString(),
         name: group.name,
@@ -343,38 +381,9 @@ export const listMyGroupsSummary = async (
           : null,
       }),
     );
-
-    // Update cursor for next batch
-    const lastGroup = groups.at(-1);
-    if (lastGroup) {
-      currentCursor = {
-        createdAt: lastGroup.createdAt,
-        id: lastGroup._id.toHexString(),
-      };
-    }
   }
 
-  // Determine if there are more items after the last one by checking if more groups exist after cursor
-  const lastItem = items.at(-1);
-  let nextCursor: string | null = null;
-
-  if (lastItem) {
-    // Check if there are more groups after the last item's cursor
-
-    if (countAfter > 0) {
-      nextCursor = encodeCursor({
-        createdAt: new Date(lastItem.createdAt),
-        id: lastItem.groupId,
-      });
-    }
-  }
-
-  return {
-    items: items,
-    nextCursor,
-    pageSize,
-    decodedCursor,
-  };
+  return summaryItems;
 };
 
 export const searchGroupParticipants = async (

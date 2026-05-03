@@ -19,6 +19,7 @@ import {
   ModelInsertInput,
   touchTimestamps,
 } from "./types";
+import { DecodedCursor, normalizePageSize } from "../utils/pagination";
 
 export interface GroupMemberDefinition extends BaseModelBlueprint {
   groupId: ObjectId;
@@ -474,6 +475,83 @@ export const softDeleteGroupMemberByGroupAndUserId = async (
   );
 
   return result.modifiedCount === 1;
+};
+
+export type ListGroupMembershipsByUserIdProps = {
+  userId: string | ObjectId;
+  includeDeleted?: boolean;
+  role?: Filter<GroupMemberDocument>["role"];
+  status?: Filter<GroupMemberDocument>["status"];
+  limit?: number;
+  cursor?: DecodedCursor | null;
+};
+export const listGroupMembershipsByUserIdPaginated = async ({
+  userId,
+  includeDeleted,
+  role,
+  status,
+  limit,
+  cursor,
+}: ListGroupMembershipsByUserIdProps) => {
+  const collection = getGroupMembersCollection();
+  const filter: Filter<GroupMemberDocument> = {
+    userId: toObjectId(userId, "userId"),
+    ...activeRecordFilter(includeDeleted),
+  };
+
+  if (role) {
+    filter.role = role;
+  }
+  if (status) {
+    filter.status = status;
+  }
+
+  const hasCursorDate =
+    cursor?.createdAt instanceof Date &&
+    !Number.isNaN(cursor.createdAt.getTime());
+
+  if (hasCursorDate) {
+    const createdAt = cursor.createdAt as Date;
+
+    if (cursor.id && ObjectId.isValid(cursor.id)) {
+      filter.$or = [
+        { createdAt: { $lt: createdAt } },
+        { createdAt, _id: { $lt: new ObjectId(cursor.id) } },
+      ];
+    } else {
+      filter.$or = [{ createdAt: { $lt: createdAt } }];
+    }
+  }
+
+  const userMemberships = await collection
+    .find(filter)
+    .sort({ createdAt: -1 })
+    .limit(normalizePageSize(limit))
+    .toArray();
+
+  const lastItem = userMemberships.at(-1);
+  let countAfter = 0;
+  if (lastItem) {
+    countAfter = await collection.countDocuments({
+      userId: toObjectId(userId, "userId"),
+      ...activeRecordFilter(includeDeleted),
+      $or: [
+        { createdAt: { $lt: lastItem.createdAt } },
+        {
+          createdAt: lastItem.createdAt,
+          _id: { $lt: lastItem._id },
+        },
+      ],
+    });
+  }
+
+  const total = await collection.countDocuments(filter);
+
+  return {
+    userMemberships,
+    total,
+    countAfter,
+  };
 };
 
 export { assertOneOwnerIfRoleOwner, toObjectId };

@@ -14,6 +14,8 @@ import {
   removeGroupMember,
 } from "../services/groupMembersService";
 import { createUpcomingMeetingFromDefaults } from "../services/groupMeetingsService";
+import { GroupMemberInviteStatus } from "../models/groupModelCommon";
+import { decodeCursor } from "../utils/pagination";
 
 export const groupsRouter = express.Router({ mergeParams: true });
 
@@ -29,6 +31,15 @@ const getAuthenticatedUserId = (req: Request): string => {
   }
 
   return userId;
+};
+
+const ensureGroupMemberInviteStatus = (
+  status: string,
+): GroupMemberInviteStatus | undefined => {
+  return !!status &&
+    ["invited", "accepted", "declined", "cancelled", "removed"].includes(status)
+    ? (status as GroupMemberInviteStatus)
+    : undefined;
 };
 
 const getRouteParam = (
@@ -118,7 +129,9 @@ const applyGroupRoutes = () => {
       }
 
       const cursor =
-        typeof req.query.cursor === "string" ? req.query.cursor : undefined;
+        typeof req.query.cursor === "string"
+          ? decodeCursor(req.query.cursor)
+          : null;
       const parsedLimit =
         typeof req.query.limit === "string"
           ? Number.parseInt(req.query.limit, 10)
@@ -128,10 +141,16 @@ const applyGroupRoutes = () => {
           ? parsedLimit
           : undefined;
 
+      const status =
+        typeof req.query.status === "string"
+          ? ensureGroupMemberInviteStatus(req.query.status)
+          : undefined;
+
       const data = await listMyGroupsSummary({
         userId,
-        ...(cursor ? { cursor } : {}),
-        ...(typeof limit === "number" ? { limit } : {}),
+        status,
+        cursor,
+        limit,
       });
 
       res.status(200).json({ items: data.items, nextCursor: data.nextCursor });
