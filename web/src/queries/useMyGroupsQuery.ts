@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ApiError } from "@/api/types";
 import { listMyGroups } from "@/api/groups";
 import type { BaseQueryOptions } from "@/types/query.types";
+import type { GroupMemberStatus } from "@/api/types/groups";
 
 const mapErrorMessage = (error: unknown): string => {
   if (error instanceof ApiError) {
@@ -12,12 +13,19 @@ const mapErrorMessage = (error: unknown): string => {
   return "Unable to load your groups.";
 };
 
-export const myGroupQueryKey = () => ["my-groups"] as const;
+export const myGroupQueryKey = (status: string | undefined) =>
+  ["my-groups", status] as const;
 
-export const useMyGroupsQuery = ({ enabled }: BaseQueryOptions = {}) => {
+type UseMyGroupsQueryProps = {
+  status?: GroupMemberStatus;
+};
+export const useMyGroupsQuery = (
+  { status }: UseMyGroupsQueryProps,
+  { enabled }: BaseQueryOptions = {},
+) => {
   const { data, isLoading, isError, error, refetch } = useQuery({
-    queryKey: myGroupQueryKey(),
-    queryFn: () => listMyGroups(),
+    queryKey: myGroupQueryKey(status),
+    queryFn: () => listMyGroups({ status }),
     enabled: enabled !== false,
   });
 

@@ -23,7 +23,9 @@ export function MyGroupsTab() {
   const [summaryGroupId, setSummaryGroupId] = useState<string | null>(null);
 
   const { groups, isLoading, isError, errorMessage, refetch } =
-    useMyGroupsQuery();
+    useMyGroupsQuery({
+      status: "accepted",
+    });
 
   const selectedGroup = useMemo(
     () => groups.find((group) => group.groupId === summaryGroupId) ?? null,

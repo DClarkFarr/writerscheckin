@@ -31,6 +31,7 @@ export interface GroupSummaryItem {
 export interface ListMyGroupsInput {
   cursor?: string;
   limit?: number;
+  status?: GroupMemberStatus;
 }
 
 export interface ListMyGroupsResponse {
