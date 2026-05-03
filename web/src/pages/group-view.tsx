@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import IconPencil from "~icons/mdi/pencil";
 import { PageCard } from "@/components/layout/PageCard";
@@ -12,26 +11,19 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
-import { getGroupById } from "@/api/groups";
 import { useHomeStore } from "@/store/homeStore";
 import { GroupMembersList } from "@/components/group/GroupMembersList";
 import { GroupSummaryModal } from "@/components/group/GroupSummaryModal";
 import { GroupMemberActionsDropdown } from "@/components/group/GroupMemberActionsDropdown";
 import { GroupAdminActionsMenu } from "@/components/group/GroupAdminActionsDropdown";
+import { useGroupQuery } from "@/queries/use-group-query";
 
 export function GroupViewPage() {
   const { groupId } = useParams({ from: "/groups/$groupId/view" });
   const navigate = useNavigate();
   const [isSummaryOpen, setSummaryOpen] = useState(false);
 
-  const {
-    data: group,
-    error,
-    isLoading,
-  } = useQuery({
-    queryKey: ["groups", groupId],
-    queryFn: () => getGroupById(groupId),
-  });
+  const { data: group, error, isLoading } = useGroupQuery({ groupId });
 
   const header = (
     <Breadcrumb variant="light">

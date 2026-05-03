@@ -1,5 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
-import { getGroupById } from "@/api/groups";
 import {
   Dialog,
   DialogContent,
@@ -8,6 +6,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { GroupMembersList } from "@/components/group/GroupMembersList";
+import { useGroupQuery } from "@/queries/use-group-query";
 
 export interface GroupSummaryModalProps {
   groupId: string;
@@ -20,11 +19,10 @@ export function GroupSummaryModal({
   isOpen,
   onClose,
 }: GroupSummaryModalProps) {
-  const { data, isLoading, isError } = useQuery({
-    queryKey: ["groups", groupId],
-    queryFn: () => getGroupById(groupId),
-    enabled: isOpen,
-  });
+  const { data, isLoading, isError } = useGroupQuery(
+    { groupId },
+    { enabled: isOpen },
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
