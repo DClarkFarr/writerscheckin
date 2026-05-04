@@ -11,6 +11,10 @@ import type { MeetingDisplayTone, MyMeetingFeedItem } from "@/api/types/groups";
 import IconEyeLock from "~icons/mdi/eye-lock";
 import IconClockTimeThree from "~icons/mdi/clock-time-three";
 
+import IconCheckCircle from "~icons/mdi/check-circle";
+import IconBookOpenPageVariant from "~icons/mdi/book-open-page-variant";
+import IconCloseCircle from "~icons/mdi/close-circle";
+
 interface MeetingFeedItemProps {
   item: MyMeetingFeedItem;
   onCheckInClick?: (item: MyMeetingFeedItem) => void;
@@ -127,18 +131,36 @@ export const MeetingFeedItem = ({
             {item.userCheckinState !== "none" && (
               <div className="flex gap-2 flex-wrap">
                 {item.userCheckinState === "attending" && (
-                  <Badge variant="outline" className="text-xs">
-                    you are coming
+                  <Badge
+                    variant="outline"
+                    className="text-sm bg-green-100 border-green-300 text-green-700"
+                  >
+                    <span>
+                      <IconCheckCircle className="text-green-700" />
+                    </span>
+                    <span>you are coming</span>
                   </Badge>
                 )}
                 {item.userCheckinState === "reading" && (
-                  <Badge variant="outline" className="text-xs">
-                    you are reading
+                  <Badge
+                    variant="outline"
+                    className="text-sm bg-blue-100 border-blue-300 text-blue-700"
+                  >
+                    <span>
+                      <IconBookOpenPageVariant className="text-blue-700" />
+                    </span>
+                    <span>you are reading</span>
                   </Badge>
                 )}
                 {item.userCheckinState === "not_attending" && (
-                  <Badge variant="outline" className="text-xs">
-                    you are not coming
+                  <Badge
+                    variant="outline"
+                    className="text-sm bg-red-100 border-red-300 text-red-700"
+                  >
+                    <span>
+                      <IconCloseCircle className="text-red-700" />
+                    </span>
+                    <span>you are not coming</span>
                   </Badge>
                 )}
               </div>
