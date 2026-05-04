@@ -46,7 +46,6 @@ import {
 } from "../models/groupModelCommon";
 import { AuthError } from "./authService";
 import {
-  createNextUpcomingMeetingFromGroupDefaults,
   mapMeetingToMyMeetingFeedItem,
   type MyMeetingFeedItem,
 } from "./groupMeetingsService";
@@ -579,8 +578,8 @@ export const listMyMeetings = async (
     groupIds: memberships.map((membership) => membership.groupId),
   });
 
-  const groupNamesById = new Map(
-    groups.map((group) => [group._id.toHexString(), group.name]),
+  const groupsById = new Map(
+    groups.map((group) => [group._id.toHexString(), group]),
   );
 
   const memberGroupIds = memberships
@@ -692,11 +691,14 @@ export const listMyMeetings = async (
       };
       const userCheckinState = userStatesByMeetingId.get(meetingId) ?? "none";
 
+      const group = groupsById.get(row.meeting.groupId.toHexString());
+      if (!group) {
+        return false;
+      }
+
       return mapMeetingToMyMeetingFeedItem({
         meeting: row.meeting,
-        groupName:
-          groupNamesById.get(row.meeting.groupId.toHexString()) ??
-          row.meeting.name,
+        group,
         segment: row.segment,
         isAdminOnly: row.isAdminOnly,
         attendingCount: aggregate.attendingCount,
@@ -864,7 +866,7 @@ export const createManagedGroup = async (
   const groupId = group._id.toHexString();
   await syncGroupMembers(groupId, ownerUserId, ownerUserId, input.members);
 
-  await createNextUpcomingMeetingFromGroupDefaults(groupId);
+  // await createNextUpcomingMeetingFromGroupDefaults(groupId);
 
   return toSaveResult({
     groupId,

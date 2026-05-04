@@ -152,7 +152,7 @@ export function formatBookendDay(value: DateValue): string {
   if (!value) return "?";
   const date = dayjs(value);
   if (!date.isValid()) return "?";
-  return date.format("D");
+  return date.format("ddd");
 }
 
 /**

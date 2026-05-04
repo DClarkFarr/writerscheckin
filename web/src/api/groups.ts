@@ -139,14 +139,15 @@ const normalizeMyMeetingFeedItem = (
   occursAt: item.occursAt,
   segment: item.segment,
   status: item.status,
-  isDraft: item.isDraft ?? item.status === "draft",
   isAdminOnly: item.isAdminOnly ?? false,
   showAdminOnlyBadge: item.showAdminOnlyBadge ?? false,
   attendingCount: item.attendingCount ?? 0,
   readingCount: item.readingCount ?? 0,
   userCheckinState: item.userCheckinState ?? "none",
   canCheckin: item.canCheckin ?? false,
-  displayTone: item.displayTone ?? "gray",
+  address: item.address ?? "",
+  description: item.description ?? "",
+  startTime: item.startTime ?? { hours: 0, minutes: 0 },
 });
 
 const normalizeListMyMeetingsResponse = (

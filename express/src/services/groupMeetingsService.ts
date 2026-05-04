@@ -1,9 +1,10 @@
 import {
   createGroupMeeting,
+  CreateGroupMeetingInput,
   getLatestUpcomingMeetingByGroupId,
   type GroupMeetingDocument,
 } from "../models/groupMeetings";
-import { getGroupById } from "../models/groups";
+import { getGroupById, GroupDocument } from "../models/groups";
 import { listGroupMembersByGroupId } from "../models/groupMembers";
 import { ensureObjectId } from "../models/types";
 import { AuthError } from "./authService";
@@ -16,22 +17,24 @@ export type UserMeetingCheckinState =
   | "none";
 export type MeetingDisplayTone = "blue" | "red" | "gray";
 
-export interface MyMeetingFeedItem {
+export interface MyMeetingFeedItem extends Omit<
+  CreateGroupMeetingInput,
+  | "emailMessage"
+  | "publishEmailMessage"
+  | "attendanceEmailMessage"
+  | "notifyAttendanceHoursBefore"
+  | "publishHoursBefore"
+  | "occursAt"
+> {
   meetingId: string;
-  groupId: string;
-  groupName: string;
-  name: string;
   occursAt: string;
   segment: MyMeetingsSegment;
-  status: "draft" | "published";
-  isDraft: boolean;
   isAdminOnly: boolean;
   showAdminOnlyBadge: boolean;
   attendingCount: number;
   readingCount: number;
   userCheckinState: UserMeetingCheckinState;
   canCheckin: boolean;
-  displayTone: MeetingDisplayTone;
 }
 
 export interface CreateUpcomingMeetingFromDefaultsInput {
@@ -104,7 +107,7 @@ const computeNextOccurrence = (input: {
 
 export const mapMeetingToMyMeetingFeedItem = (input: {
   meeting: GroupMeetingDocument;
-  groupName: string;
+  group: GroupDocument;
   segment: MyMeetingsSegment;
   isAdminOnly: boolean;
   attendingCount: number;
@@ -115,27 +118,23 @@ export const mapMeetingToMyMeetingFeedItem = (input: {
   const canCheckin = input.segment === "upcoming";
   const isDraft = input.meeting.status === "draft";
 
-  let displayTone: MeetingDisplayTone = "gray";
-  if (input.segment === "upcoming") {
-    displayTone = input.userCheckinState === "not_attending" ? "red" : "blue";
-  }
-
   return {
     meetingId: input.meeting._id.toHexString(),
     groupId: input.meeting.groupId.toHexString(),
-    groupName: input.groupName,
+    startTime: input.meeting.startTime,
+    address: input.meeting.address,
+    description: input.meeting.description,
+    durationMinutes: input.meeting.durationMinutes,
     name: input.meeting.name,
     occursAt: occursAt.toISOString(),
     segment: input.segment,
     status: input.meeting.status,
-    isDraft,
     isAdminOnly: input.isAdminOnly,
     showAdminOnlyBadge: isDraft && input.isAdminOnly,
     attendingCount: input.attendingCount,
     readingCount: input.readingCount,
     userCheckinState: input.userCheckinState,
     canCheckin,
-    displayTone,
   };
 };
 

@@ -156,6 +156,10 @@ export type UserMeetingCheckinState =
   | "none";
 export type MeetingDisplayTone = "blue" | "red" | "gray";
 
+export interface MeetingStartTime {
+  hours: number;
+  minutes: number;
+}
 export interface MyMeetingFeedItem {
   meetingId: string;
   groupId: string;
@@ -164,14 +168,15 @@ export interface MyMeetingFeedItem {
   occursAt: string;
   segment: MyMeetingsSegment;
   status: MeetingPublicationStatus;
-  isDraft: boolean;
   isAdminOnly: boolean;
   showAdminOnlyBadge: boolean;
   attendingCount: number;
   readingCount: number;
   userCheckinState: UserMeetingCheckinState;
   canCheckin: boolean;
-  displayTone: MeetingDisplayTone;
+  address: string;
+  description: string;
+  startTime: MeetingStartTime;
 }
 
 export interface ListMyMeetingsInput {

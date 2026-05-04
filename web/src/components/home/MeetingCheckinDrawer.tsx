@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import {
   Drawer,
   DrawerContent,
+  DrawerDescription,
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
@@ -30,13 +31,21 @@ export const MeetingCheckinDrawer = ({
     <Drawer open={isOpen} onOpenChange={onClose}>
       <DrawerContent>
         <DrawerHeader>
-          <DrawerTitle className="text-left">
+          <DrawerTitle className="text-left text-lg">
             {selectedMeeting.name}
           </DrawerTitle>
+          <DrawerDescription className="text-left">
+            How are you planning to attend this meeting?
+          </DrawerDescription>
         </DrawerHeader>
-        <div className="p-4 space-y-3">
+
+        <div className="p-4 space-y-3 mb-8">
           <Button
-            variant="outline"
+            variant={
+              selectedMeeting.userCheckinState === "attending"
+                ? "default"
+                : "outline"
+            }
             className="w-full justify-start"
             onClick={() => onSubmit("attending")}
             disabled={isSubmitting}
@@ -45,7 +54,11 @@ export const MeetingCheckinDrawer = ({
           </Button>
 
           <Button
-            variant="outline"
+            variant={
+              selectedMeeting.userCheckinState === "reading"
+                ? "default"
+                : "outline"
+            }
             className="w-full justify-start"
             onClick={() => onSubmit("reading")}
             disabled={isSubmitting}
@@ -54,7 +67,11 @@ export const MeetingCheckinDrawer = ({
           </Button>
 
           <Button
-            variant="outline"
+            variant={
+              selectedMeeting.userCheckinState === "not_attending"
+                ? "destructive"
+                : "outline"
+            }
             className="w-full justify-start"
             onClick={() => onSubmit("not_attending")}
             disabled={isSubmitting}

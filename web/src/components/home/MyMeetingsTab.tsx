@@ -95,7 +95,7 @@ export function MyMeetingsTab() {
 
   if (!items.length) {
     return (
-      <div className="py-6 text-sm text-muted-foreground">
+      <div className="py-6 text-sm text-center text-muted-foreground">
         No meetings found yet.
       </div>
     );
@@ -118,7 +118,7 @@ export function MyMeetingsTab() {
           </p>
         )}
         {!hasNextPage && !isFetchingNextPage && items.length > 0 && (
-          <p className="text-sm text-muted-foreground py-3">
+          <p className="text-sm text-center text-muted-foreground py-3">
             You've reached the end of your meetings.
           </p>
         )}

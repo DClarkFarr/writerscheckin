@@ -5,8 +5,11 @@ import {
   formatBookendDay,
   formatBookendMonthDay,
   formatBookendYear,
+  formatDate,
 } from "@/lib/dateFormat";
-import type { MyMeetingFeedItem } from "@/api/types/groups";
+import type { MeetingDisplayTone, MyMeetingFeedItem } from "@/api/types/groups";
+import IconEyeLock from "~icons/mdi/eye-lock";
+import IconClockTimeThree from "~icons/mdi/clock-time-three";
 
 interface MeetingFeedItemProps {
   item: MyMeetingFeedItem;
@@ -39,34 +42,38 @@ const getBookendColor = (displayTone: string): string => {
   }
 };
 
-const getButtonVariant = (
-  displayTone: string,
-): "outline" | "default" | "secondary" => {
+const getButtonColors = (displayTone: string) => {
   switch (displayTone) {
     case "blue":
-      return "default";
+      return "bg-blue-500 hover:bg-blue-600 text-white";
     case "red":
-      return "secondary";
+      return "bg-red-500 hover:bg-red-600 text-white";
     case "gray":
-      return "outline";
+      return "bg-gray-300 hover:bg-gray-400 text-gray-700";
     default:
-      return "outline";
+      return "bg-gray-300 hover:bg-gray-400 text-gray-700";
   }
 };
 
+const getGroupStartTime = (occursAt: string): string => {
+  return formatDate(occursAt, "h:mm a");
+};
 export const MeetingFeedItem = ({
   item,
   onCheckInClick,
 }: MeetingFeedItemProps) => {
-  const borderColorClass = getBookendAndBorderColor(item.displayTone);
-  const bookendColorClass = getBookendColor(item.displayTone);
-  const buttonVariant = getButtonVariant(item.displayTone);
+  let displayTone: MeetingDisplayTone = "gray";
+  if (item.segment === "upcoming") {
+    displayTone = item.userCheckinState === "not_attending" ? "red" : "blue";
+  }
+  const borderColorClass = getBookendAndBorderColor(displayTone);
+  const bookendColorClass = getBookendColor(displayTone);
+  const buttonColorClass = getButtonColors(displayTone);
+
+  const groupStartTime = getGroupStartTime(item.occursAt);
 
   return (
-    <Card
-      className={`overflow-hidden border-l-4 ${borderColorClass}`}
-      size="sm"
-    >
+    <Card className={`border-l-4 blabla p-0! ${borderColorClass}`} size="sm">
       <div className="flex">
         {/* Left Date Bookend */}
         <div
@@ -97,49 +104,18 @@ export const MeetingFeedItem = ({
                   variant="secondary"
                   className="flex items-center gap-1 text-xs whitespace-nowrap"
                 >
-                  <svg
-                    className="size-3"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M3 3L21 21"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
-                    <path
-                      d="M10.58 10.58C10.21 10.95 10 11.46 10 12C10 13.1 10.9 14 12 14C12.54 14 13.05 13.79 13.42 13.42"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M9.88 5.09C10.57 4.89 11.28 4.79 12 4.79C16.45 4.79 20.27 8.13 22 12C21.52 13.08 20.85 14.08 20.04 14.94"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                    <path
-                      d="M6.61 6.61C4.62 7.93 3.08 9.82 2 12C3.73 15.87 7.55 19.21 12 19.21C13.87 19.21 15.65 18.62 17.13 17.59"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  admin only
+                  <IconEyeLock />
+                  <span>admin only</span>
                 </Badge>
               )}
             </div>
 
             {/* Group Name and Counts */}
-            <div className="text-xs text-muted-foreground space-y-1">
-              <p>{item.groupName}</p>
+            <div className="text-sm text-muted-foreground space-y-1">
+              <p className="flex items-center gap-1 text-base text-gray-700">
+                <IconClockTimeThree />
+                {groupStartTime}
+              </p>
               <p>
                 Attending:{" "}
                 <b className="text-foreground">{item.attendingCount}</b> |
@@ -172,8 +148,7 @@ export const MeetingFeedItem = ({
             {item.canCheckin && (
               <Button
                 size="sm"
-                variant={buttonVariant}
-                className="w-full mt-2"
+                className={`w-full mt-2 ${buttonColorClass}`}
                 onClick={() => onCheckInClick?.(item)}
               >
                 {item.userCheckinState === "none"
