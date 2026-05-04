@@ -32,6 +32,7 @@ export function GroupMeetingEditPage({
     touched,
     fields,
     handleFieldChange,
+    onChangeDescription,
     handleFieldBlur,
     handlePublish,
   } = useMeetingForm({
@@ -82,6 +83,7 @@ export function GroupMeetingEditPage({
         fields={fields}
         onFieldChange={handleFieldChange}
         onFieldBlur={handleFieldBlur}
+        onChangeDescription={onChangeDescription}
         onPublish={handlePublish}
       />
     </PageCard>

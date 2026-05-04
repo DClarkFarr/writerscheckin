@@ -2,11 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useEditableMeetingQuery } from "@/queries/useEditableMeetingQuery";
 import { useSaveMeetingMutation } from "@/queries/useSaveMeetingMutation";
 import { usePublishMeetingMutation } from "@/queries/usePublishMeetingMutation";
-import type {
-  EditableMeetingResponse,
-  UpdateMeetingInput,
-} from "@/api/types/groups";
-import { alert } from "@/utils/alert";
+import type { UpdateMeetingInput } from "@/api/types/groups";
 
 const AUTOSAVE_DELAY = 1500; // 1.5 seconds
 
@@ -58,29 +54,33 @@ export function useMeetingForm({ groupId, meetingId }: UseMeetingFormProps) {
 
   // Initialize fields from meeting data
   useEffect(() => {
-    if (!meeting) return;
+    const syncFieldState = () => {
+      if (!meeting) return;
 
-    const occursAtDate = new Date(meeting.occursAt);
-    const dateStr = occursAtDate.toISOString().split("T")[0];
-    const timeStr = `${meeting.startTime.hours.toString().padStart(2, "0")}:${meeting.startTime.minutes.toString().padStart(2, "0")}`;
+      const occursAtDate = new Date(meeting.occursAt);
+      const dateStr = occursAtDate.toISOString().split("T")[0];
+      const timeStr = `${meeting.startTime.hours.toString().padStart(2, "0")}:${meeting.startTime.minutes.toString().padStart(2, "0")}`;
 
-    setFields({
-      name: meeting.name,
-      occursAt: dateStr,
-      occursAtTime: timeStr,
-      description: meeting.description,
-      address: meeting.address,
-      durationMinutes: meeting.durationMinutes.toString(),
-      publishEmailMessage: meeting.publishEmailMessage,
-      attendanceEmailMessage: meeting.attendanceEmailMessage,
-      publishHoursBefore: meeting.publishHoursBefore.toString(),
-      notifyAttendanceHoursBefore:
-        meeting.notifyAttendanceHoursBefore.toString(),
-    });
+      setFields({
+        name: meeting.name,
+        occursAt: dateStr,
+        occursAtTime: timeStr,
+        description: meeting.description,
+        address: meeting.address,
+        durationMinutes: meeting.durationMinutes.toString(),
+        publishEmailMessage: meeting.publishEmailMessage,
+        attendanceEmailMessage: meeting.attendanceEmailMessage,
+        publishHoursBefore: meeting.publishHoursBefore.toString(),
+        notifyAttendanceHoursBefore:
+          meeting.notifyAttendanceHoursBefore.toString(),
+      });
 
-    // Clear field errors on fresh load
-    setFieldErrors({});
-    setSaveStatus(null);
+      // Clear field errors on fresh load
+      setFieldErrors({});
+      setSaveStatus(null);
+    };
+
+    syncFieldState();
   }, [meeting]);
 
   // Validate individual field
@@ -104,7 +104,7 @@ export function useMeetingForm({ groupId, meetingId }: UseMeetingFormProps) {
   };
 
   // Build update payload from current field state
-  const buildUpdatePayload = (): Partial<UpdateMeetingInput> => {
+  const buildUpdatePayload = useCallback((): Partial<UpdateMeetingInput> => {
     const payload: Partial<UpdateMeetingInput> = {};
 
     if (fields.name !== meeting?.name) {
@@ -117,7 +117,7 @@ export function useMeetingForm({ groupId, meetingId }: UseMeetingFormProps) {
       const newDate = new Date(fields.occursAt);
       newDate.setHours(hours, minutes, 0, 0);
       if (newDate.toISOString() !== meeting?.occursAt) {
-        payload.occursAt = newDate;
+        payload.occursAt = newDate.toISOString();
       }
     }
 
@@ -158,7 +158,7 @@ export function useMeetingForm({ groupId, meetingId }: UseMeetingFormProps) {
     }
 
     return payload;
-  };
+  }, [fields, meeting]);
 
   // Perform autosave
   const performAutosave = useCallback(async () => {
@@ -237,6 +237,22 @@ export function useMeetingForm({ groupId, meetingId }: UseMeetingFormProps) {
     await publishMutation.mutateAsync(undefined);
   }, [buildUpdatePayload, saveMutation, publishMutation]);
 
+  const onChangeDescription = useCallback(
+    (value: string) => {
+      setFields((prev) => ({ ...prev, description: value }));
+
+      // Debounce autosave
+      if (autosaveTimeoutRef.current) {
+        clearTimeout(autosaveTimeoutRef.current);
+      }
+
+      autosaveTimeoutRef.current = setTimeout(() => {
+        performAutosave();
+      }, AUTOSAVE_DELAY);
+    },
+    [performAutosave],
+  );
+
   // Clean up on unmount
   useEffect(() => {
     return () => {
@@ -259,5 +275,6 @@ export function useMeetingForm({ groupId, meetingId }: UseMeetingFormProps) {
     handleFieldChange,
     handleFieldBlur,
     handlePublish,
+    onChangeDescription,
   };
 }

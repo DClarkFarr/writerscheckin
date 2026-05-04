@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { EditableMeetingResponse } from "@/api/types/groups";
 import { formatStaticDateTime } from "@/lib/dateFormat";
+import { RichTextEditor } from "./RichTextEditor";
 
 export interface MeetingFormProps {
   meeting: EditableMeetingResponse | null;
@@ -43,6 +44,7 @@ export interface MeetingFormProps {
   onFieldChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => void;
+  onChangeDescription: (value: string) => void;
   onFieldBlur: (
     e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => void;
@@ -60,9 +62,11 @@ export function MeetingForm({
   touched,
   fields,
   onFieldChange,
+  onChangeDescription,
   onFieldBlur,
   onPublish,
 }: MeetingFormProps) {
+  console.log(fields.description);
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -79,6 +83,7 @@ export function MeetingForm({
     );
   }
 
+  console.log("rendienrg form");
   return (
     <form className="flex flex-col gap-6" noValidate>
       <div className="space-y-2">
@@ -170,16 +175,15 @@ export function MeetingForm({
 
         <Field>
           <FieldLabel htmlFor="description">Description</FieldLabel>
-          <Textarea
-            id="description"
-            name="description"
+          <RichTextEditor
             value={fields.description}
-            onChange={onFieldChange}
-            onBlur={onFieldBlur}
-            disabled={isSaving || isPublishing}
-            placeholder="Meeting details, guidelines, what to bring..."
-            rows={4}
+            onChange={onChangeDescription}
+            isSimpleMode
           />
+          <FieldDescription>
+            Use the basic editor mode for a public-facing description of the
+            meeting.
+          </FieldDescription>
         </Field>
 
         <Field>
