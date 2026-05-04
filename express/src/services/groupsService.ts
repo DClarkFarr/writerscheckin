@@ -2,9 +2,12 @@ import { ObjectId } from "mongodb";
 import {
   decodeOpaqueCursor,
   encodeCursor,
+  decodeMyMeetingsCursor,
+  encodeMyMeetingsCursor,
   encodeOpaqueCursor,
   normalizePageSize,
   type DecodedCursor,
+  type DecodedMyMeetingsCursor,
 } from "../utils/pagination";
 import {
   buildActionAvailability,
@@ -28,7 +31,9 @@ import {
 } from "../models/groupMembers";
 import {
   countGroupMeetingsByGroupId,
+  getNextUpcomingPublishedMeetingByGroupId,
   getNextUpcomingMeetingByGroupId,
+  listGroupMeetingsForFeed,
   listGroupMeetingsByGroupIdPaginated,
 } from "../models/groupMeetings";
 import { ensureObjectId } from "../models/types";
@@ -40,8 +45,16 @@ import {
   type MeetingTimeOfDay,
 } from "../models/groupModelCommon";
 import { AuthError } from "./authService";
-import { createNextUpcomingMeetingFromGroupDefaults } from "./groupMeetingsService";
+import {
+  createNextUpcomingMeetingFromGroupDefaults,
+  mapMeetingToMyMeetingFeedItem,
+  type MyMeetingFeedItem,
+} from "./groupMeetingsService";
 import { addGroupMember, removeGroupMember } from "./groupMembersService";
+import {
+  getMeetingCheckinAggregatesByMeetingIds,
+  getUserCheckinStatesForMeetingsByMemberIds,
+} from "../models/meetingCheckins";
 
 import { recordAuditEvent } from "../utils/audit";
 
@@ -407,6 +420,97 @@ export interface ListMyGroupsProps {
   status?: GroupMemberInviteStatus | undefined;
 }
 
+export interface ListMyMeetingsProps {
+  userId: string;
+  cursor?: string;
+  limit?: number;
+}
+
+export interface ListMyMeetingsResult {
+  items: MyMeetingFeedItem[];
+  nextCursor: string | null;
+}
+
+const compareMyMeetingItem = (
+  left: MyMeetingFeedItem,
+  right: MyMeetingFeedItem,
+): number => {
+  if (left.segment !== right.segment) {
+    return left.segment === "upcoming" ? -1 : 1;
+  }
+
+  const leftDate = new Date(left.occursAt).getTime();
+  const rightDate = new Date(right.occursAt).getTime();
+
+  if (left.segment === "upcoming") {
+    if (leftDate !== rightDate) {
+      return leftDate - rightDate;
+    }
+  } else if (leftDate !== rightDate) {
+    return rightDate - leftDate;
+  }
+
+  if (left.name !== right.name) {
+    return left.name.localeCompare(right.name);
+  }
+
+  return left.meetingId.localeCompare(right.meetingId);
+};
+
+const cursorFromMeetingItem = (
+  item: MyMeetingFeedItem,
+): DecodedMyMeetingsCursor => ({
+  segment: item.segment,
+  occursAt: new Date(item.occursAt),
+  name: item.name,
+  id: item.meetingId,
+});
+
+const compareMeetingItemToCursor = (
+  item: MyMeetingFeedItem,
+  cursor: DecodedMyMeetingsCursor,
+): number => {
+  const cursorComparable: MyMeetingFeedItem = {
+    ...item,
+    segment: cursor.segment,
+    occursAt: cursor.occursAt.toISOString(),
+    name: cursor.name,
+    meetingId: cursor.id,
+  };
+
+  return compareMyMeetingItem(item, cursorComparable);
+};
+
+const listAcceptedMembershipsByUserId = async (
+  userId: ObjectId,
+): Promise<GroupMemberDocument[]> => {
+  const rows: GroupMemberDocument[] = [];
+  let cursor: DecodedCursor | null = null;
+
+  for (let page = 0; page < 20; page += 1) {
+    const response = await listGroupMembershipsByUserIdPaginated({
+      userId,
+      status: "accepted",
+      limit: 50,
+      ...(cursor ? { cursor } : {}),
+    });
+
+    rows.push(...response.userMemberships);
+
+    const last = response.userMemberships.at(-1);
+    if (!last || response.countAfter <= 0) {
+      break;
+    }
+
+    cursor = {
+      createdAt: last.createdAt,
+      id: last._id.toHexString(),
+    };
+  }
+
+  return rows;
+};
+
 export const listMyGroupsSummary = async (input: ListMyGroupsProps) => {
   const pageSize = normalizePageSize(input.limit);
   const userId = ensureObjectId(input.userId, "userId");
@@ -453,6 +557,173 @@ export const listMyGroupsSummary = async (input: ListMyGroupsProps) => {
     nextCursor,
     pageSize,
     decodedCursor: cursor,
+  };
+};
+
+export const listMyMeetings = async (
+  input: ListMyMeetingsProps,
+): Promise<ListMyMeetingsResult> => {
+  const pageSize = normalizePageSize(input.limit);
+  const userId = ensureObjectId(input.userId, "userId");
+  const now = new Date();
+
+  const memberships = await listAcceptedMembershipsByUserId(userId);
+  if (!memberships.length) {
+    return {
+      items: [],
+      nextCursor: null,
+    };
+  }
+
+  const groups = await listGroupsByIds({
+    groupIds: memberships.map((membership) => membership.groupId),
+  });
+
+  const groupNamesById = new Map(
+    groups.map((group) => [group._id.toHexString(), group.name]),
+  );
+
+  const memberGroupIds = memberships
+    .filter((membership) => membership.role === "member")
+    .map((membership) => membership.groupId.toHexString());
+  const managerGroupIds = memberships
+    .filter(
+      (membership) =>
+        membership.role === "admin" || membership.role === "owner",
+    )
+    .map((membership) => membership.groupId.toHexString());
+
+  const [memberUpcomingRows, managerUpcomingRows, allPastRows] =
+    await Promise.all([
+      Promise.all(
+        memberGroupIds.map(async (groupId) =>
+          getNextUpcomingPublishedMeetingByGroupId(groupId),
+        ),
+      ),
+      Promise.all(
+        managerGroupIds.map(async (groupId) =>
+          listGroupMeetingsForFeed({
+            groupId,
+            segment: "upcoming",
+            statuses: ["draft", "published"],
+            now,
+            limit: 500,
+          }),
+        ),
+      ),
+      Promise.all(
+        memberships.map(async (membership) =>
+          listGroupMeetingsForFeed({
+            groupId: membership.groupId,
+            segment: "past",
+            statuses: ["published"],
+            now,
+            limit: 500,
+          }),
+        ),
+      ),
+    ]);
+
+  const meetingsById = new Map<
+    string,
+    {
+      meeting: NonNullable<(typeof memberUpcomingRows)[number]>;
+      segment: "upcoming" | "past";
+      isAdminOnly: boolean;
+    }
+  >();
+
+  for (const meeting of memberUpcomingRows) {
+    if (!meeting) {
+      continue;
+    }
+
+    meetingsById.set(meeting._id.toHexString(), {
+      meeting,
+      segment: "upcoming",
+      isAdminOnly: false,
+    });
+  }
+
+  for (const rows of managerUpcomingRows) {
+    for (const meeting of rows) {
+      meetingsById.set(meeting._id.toHexString(), {
+        meeting,
+        segment: "upcoming",
+        isAdminOnly: meeting.status === "draft",
+      });
+    }
+  }
+
+  for (const rows of allPastRows) {
+    for (const meeting of rows) {
+      const key = meeting._id.toHexString();
+      if (meetingsById.has(key)) {
+        continue;
+      }
+
+      meetingsById.set(key, {
+        meeting,
+        segment: "past",
+        isAdminOnly: false,
+      });
+    }
+  }
+
+  const meetingIds = Array.from(meetingsById.keys());
+  const [aggregatesByMeetingId, userStatesByMeetingId] = await Promise.all([
+    getMeetingCheckinAggregatesByMeetingIds(meetingIds),
+    getUserCheckinStatesForMeetingsByMemberIds({
+      memberIds: memberships.map((membership) => membership._id),
+      meetingIds,
+    }),
+  ]);
+
+  const allItems = meetingIds
+    .map((meetingId) => {
+      const row = meetingsById.get(meetingId);
+      if (!row) {
+        return null;
+      }
+
+      const aggregate = aggregatesByMeetingId.get(meetingId) ?? {
+        attendingCount: 0,
+        readingCount: 0,
+      };
+      const userCheckinState = userStatesByMeetingId.get(meetingId) ?? "none";
+
+      return mapMeetingToMyMeetingFeedItem({
+        meeting: row.meeting,
+        groupName:
+          groupNamesById.get(row.meeting.groupId.toHexString()) ??
+          row.meeting.name,
+        segment: row.segment,
+        isAdminOnly: row.isAdminOnly,
+        attendingCount: aggregate.attendingCount,
+        readingCount: aggregate.readingCount,
+        userCheckinState,
+      });
+    })
+    .filter((item): item is MyMeetingFeedItem => Boolean(item))
+    .sort(compareMyMeetingItem);
+
+  const decodedCursor = decodeMyMeetingsCursor(input.cursor);
+  const afterCursor = decodedCursor
+    ? allItems.filter(
+        (item) => compareMeetingItemToCursor(item, decodedCursor) > 0,
+      )
+    : allItems;
+
+  const items = afterCursor.slice(0, pageSize);
+  const hasMore = afterCursor.length > pageSize;
+  const lastItem = items.at(-1);
+
+  return {
+    items,
+    nextCursor:
+      hasMore && lastItem
+        ? encodeMyMeetingsCursor(cursorFromMeetingItem(lastItem))
+        : null,
   };
 };
 

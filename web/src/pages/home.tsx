@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useHomeStore } from "@/store/homeStore";
 import { useCallback } from "react";
 import { MyGroupsTab } from "@/components/home/MyGroupsTab";
+import { MyMeetingsTab } from "@/components/home/MyMeetingsTab";
 export function Home() {
   const user = useAuthStore((state) => state.user);
   return user ? <HomeAuthenticated /> : <HomeUnauthenticated />;
@@ -34,7 +35,9 @@ const HomeAuthenticated = () => {
             </TabsTrigger>
           </TabsList>
         </div>
-        <TabsContent value="meetings">Meetings here</TabsContent>
+        <TabsContent value="meetings">
+          <MyMeetingsTab />
+        </TabsContent>
         <TabsContent value="groups">
           <MyGroupsTab />
         </TabsContent>

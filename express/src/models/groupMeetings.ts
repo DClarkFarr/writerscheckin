@@ -19,7 +19,11 @@ import {
   ModelInsertInput,
   touchTimestamps,
 } from "./types";
-import { normalizePageSize, type DecodedCursor } from "../utils/pagination";
+import {
+  normalizePageSize,
+  type DecodedCursor,
+  type FeedSegment,
+} from "../utils/pagination";
 
 export interface GroupMeetingDefinition extends BaseModelBlueprint {
   groupId: ObjectId;
@@ -262,6 +266,34 @@ export const listGroupMeetingsByGroupId = async (
     .toArray();
 };
 
+export const listGroupMeetingsForFeed = async ({
+  groupId,
+  segment,
+  statuses,
+  now,
+  limit,
+}: ListGroupMeetingsForFeedProps): Promise<GroupMeetingDocument[]> => {
+  const collection = getGroupMeetingsCollection();
+  const reference = now ?? new Date();
+
+  return collection
+    .find({
+      groupId: toObjectId(groupId, "groupId"),
+      status: { $in: statuses },
+      ...(segment === "upcoming"
+        ? { occursAt: { $gte: reference } }
+        : { occursAt: { $lt: reference } }),
+      ...activeRecordFilter(),
+    })
+    .sort(
+      segment === "upcoming"
+        ? { occursAt: 1, name: 1, _id: 1 }
+        : { occursAt: -1, name: 1, _id: 1 },
+    )
+    .limit(typeof limit === "number" ? limit : 500)
+    .toArray();
+};
+
 export interface ListGroupMeetingsByGroupIdPaginatedProps {
   groupId: string | ObjectId;
   cursor?: DecodedCursor | null;
@@ -269,6 +301,14 @@ export interface ListGroupMeetingsByGroupIdPaginatedProps {
   futureOnly?: boolean;
   pastOnly?: boolean;
   statuses?: GroupMeetingStatus[];
+}
+
+export interface ListGroupMeetingsForFeedProps {
+  groupId: string | ObjectId;
+  segment: FeedSegment;
+  statuses: GroupMeetingStatus[];
+  now?: Date;
+  limit?: number;
 }
 export const listGroupMeetingsByGroupIdPaginated = async ({
   groupId,
@@ -415,6 +455,25 @@ export const getLatestUpcomingMeetingByGroupId = async (
   );
 
   return meetingWithOccurrence;
+};
+
+export const getNextUpcomingPublishedMeetingByGroupId = async (
+  groupId: string | ObjectId,
+): Promise<GroupMeetingDocument | null> => {
+  const collection = getGroupMeetingsCollection();
+  const now = new Date();
+
+  return collection.findOne(
+    {
+      groupId: toObjectId(groupId, "groupId"),
+      status: "published",
+      occursAt: { $gte: now },
+      ...activeRecordFilter(),
+    },
+    {
+      sort: { occursAt: 1, name: 1, _id: 1 },
+    },
+  );
 };
 
 export const updateGroupMeetingById = async (

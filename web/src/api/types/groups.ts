@@ -146,3 +146,52 @@ export interface GroupEventsResponse {
   rows: GroupMeetingPublic[];
   nextCursor: string | null;
 }
+
+export type MyMeetingsSegment = "upcoming" | "past";
+export type MeetingPublicationStatus = "draft" | "published";
+export type UserMeetingCheckinState =
+  | "attending"
+  | "reading"
+  | "not_attending"
+  | "none";
+export type MeetingDisplayTone = "blue" | "red" | "gray";
+
+export interface MyMeetingFeedItem {
+  meetingId: string;
+  groupId: string;
+  groupName: string;
+  name: string;
+  occursAt: string;
+  segment: MyMeetingsSegment;
+  status: MeetingPublicationStatus;
+  isDraft: boolean;
+  isAdminOnly: boolean;
+  showAdminOnlyBadge: boolean;
+  attendingCount: number;
+  readingCount: number;
+  userCheckinState: UserMeetingCheckinState;
+  canCheckin: boolean;
+  displayTone: MeetingDisplayTone;
+}
+
+export interface ListMyMeetingsInput {
+  cursor?: string;
+  limit?: number;
+}
+
+export interface ListMyMeetingsResponse {
+  items: MyMeetingFeedItem[];
+  nextCursor: string | null;
+}
+
+export interface UpdateMeetingCheckinInput {
+  state: "attending" | "reading" | "not_attending";
+}
+
+export interface UpdateMeetingCheckinResponse {
+  meetingId: string;
+  userCheckinState: "attending" | "reading" | "not_attending";
+  attendingCount: number;
+  readingCount: number;
+  appliedAt: string;
+}

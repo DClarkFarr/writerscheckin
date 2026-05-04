@@ -6,6 +6,15 @@ export interface DecodedCursor {
   id: string;
 }
 
+export type FeedSegment = "upcoming" | "past";
+
+export interface DecodedMyMeetingsCursor {
+  segment: FeedSegment;
+  occursAt: Date;
+  name: string;
+  id: string;
+}
+
 type CursorValue = string | number | boolean | null;
 export type OpaqueCursorPayload = Record<string, CursorValue>;
 
@@ -74,4 +83,51 @@ export const decodeOpaqueCursor = <T extends OpaqueCursorPayload>(
   } catch {
     return null;
   }
+};
+
+export const encodeMyMeetingsCursor = (
+  input: DecodedMyMeetingsCursor,
+): string => {
+  return encodeOpaqueCursor({
+    segment: input.segment,
+    occursAt: input.occursAt.toISOString(),
+    name: input.name,
+    id: input.id,
+  });
+};
+
+export const decodeMyMeetingsCursor = (
+  value?: string,
+): DecodedMyMeetingsCursor | null => {
+  const decoded = decodeOpaqueCursor<{
+    segment?: string;
+    occursAt?: string;
+    name?: string;
+    id?: string;
+  }>(value);
+
+  if (!decoded) {
+    return null;
+  }
+
+  if (
+    (decoded.segment !== "upcoming" && decoded.segment !== "past") ||
+    typeof decoded.occursAt !== "string" ||
+    typeof decoded.name !== "string" ||
+    typeof decoded.id !== "string"
+  ) {
+    return null;
+  }
+
+  const occursAt = new Date(decoded.occursAt);
+  if (Number.isNaN(occursAt.getTime())) {
+    return null;
+  }
+
+  return {
+    segment: decoded.segment,
+    occursAt,
+    name: decoded.name,
+    id: decoded.id,
+  };
 };

@@ -14,10 +14,12 @@
 import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc";
 import timezone from "dayjs/plugin/timezone";
+import advancedFormat from "dayjs/plugin/advancedFormat";
 
 // Extend dayjs with plugins
 dayjs.extend(utc);
 dayjs.extend(timezone);
+dayjs.extend(advancedFormat);
 
 // Common format constants
 export const DISPLAY_DATE_FORMAT = "MM/DD/YYYY";
@@ -137,4 +139,46 @@ export function parseDateStrict(value: DateValue): dayjs.Dayjs | null {
 export function isValidDate(value: DateValue): boolean {
   if (!value) return false;
   return dayjs(value).isValid();
+}
+
+/**
+ * Format the day of month for the date bookend (large day number).
+ * Example: 5, 23, 31
+ *
+ * @param value — Date to format
+ * @returns Day of month as a string, or "?" if invalid
+ */
+export function formatBookendDay(value: DateValue): string {
+  if (!value) return "?";
+  const date = dayjs(value);
+  if (!date.isValid()) return "?";
+  return date.format("D");
+}
+
+/**
+ * Format the month and ordinal day for the date bookend (middle line).
+ * Example: "MAY 3rd", "JAN 1st"
+ *
+ * @param value — Date to format
+ * @returns Month and ordinal day as a string, or empty if invalid
+ */
+export function formatBookendMonthDay(value: DateValue): string {
+  if (!value) return "";
+  const date = dayjs(value);
+  if (!date.isValid()) return "";
+  return date.format("MMM Do").toUpperCase();
+}
+
+/**
+ * Format the year for the date bookend (bottom line).
+ * Example: "2026"
+ *
+ * @param value — Date to format
+ * @returns 4-digit year as a string, or "" if invalid
+ */
+export function formatBookendYear(value: DateValue): string {
+  if (!value) return "";
+  const date = dayjs(value);
+  if (!date.isValid()) return "";
+  return date.format("YYYY");
 }

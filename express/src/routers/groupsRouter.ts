@@ -7,6 +7,7 @@ import {
   listManagedGroupMembersPaginated,
   getManagedGroupForm,
   leaveGroup,
+  listMyMeetings,
   listMyGroupsSummary,
   searchGroupParticipants,
   updateManagedGroup,
@@ -16,6 +17,7 @@ import {
   removeGroupMember,
 } from "../services/groupMembersService";
 import { createUpcomingMeetingFromDefaults } from "../services/groupMeetingsService";
+import { updateMeetingCheckin } from "../services/meetingCheckinService";
 import { GroupMemberInviteStatus } from "../models/groupModelCommon";
 import { decodeCursor } from "../utils/pagination";
 
@@ -156,6 +158,56 @@ const applyGroupRoutes = () => {
       });
 
       res.status(200).json({ items: data.items, nextCursor: data.nextCursor });
+    }),
+  );
+
+  groupsRouter.get(
+    "/meetings/mine",
+    handleAsync(async (req, res) => {
+      const userId = getAuthenticatedUserId(req);
+      const cursor =
+        typeof req.query.cursor === "string" ? req.query.cursor : undefined;
+      const parsedLimit =
+        typeof req.query.limit === "string"
+          ? Number.parseInt(req.query.limit, 10)
+          : undefined;
+      const limit =
+        typeof parsedLimit === "number" && !Number.isNaN(parsedLimit)
+          ? parsedLimit
+          : undefined;
+
+      const data = await listMyMeetings({
+        userId,
+        ...(cursor ? { cursor } : {}),
+        ...(typeof limit === "number" ? { limit } : {}),
+      });
+
+      res.status(200).json(data);
+    }),
+  );
+
+  groupsRouter.post(
+    "/meetings/:meetingId/checkin",
+    handleAsync(async (req, res) => {
+      const userId = getAuthenticatedUserId(req);
+      const meetingId = getRouteParam(req.params.meetingId, "meetingId");
+
+      const stateRaw = req.body?.state;
+      if (
+        stateRaw !== "attending" &&
+        stateRaw !== "reading" &&
+        stateRaw !== "not_attending"
+      ) {
+        throw new Error("Invalid check-in state.");
+      }
+
+      const data = await updateMeetingCheckin({
+        meetingId,
+        userId,
+        state: stateRaw,
+      });
+
+      res.status(200).json(data);
     }),
   );
 

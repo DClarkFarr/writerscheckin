@@ -8,10 +8,15 @@ import type {
   GroupMeetingPublic,
   GroupMembersResponse,
   GroupSummaryItem,
+  ListMyMeetingsInput,
+  ListMyMeetingsResponse,
   ListMyGroupsInput,
   ListMyGroupsResponse,
+  MyMeetingFeedItem,
   SaveGroupResponse,
   SearchParticipantsResponse,
+  UpdateMeetingCheckinInput,
+  UpdateMeetingCheckinResponse,
   UpdateGroupStateInput,
   UpdateGroupStateResponse,
 } from "./types/groups";
@@ -124,6 +129,35 @@ const normalizeGroupEventsResponse = (
   nextCursor: data.nextCursor ?? null,
 });
 
+const normalizeMyMeetingFeedItem = (
+  item: MyMeetingFeedItem,
+): MyMeetingFeedItem => ({
+  meetingId: item.meetingId,
+  groupId: item.groupId,
+  groupName: item.groupName,
+  name: item.name,
+  occursAt: item.occursAt,
+  segment: item.segment,
+  status: item.status,
+  isDraft: item.isDraft ?? item.status === "draft",
+  isAdminOnly: item.isAdminOnly ?? false,
+  showAdminOnlyBadge: item.showAdminOnlyBadge ?? false,
+  attendingCount: item.attendingCount ?? 0,
+  readingCount: item.readingCount ?? 0,
+  userCheckinState: item.userCheckinState ?? "none",
+  canCheckin: item.canCheckin ?? false,
+  displayTone: item.displayTone ?? "gray",
+});
+
+const normalizeListMyMeetingsResponse = (
+  data: ListMyMeetingsResponse,
+): ListMyMeetingsResponse => ({
+  items: Array.isArray(data.items)
+    ? data.items.map((item) => normalizeMyMeetingFeedItem(item))
+    : [],
+  nextCursor: data.nextCursor ?? null,
+});
+
 export async function listMyGroups(
   input: ListMyGroupsInput = {},
 ): Promise<ListMyGroupsResponse> {
@@ -132,6 +166,37 @@ export async function listMyGroups(
       params: input,
     });
     return normalizeListMyGroupsResponse(data);
+  } catch (err) {
+    throw await toApiError(err);
+  }
+}
+
+export async function getMyMeetings(
+  input: ListMyMeetingsInput = {},
+): Promise<ListMyMeetingsResponse> {
+  try {
+    const { data } = await apiClient.get<ListMyMeetingsResponse>(
+      "/groups/meetings/mine",
+      {
+        params: input,
+      },
+    );
+    return normalizeListMyMeetingsResponse(data);
+  } catch (err) {
+    throw await toApiError(err);
+  }
+}
+
+export async function updateMeetingCheckin(
+  meetingId: string,
+  input: UpdateMeetingCheckinInput,
+): Promise<UpdateMeetingCheckinResponse> {
+  try {
+    const { data } = await apiClient.post<UpdateMeetingCheckinResponse>(
+      `/groups/meetings/${meetingId}/checkin`,
+      input,
+    );
+    return data;
   } catch (err) {
     throw await toApiError(err);
   }
