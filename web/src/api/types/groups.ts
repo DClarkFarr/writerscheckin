@@ -199,3 +199,80 @@ export interface UpdateMeetingCheckinResponse {
   readingCount: number;
   appliedAt: string;
 }
+
+export interface MeetingParticipantRow {
+  memberId: string;
+  userId: string | null;
+  displayName: string;
+  avatarUrl: string | null;
+  role: GroupMemberRole;
+  membershipStatus: GroupMemberStatus;
+  attendanceState: UserMeetingCheckinState;
+  isCurrentUser: boolean;
+}
+
+export interface MeetingDetailResponse {
+  meetingId: string;
+  groupId: string;
+  groupName: string;
+  name: string;
+  occursAt: string;
+  address: string;
+  description: string;
+  startTime: MeetingStartTime;
+  durationMinutes: number;
+  status: MeetingPublicationStatus;
+  userCheckinState: UserMeetingCheckinState;
+  canCheckin: boolean;
+  canEdit: boolean;
+  attendingCount: number;
+  readingCount: number;
+  participantRows: MeetingParticipantRow[];
+}
+
+export interface EditableMeetingResponse {
+  meetingId: string;
+  groupId: string;
+  name: string;
+  occursAt: string;
+  description: string;
+  address: string;
+  startTime: MeetingStartTime;
+  durationMinutes: number;
+  publishEmailMessage: string;
+  attendanceEmailMessage: string;
+  publishHoursBefore: number;
+  notifyAttendanceHoursBefore: number;
+  status: MeetingPublicationStatus;
+  publishScheduledFor: string | null;
+  canPublishNow: boolean;
+  savedAt: string | null;
+}
+
+export interface UpdateMeetingInput {
+  name?: string;
+  occursAt?: string;
+  description?: string;
+  address?: string;
+  startTime?: MeetingStartTime;
+  durationMinutes?: number;
+  publishEmailMessage?: string;
+  attendanceEmailMessage?: string;
+  publishHoursBefore?: number;
+  notifyAttendanceHoursBefore?: number;
+}
+
+export interface UpdateMeetingResponse {
+  meetingId: string;
+  savedAt: string;
+  status: MeetingPublicationStatus;
+  publishScheduledFor: string | null;
+  updatedFields: string[];
+}
+
+export interface PublishMeetingResponse {
+  meetingId: string;
+  status: "published";
+  publishedAt: string;
+  attendanceEnabled: boolean;
+}

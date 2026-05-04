@@ -14,6 +14,8 @@ import IconClockTimeThree from "~icons/mdi/clock-time-three";
 import IconCheckCircle from "~icons/mdi/check-circle";
 import IconBookOpenPageVariant from "~icons/mdi/book-open-page-variant";
 import IconCloseCircle from "~icons/mdi/close-circle";
+import IconEye from "~icons/mdi/eye";
+import { Link } from "@tanstack/react-router";
 
 interface MeetingFeedItemProps {
   item: MyMeetingFeedItem;
@@ -178,6 +180,17 @@ export const MeetingFeedItem = ({
                   : "Update Check-In"}
               </Button>
             )}
+
+            {/* View Meeting Button */}
+            <Link
+              to="/groups/$groupId/meetings/$meetingId/view"
+              params={{ groupId: item.groupId, meetingId: item.meetingId }}
+            >
+              <Button size="sm" variant="outline" className="w-full mt-2">
+                <IconEye className="mr-1 h-4 w-4" />
+                View Meeting
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

@@ -3,11 +3,19 @@ import {
   CreateGroupMeetingInput,
   getLatestUpcomingMeetingByGroupId,
   type GroupMeetingDocument,
+  getGroupMeetingById,
+  updateGroupMeetingById,
 } from "../models/groupMeetings";
 import { getGroupById, GroupDocument } from "../models/groups";
-import { listGroupMembersByGroupId } from "../models/groupMembers";
+import {
+  listGroupMembersByGroupId,
+  type GroupMemberDocument,
+} from "../models/groupMembers";
 import { ensureObjectId } from "../models/types";
 import { AuthError } from "./authService";
+import { listMeetingAttendeesByMeetingId } from "../models/meetingAttendees";
+import { getUserById } from "../models/users";
+import type { AttendanceStatus } from "../models/groupModelCommon";
 
 export type MyMeetingsSegment = "upcoming" | "past";
 export type UserMeetingCheckinState =
@@ -16,6 +24,77 @@ export type UserMeetingCheckinState =
   | "not_attending"
   | "none";
 export type MeetingDisplayTone = "blue" | "red" | "gray";
+
+// ====== Meeting Detail & Edit DTO Types ======
+
+export interface MeetingParticipantRow {
+  memberId: string;
+  userId: string | null;
+  displayName: string;
+  avatarUrl: string | null;
+  role: "owner" | "admin" | "member";
+  membershipStatus:
+    | "accepted"
+    | "invited"
+    | "declined"
+    | "cancelled"
+    | "removed";
+  attendanceState: "attending" | "reading" | "not_attending" | "none";
+  isCurrentUser: boolean;
+}
+
+export interface MeetingDetailResponse {
+  meetingId: string;
+  groupId: string;
+  groupName: string;
+  name: string;
+  occursAt: string;
+  address: string;
+  description: string;
+  startTime: { hours: number; minutes: number };
+  durationMinutes: number;
+  status: "draft" | "published";
+  userCheckinState: UserMeetingCheckinState;
+  canCheckin: boolean;
+  canEdit: boolean;
+  attendingCount: number;
+  readingCount: number;
+  participantRows: MeetingParticipantRow[];
+}
+
+export interface EditableMeetingResponse {
+  meetingId: string;
+  groupId: string;
+  name: string;
+  occursAt: string;
+  description: string;
+  address: string;
+  startTime: { hours: number; minutes: number };
+  durationMinutes: number;
+  publishEmailMessage: string;
+  attendanceEmailMessage: string;
+  publishHoursBefore: number;
+  notifyAttendanceHoursBefore: number;
+  status: "draft" | "published";
+  publishScheduledFor: string | null;
+  canPublishNow: boolean;
+  savedAt: string | null;
+}
+
+export interface MeetingAutosaveResult {
+  meetingId: string;
+  savedAt: string;
+  status: "draft" | "published";
+  publishScheduledFor: string | null;
+  updatedFields: string[];
+}
+
+export interface PublishMeetingResult {
+  meetingId: string;
+  status: "published";
+  publishedAt: string;
+  attendanceEnabled: true;
+}
 
 export interface MyMeetingFeedItem extends Omit<
   CreateGroupMeetingInput,
@@ -216,5 +295,191 @@ export const createUpcomingMeetingFromDefaults = async (
     meetingId,
     redirectTo: `/groups/${groupId}/meetings/${meetingId}/edit`,
     createdFromDefaults: true,
+  };
+};
+
+// ====== Meeting Detail & Edit Helpers ======
+
+const computePublishScheduledFor = (
+  publishHoursBefore: number,
+  occursAt: Date,
+): Date => {
+  const result = new Date(occursAt);
+  result.setHours(result.getHours() - publishHoursBefore);
+  return result;
+};
+
+const buildMeetingParticipantRows = async (
+  members: GroupMemberDocument[],
+  attendeeStatuses: Map<string, AttendanceStatus>,
+  currentUserId: string,
+): Promise<MeetingParticipantRow[]> => {
+  const rows: MeetingParticipantRow[] = [];
+
+  for (const member of members) {
+    const memberIdHex = member._id.toHexString();
+    const status = attendeeStatuses.get(memberIdHex) ?? "none";
+
+    const attendanceState: "attending" | "reading" | "not_attending" | "none" =
+      status === "invited" ? "none" : (status as any);
+
+    const isCurrentUser = member.userId
+      ? member.userId.equals(ensureObjectId(currentUserId, "currentUserId"))
+      : false;
+
+    // Get user details if linked
+    let displayName = "Unknown Member";
+    let avatarUrl: string | null = null;
+    if (member.userId) {
+      const user = await getUserById(member.userId);
+      if (user) {
+        displayName = `${user.firstName} ${user.lastName}`.trim();
+      }
+    }
+
+    rows.push({
+      memberId: memberIdHex,
+      userId: member.userId?.toHexString() ?? null,
+      displayName,
+      avatarUrl,
+      role: member.role,
+      membershipStatus: member.status,
+      attendanceState,
+      isCurrentUser,
+    });
+  }
+
+  return rows;
+};
+
+export const buildMeetingDetailResponse = async (
+  meeting: GroupMeetingDocument,
+  group: GroupDocument,
+  currentUserId: string,
+): Promise<MeetingDetailResponse> => {
+  // Authorization: user must be accepted member
+  const members = await listGroupMembersByGroupId(
+    meeting.groupId.toHexString(),
+    {
+      limit: 500,
+    },
+  );
+  const userObjectId = ensureObjectId(currentUserId, "userId");
+  const userMembership = members.find(
+    (m) => m.userId?.equals(userObjectId) && m.status === "accepted",
+  );
+
+  if (!userMembership) {
+    throw new AuthError("Forbidden", 403);
+  }
+
+  // If draft, only admins and owners can view
+  if (
+    meeting.status === "draft" &&
+    userMembership.role !== "admin" &&
+    userMembership.role !== "owner"
+  ) {
+    throw new AuthError("Forbidden", 403);
+  }
+
+  // Get attendance status
+  const attendees = await listMeetingAttendeesByMeetingId(meeting._id);
+  const attendeeStatuses = new Map(
+    attendees.map((a) => [a.memberId.toHexString(), a.status]),
+  );
+
+  // Count attendance
+  let attendingCount = 0;
+  let readingCount = 0;
+  let userCheckinState: UserMeetingCheckinState = "none";
+
+  for (const [memberId, status] of attendeeStatuses) {
+    if (status === "attending") attendingCount++;
+    if (status === "reading") readingCount++;
+    if (memberId === userMembership._id.toHexString()) {
+      userCheckinState =
+        status === "invited" ? "none" : (status as UserMeetingCheckinState);
+    }
+  }
+
+  // Build participant rows (accepted members only)
+  const acceptedMembers = members.filter((m) => m.status === "accepted");
+  const participantRows = await buildMeetingParticipantRows(
+    acceptedMembers,
+    attendeeStatuses,
+    currentUserId,
+  );
+
+  // Check if can check in (only for upcoming published meetings)
+  const now = new Date();
+  const isUpcoming = meeting.occursAt > now;
+  const canCheckin = isUpcoming && meeting.status === "published";
+
+  return {
+    meetingId: meeting._id.toHexString(),
+    groupId: meeting.groupId.toHexString(),
+    groupName: group.name,
+    name: meeting.name,
+    occursAt: meeting.occursAt.toISOString(),
+    address: meeting.address,
+    description: meeting.description,
+    startTime: meeting.startTime,
+    durationMinutes: meeting.durationMinutes,
+    status: meeting.status,
+    userCheckinState,
+    canCheckin,
+    canEdit: userMembership.role === "owner" || userMembership.role === "admin",
+    attendingCount,
+    readingCount,
+    participantRows,
+  };
+};
+
+export const buildEditableMeetingResponse = async (
+  meeting: GroupMeetingDocument,
+  group: GroupDocument,
+  currentUserId: string,
+): Promise<EditableMeetingResponse> => {
+  // Authorization: user must be accepted admin or owner
+  const members = await listGroupMembersByGroupId(
+    meeting.groupId.toHexString(),
+    {
+      limit: 500,
+    },
+  );
+  const userObjectId = ensureObjectId(currentUserId, "userId");
+  const adminMembership = members.find(
+    (m) =>
+      m.userId?.equals(userObjectId) &&
+      m.status === "accepted" &&
+      (m.role === "owner" || m.role === "admin"),
+  );
+
+  if (!adminMembership) {
+    throw new AuthError("Forbidden", 403);
+  }
+
+  const publishScheduledFor = computePublishScheduledFor(
+    meeting.publishHoursBefore,
+    meeting.occursAt,
+  );
+
+  return {
+    meetingId: meeting._id.toHexString(),
+    groupId: meeting.groupId.toHexString(),
+    name: meeting.name,
+    occursAt: meeting.occursAt.toISOString(),
+    description: meeting.description,
+    address: meeting.address,
+    startTime: meeting.startTime,
+    durationMinutes: meeting.durationMinutes,
+    publishEmailMessage: meeting.publishEmailMessage,
+    attendanceEmailMessage: meeting.attendanceEmailMessage,
+    publishHoursBefore: meeting.publishHoursBefore,
+    notifyAttendanceHoursBefore: meeting.notifyAttendanceHoursBefore,
+    status: meeting.status,
+    publishScheduledFor: publishScheduledFor.toISOString(),
+    canPublishNow: meeting.status === "draft",
+    savedAt: null,
   };
 };

@@ -2,6 +2,7 @@ import { apiClient } from "../lib/apiClient";
 import { toApiError } from "./types";
 import type {
   CreateUpcomingMeetingResponse,
+  EditableMeetingResponse,
   EditableGroupResponse,
   GroupEventsResponse,
   GroupFormDraft,
@@ -12,11 +13,16 @@ import type {
   ListMyMeetingsResponse,
   ListMyGroupsInput,
   ListMyGroupsResponse,
+  MeetingDetailResponse,
+  MeetingParticipantRow,
   MyMeetingFeedItem,
+  PublishMeetingResponse,
   SaveGroupResponse,
   SearchParticipantsResponse,
+  UpdateMeetingInput,
   UpdateMeetingCheckinInput,
   UpdateMeetingCheckinResponse,
+  UpdateMeetingResponse,
   UpdateGroupStateInput,
   UpdateGroupStateResponse,
 } from "./types/groups";
@@ -155,6 +161,63 @@ const normalizeListMyMeetingsResponse = (
   nextCursor: data.nextCursor ?? null,
 });
 
+const normalizeMeetingParticipantRow = (
+  row: MeetingParticipantRow,
+): MeetingParticipantRow => ({
+  memberId: row.memberId,
+  userId: row.userId ?? null,
+  displayName: row.displayName,
+  avatarUrl: row.avatarUrl ?? null,
+  role: row.role,
+  membershipStatus: row.membershipStatus,
+  attendanceState: row.attendanceState ?? "none",
+  isCurrentUser: row.isCurrentUser ?? false,
+});
+
+const normalizeMeetingDetailResponse = (
+  data: MeetingDetailResponse,
+): MeetingDetailResponse => ({
+  meetingId: data.meetingId,
+  groupId: data.groupId,
+  groupName: data.groupName,
+  name: data.name,
+  occursAt: data.occursAt,
+  address: data.address ?? "",
+  description: data.description ?? "",
+  startTime: data.startTime ?? { hours: 0, minutes: 0 },
+  durationMinutes: data.durationMinutes ?? 0,
+  status: data.status,
+  userCheckinState: data.userCheckinState ?? "none",
+  canCheckin: data.canCheckin ?? false,
+  canEdit: data.canEdit ?? false,
+  attendingCount: data.attendingCount ?? 0,
+  readingCount: data.readingCount ?? 0,
+  participantRows: Array.isArray(data.participantRows)
+    ? data.participantRows.map((row) => normalizeMeetingParticipantRow(row))
+    : [],
+});
+
+const normalizeEditableMeetingResponse = (
+  data: EditableMeetingResponse,
+): EditableMeetingResponse => ({
+  meetingId: data.meetingId,
+  groupId: data.groupId,
+  name: data.name,
+  occursAt: data.occursAt,
+  description: data.description ?? "",
+  address: data.address ?? "",
+  startTime: data.startTime ?? { hours: 0, minutes: 0 },
+  durationMinutes: data.durationMinutes ?? 0,
+  publishEmailMessage: data.publishEmailMessage ?? "",
+  attendanceEmailMessage: data.attendanceEmailMessage ?? "",
+  publishHoursBefore: data.publishHoursBefore ?? 0,
+  notifyAttendanceHoursBefore: data.notifyAttendanceHoursBefore ?? 0,
+  status: data.status,
+  publishScheduledFor: data.publishScheduledFor ?? null,
+  canPublishNow: data.canPublishNow ?? false,
+  savedAt: data.savedAt ?? null,
+});
+
 export async function listMyGroups(
   input: ListMyGroupsInput = {},
 ): Promise<ListMyGroupsResponse> {
@@ -194,6 +257,78 @@ export async function updateMeetingCheckin(
       input,
     );
     return data;
+  } catch (err) {
+    throw await toApiError(err);
+  }
+}
+
+export async function getMeetingDetail(
+  groupId: string,
+  meetingId: string,
+): Promise<MeetingDetailResponse> {
+  try {
+    const { data } = await apiClient.get<MeetingDetailResponse>(
+      `/groups/${groupId}/meetings/${meetingId}`,
+    );
+    return normalizeMeetingDetailResponse(data);
+  } catch (err) {
+    throw await toApiError(err);
+  }
+}
+
+export async function getEditableMeeting(
+  groupId: string,
+  meetingId: string,
+): Promise<EditableMeetingResponse> {
+  try {
+    const { data } = await apiClient.get<EditableMeetingResponse>(
+      `/groups/${groupId}/meetings/${meetingId}/edit`,
+    );
+    return normalizeEditableMeetingResponse(data);
+  } catch (err) {
+    throw await toApiError(err);
+  }
+}
+
+export async function updateMeeting(
+  groupId: string,
+  meetingId: string,
+  input: UpdateMeetingInput,
+): Promise<UpdateMeetingResponse> {
+  try {
+    const { data } = await apiClient.patch<UpdateMeetingResponse>(
+      `/groups/${groupId}/meetings/${meetingId}/edit`,
+      input,
+    );
+    return {
+      meetingId: data.meetingId,
+      savedAt: data.savedAt,
+      status: data.status,
+      publishScheduledFor: data.publishScheduledFor ?? null,
+      updatedFields: Array.isArray(data.updatedFields)
+        ? data.updatedFields
+        : [],
+    };
+  } catch (err) {
+    throw await toApiError(err);
+  }
+}
+
+export async function publishMeeting(
+  groupId: string,
+  meetingId: string,
+): Promise<PublishMeetingResponse> {
+  try {
+    const { data } = await apiClient.post<PublishMeetingResponse>(
+      `/groups/${groupId}/meetings/${meetingId}/publish`,
+      {},
+    );
+    return {
+      meetingId: data.meetingId,
+      status: data.status,
+      publishedAt: data.publishedAt,
+      attendanceEnabled: data.attendanceEnabled ?? false,
+    };
   } catch (err) {
     throw await toApiError(err);
   }
