@@ -1,6 +1,13 @@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
   Field,
   FieldDescription,
   FieldError,
@@ -10,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { EditableMeetingResponse } from "@/api/types/groups";
+import { formatStaticDateTime } from "@/lib/dateFormat";
 
 export interface MeetingFormProps {
   meeting: EditableMeetingResponse | null;
@@ -271,34 +279,52 @@ export function MeetingForm({
 
       {/* Publish Section */}
       {meeting.canPublishNow && (
-        <fieldset className="space-y-4 border-t pt-4">
-          <legend className="text-sm font-semibold text-blue-600">
-            Draft Meeting
-          </legend>
-          <p className="text-sm text-muted-foreground">
-            This meeting is currently a draft and is not visible to members.
-            Publish it to make it available.
-          </p>
-          <Button
-            type="button"
-            onClick={onPublish}
-            disabled={isSaving || isPublishing}
-            className="w-full bg-blue-600 hover:bg-blue-700"
-          >
-            {isPublishing ? "Publishing..." : "Publish Meeting"}
-          </Button>
-        </fieldset>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-semibold">
+              Publication Status: Draft
+            </CardTitle>
+            <CardDescription>
+              <p>
+                This meeting is currently a draft and is not visible to members.
+                Publish it to make it available.
+              </p>
+
+              {meeting.publishScheduledFor && (
+                <p className="text-gray-800 text-sm my-2">
+                  <b>Automatic publication:</b>
+                  <br />
+                  This meeting will is scheduled to be automatically published
+                  on {formatStaticDateTime(meeting.publishScheduledFor)}
+                </p>
+              )}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              type="button"
+              onClick={onPublish}
+              disabled={isSaving || isPublishing}
+              className="w-full bg-blue-600 hover:bg-blue-700"
+            >
+              {isPublishing ? "Publishing..." : "Publish Meeting"}
+            </Button>
+          </CardContent>
+        </Card>
       )}
 
       {meeting.status === "published" && (
-        <fieldset className="space-y-2 border-t pt-4">
-          <legend className="text-sm font-semibold text-green-600">
-            Published
-          </legend>
-          <p className="text-sm text-green-600">
-            This meeting is live and members can check in.
-          </p>
-        </fieldset>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-semibold">
+              Publication Status: Published
+            </CardTitle>
+            <CardDescription>
+              This meeting is live and members can check in.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>TODO: Cancel button here</CardContent>
+        </Card>
       )}
     </form>
   );
