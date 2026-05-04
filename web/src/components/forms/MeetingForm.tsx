@@ -66,7 +66,6 @@ export function MeetingForm({
   onFieldBlur,
   onPublish,
 }: MeetingFormProps) {
-  console.log(fields.description);
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -83,7 +82,6 @@ export function MeetingForm({
     );
   }
 
-  console.log("rendienrg form");
   return (
     <form className="flex flex-col gap-6" noValidate>
       <div className="space-y-2">

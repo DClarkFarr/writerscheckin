@@ -1,4 +1,4 @@
-import { forwardRef, useImperativeHandle } from "react";
+import { forwardRef, useEffect, useImperativeHandle } from "react";
 import {
   Editor,
   EditorContent,
@@ -47,6 +47,25 @@ export const RichTextEditor = forwardRef<
       onChange(editor.getHTML());
     },
   });
+
+  useEffect(() => {
+    if (!editor) {
+      return;
+    }
+
+    const currentHtml = editor.getHTML();
+    const normalizedValue = value || "";
+    const isEquivalentEmpty =
+      normalizedValue.trim() === "" && currentHtml.trim() === "<p></p>";
+
+    const currentHtmlIsEmpty =
+      currentHtml.trim() === "" || currentHtml.trim() === "<p></p>";
+
+    if (currentHtmlIsEmpty && !isEquivalentEmpty) {
+      // Sync external updates (for async-loaded form values) without triggering onUpdate.
+      editor.commands.setContent(normalizedValue);
+    }
+  }, [value]);
 
   useImperativeHandle(
     ref,
