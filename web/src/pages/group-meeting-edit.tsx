@@ -9,6 +9,8 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { useHomeStore } from "@/store/homeStore";
+import { MeetingForm } from "@/components/forms/MeetingForm";
+import { useMeetingForm } from "@/hooks/useMeetingForm";
 
 export interface GroupMeetingEditPageProps {
   groupId: string;
@@ -19,6 +21,24 @@ export function GroupMeetingEditPage({
   groupId,
   meetingId,
 }: GroupMeetingEditPageProps) {
+  const {
+    meeting,
+    isLoading,
+    isSaving,
+    isPublishing,
+    formError,
+    saveStatus,
+    fieldErrors,
+    touched,
+    fields,
+    handleFieldChange,
+    handleFieldBlur,
+    handlePublish,
+  } = useMeetingForm({
+    groupId,
+    meetingId,
+  });
+
   const header = (
     <Breadcrumb variant="light">
       <BreadcrumbList>
@@ -35,14 +55,14 @@ export function GroupMeetingEditPage({
         <BreadcrumbSeparator />
         <BreadcrumbItem>
           <BreadcrumbLink asChild>
-            <Link to="/groups/$groupId/edit" params={{ groupId }}>
-              Edit Group
+            <Link to="/groups/$groupId/view" params={{ groupId }}>
+              {meeting?.groupId ? "Group Details" : "Back"}
             </Link>
           </BreadcrumbLink>
         </BreadcrumbItem>
         <BreadcrumbSeparator />
         <BreadcrumbItem>
-          <BreadcrumbPage>Edit Meeting</BreadcrumbPage>
+          <BreadcrumbPage>{meeting?.name || "Edit Meeting"}</BreadcrumbPage>
         </BreadcrumbItem>
       </BreadcrumbList>
     </Breadcrumb>
@@ -50,19 +70,20 @@ export function GroupMeetingEditPage({
 
   return (
     <PageCard grow header={header}>
-      <div className="flex flex-col gap-3">
-        <div className="space-y-2">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Meetings
-          </p>
-          <h1 className="text-2xl font-semibold text-foreground">
-            Edit Meeting
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Meeting editor shell for group {groupId} and meeting {meetingId}.
-          </p>
-        </div>
-      </div>
+      <MeetingForm
+        meeting={meeting || null}
+        isLoading={isLoading}
+        isSaving={isSaving}
+        isPublishing={isPublishing}
+        formError={formError}
+        saveStatus={saveStatus}
+        fieldErrors={fieldErrors}
+        touched={touched}
+        fields={fields}
+        onFieldChange={handleFieldChange}
+        onFieldBlur={handleFieldBlur}
+        onPublish={handlePublish}
+      />
     </PageCard>
   );
 }
