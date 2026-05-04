@@ -13,7 +13,6 @@ export interface GroupSummaryAvailableActions {
   canActivate: boolean;
   canDeactivate: boolean;
   canViewUpcomingMeeting: boolean;
-  canCreateManualMeeting: boolean;
 }
 
 export type GroupUserRole = "owner" | "admin" | "member";

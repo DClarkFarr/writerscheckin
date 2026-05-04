@@ -43,8 +43,6 @@ const normalizeGroupSummaryItem = (
     canDeactivate: item.availableActions?.canDeactivate ?? false,
     canViewUpcomingMeeting:
       item.availableActions?.canViewUpcomingMeeting ?? false,
-    canCreateManualMeeting:
-      item.availableActions?.canCreateManualMeeting ?? false,
   },
 });
 
@@ -79,8 +77,6 @@ const normalizeEditableGroupResponse = (
       canDeactivate: data.availableActions?.canDeactivate ?? false,
       canViewUpcomingMeeting:
         data.availableActions?.canViewUpcomingMeeting ?? false,
-      canCreateManualMeeting:
-        data.availableActions?.canCreateManualMeeting ?? false,
     },
   };
 };

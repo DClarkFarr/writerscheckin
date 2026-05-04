@@ -91,14 +91,12 @@ export function GroupAdminActionsMenu({
           View Upcoming Meeting
         </DropdownMenuItem>
         <DropdownMenuItem
-          disabled={
-            disabled || !availableActions.canCreateManualMeeting || isPending
-          }
+          disabled={disabled || isPending}
           onSelect={() => {
             createMeeting();
           }}
         >
-          {isPending ? "Creating Meeting..." : "Create Manual Meeting"}
+          {isPending ? "Creating Meeting..." : "Create Next Meeting"}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

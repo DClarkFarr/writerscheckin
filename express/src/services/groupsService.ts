@@ -121,7 +121,6 @@ export interface EditableGroupFormResult {
     canActivate: boolean;
     canDeactivate: boolean;
     canViewUpcomingMeeting: boolean;
-    canCreateManualMeeting: boolean;
   };
   description: string;
   address: string;

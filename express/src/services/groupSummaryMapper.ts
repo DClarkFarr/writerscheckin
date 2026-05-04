@@ -2,7 +2,6 @@ export interface GroupSummaryAvailableActions {
   canActivate: boolean;
   canDeactivate: boolean;
   canViewUpcomingMeeting: boolean;
-  canCreateManualMeeting: boolean;
 }
 
 export interface GroupSummaryItem {
@@ -44,7 +43,6 @@ export const buildActionAvailability = (
   canActivate: !isActive,
   canDeactivate: isActive,
   canViewUpcomingMeeting: hasUpcomingMeeting,
-  canCreateManualMeeting: !hasUpcomingMeeting,
 });
 
 export const mapToGroupSummaryItem = (
