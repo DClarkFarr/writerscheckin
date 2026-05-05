@@ -4,6 +4,7 @@ import type {
   MeetingDisplayTone,
   UserMeetingCheckinState,
 } from "@/api/types/groups";
+import dayjs from "dayjs";
 
 type MeetingTimeState = "upcoming" | "past" | "ongoing";
 export interface MemberMeetingDerivedState {
@@ -13,6 +14,7 @@ export interface MemberMeetingDerivedState {
   displayTone: MeetingDisplayTone;
   meetingTimeState: MeetingTimeState;
   canEdit: boolean;
+  toBePublishedAt: string;
 }
 
 export const getUserCanEditMeeting = (
@@ -97,6 +99,9 @@ export const getMemberMeetingDerivedState = (
     showAdminOnlyBadge: showMemberMeetingAdminOnlyBadge(meeting),
     displayTone: getMemberMeetingDisplayTone(meeting, now),
     meetingTimeState: getMemberMeetingTimeState(meeting, now),
+    toBePublishedAt: dayjs(meeting.occursAt)
+      .subtract(meeting.publishHoursBefore, "hour")
+      .toISOString(),
     canEdit: getUserCanEditMeeting(meeting),
   };
 };

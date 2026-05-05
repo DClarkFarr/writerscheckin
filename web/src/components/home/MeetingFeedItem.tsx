@@ -18,6 +18,7 @@ import {
   formatBookendMonthDay,
   formatBookendYear,
   formatDate,
+  formatTimeUntil,
 } from "@/lib/dateFormat";
 import type {
   MeetingDisplayTone,
@@ -95,6 +96,14 @@ const getGroupStartTime = (occursAt: string): string => {
   return formatDate(occursAt, "h:mm a");
 };
 
+const getTimeUntilCheckin = (
+  isUpcoming: boolean,
+  checkinAt: string,
+): string => {
+  if (!isUpcoming) return "";
+  return formatTimeUntil(checkinAt);
+};
+
 const getMeetingTitle = (name: string): string => {
   const trimmed = name.trim();
   return trimmed.length > 0 ? trimmed : "Untitled meeting";
@@ -116,8 +125,12 @@ export const MeetingFeedItem = ({
   const borderColorClass = getBookendAndBorderColor(displayTone);
   const bookendColorClass = getBookendColor(displayTone);
   const buttonColorClass = getButtonColors(displayTone);
-
+  const timeUntilCheckin = getTimeUntilCheckin(
+    derivedState.meetingTimeState === "upcoming",
+    derivedState.toBePublishedAt,
+  );
   const groupStartTime = getGroupStartTime(item.occursAt);
+
   const meetingTitle = getMeetingTitle(item.name);
   const attendingCount = getSafeCount(item.counts?.attending);
   const readingCount = getSafeCount(item.counts?.reading);
@@ -342,6 +355,17 @@ export const MeetingFeedItem = ({
             )}
 
             {/* Check-In Button */}
+            {derivedState.meetingTimeState === "upcoming" &&
+              !derivedState.canCheckin && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className={`w-full mt-2 border-gray-500`}
+                  disabled
+                >
+                  Check-in starts {timeUntilCheckin}
+                </Button>
+              )}
             {derivedState.canCheckin && (
               <Button
                 size="sm"

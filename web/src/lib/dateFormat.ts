@@ -217,3 +217,32 @@ export function formatLocalDateField(value: DateValue): string {
   if (!dt.isValid()) return "";
   return dt.format("YYYY-MM-DD");
 }
+
+export function formatTimeUntil(value: DateValue): string {
+  if (!value) return "";
+  const dt = dayjs(value);
+  if (!dt.isValid()) return "";
+  const now = dayjs();
+
+  const weeks = dt.diff(now, "week");
+  const days = dt.diff(now, "day") % 7;
+  const hours = dt.diff(now, "hour") % 24;
+  const minutes = dt.diff(now, "minute") % 60;
+
+  const arr = (
+    [
+      [weeks, "week"],
+      [days, "day"],
+      [hours, "hour"],
+      [minutes, "minute"],
+    ] as [num: number, period: string][]
+  )
+    .filter((n) => n[0] > 0)
+    .slice(0, 2);
+
+  if (!arr.length) {
+    return "soon";
+  }
+
+  return arr.map((n) => `${n[0]} ${n[1]}${n[0] > 1 ? "s" : ""}`).join(" ");
+}
