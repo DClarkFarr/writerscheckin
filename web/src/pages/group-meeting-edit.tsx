@@ -8,7 +8,6 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { useHomeStore } from "@/store/homeStore";
 import { MeetingForm } from "@/components/forms/MeetingForm";
 import { useMeetingForm } from "@/hooks/useMeetingForm";
 
@@ -45,12 +44,7 @@ export function GroupMeetingEditPage({
       <BreadcrumbList>
         <BreadcrumbItem>
           <BreadcrumbLink asChild>
-            <Link
-              to="/"
-              onClick={() => useHomeStore.getState().setView("groups")}
-            >
-              My Groups
-            </Link>
+            <Link to="/">My Groups</Link>
           </BreadcrumbLink>
         </BreadcrumbItem>
         <BreadcrumbSeparator />

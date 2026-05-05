@@ -58,7 +58,6 @@ const resolveIdentifier = async (
 ): Promise<{
   userId?: string;
   email: string;
-  status: GroupMemberInviteStatus;
 }> => {
   const trimmed = identifier.trim();
 
@@ -71,7 +70,6 @@ const resolveIdentifier = async (
     return {
       userId: user._id.toHexString(),
       email: user.email,
-      status: "accepted",
     };
   }
 
@@ -82,13 +80,11 @@ const resolveIdentifier = async (
     return {
       userId: existingUser._id.toHexString(),
       email: existingUser.email,
-      status: "accepted",
     };
   }
 
   return {
     email,
-    status: "invited",
   };
 };
 
@@ -103,10 +99,7 @@ export const addGroupMember = async (
     : await getEmailGroupMembership(resolved.email, input.groupId);
 
   const now = new Date();
-  const nextStatus =
-    existingMember?.status === "removed"
-      ? resolved.status
-      : (existingMember?.status ?? resolved.status);
+  const nextStatus = existingMember?.status ?? "invited";
   const acceptedAt =
     nextStatus === "accepted" ? (existingMember?.acceptedAt ?? now) : undefined;
 

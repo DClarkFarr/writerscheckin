@@ -8,7 +8,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { useHomeStore } from "@/store/homeStore";
+
 import { useMeetingViewQuery } from "@/queries/useMeetingViewQuery";
 import { Button } from "@/components/ui/button";
 import { formatStaticDateTime } from "@/lib/dateFormat";
@@ -82,12 +82,7 @@ export function GroupMeetingViewPage({
       <BreadcrumbList>
         <BreadcrumbItem>
           <BreadcrumbLink asChild>
-            <Link
-              to="/"
-              onClick={() => useHomeStore.getState().setView("groups")}
-            >
-              My Groups
-            </Link>
+            <Link to="/">My Groups</Link>
           </BreadcrumbLink>
         </BreadcrumbItem>
         <BreadcrumbSeparator />

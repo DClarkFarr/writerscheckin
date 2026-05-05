@@ -21,6 +21,7 @@ import {
   buildEditableMeetingResponse,
   type MeetingAutosaveResult,
   type PublishMeetingResult,
+  type CancelMeetingResult,
   getAggregationMemberMeetingsPaginated,
   memberMeetingAggregationRowToResponse,
 } from "../services/groupMeetingsService";
@@ -31,6 +32,7 @@ import {
   getGroupMeetingById,
   updateGroupMeetingById,
   publishGroupMeetingById,
+  cancelGroupMeetingById,
   UpdateGroupMeetingInput,
 } from "../models/groupMeetings";
 import { getGroupById } from "../models/groups";
@@ -519,6 +521,41 @@ const applyGroupRoutes = () => {
         status: "published",
         publishedAt: (published.updatedAt || new Date()).toISOString(),
         attendanceEnabled: true,
+      };
+
+      res.status(200).json(result);
+    }),
+  );
+
+  // POST /:groupId/meetings/:meetingId/cancel - Cancel published meeting
+  groupsRouter.post(
+    "/:groupId/meetings/:meetingId/cancel",
+    handleAsync(async (req, res) => {
+      const userId = getAuthenticatedUserId(req);
+      const groupId = getRouteParam(req.params.groupId, "groupId");
+      const meetingId = getRouteParam(req.params.meetingId, "meetingId");
+
+      const meeting = await getGroupMeetingById(meetingId);
+      if (!meeting || meeting.groupId.toHexString() !== groupId) {
+        throw new Error("Meeting not found.");
+      }
+
+      // Verify authorization (will throw if not authorized)
+      await buildEditableMeetingResponse(
+        meeting,
+        (await getGroupById(groupId)) as any,
+        userId,
+      );
+
+      const cancelled = await cancelGroupMeetingById(meetingId);
+      if (!cancelled) {
+        throw new Error("Failed to cancel meeting.");
+      }
+
+      const result: CancelMeetingResult = {
+        meetingId: cancelled._id.toHexString(),
+        status: "cancelled",
+        cancelledAt: (cancelled.cancelledAt || new Date()).toISOString(),
       };
 
       res.status(200).json(result);

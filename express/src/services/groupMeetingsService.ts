@@ -62,10 +62,12 @@ export interface MeetingDetailResponse {
   description: string;
   startTime: { hours: number; minutes: number };
   durationMinutes: number;
-  status: "draft" | "published";
+  status: "draft" | "published" | "cancelled";
+  cancelledAt?: string;
   userCheckinState: UserMeetingCheckinState;
   canCheckin: boolean;
   canEdit: boolean;
+  canCancel: boolean;
   attendingCount: number;
   readingCount: number;
   participantRows: MeetingParticipantRow[];
@@ -84,16 +86,18 @@ export interface EditableMeetingResponse {
   attendanceEmailMessage: string;
   publishHoursBefore: number;
   notifyAttendanceHoursBefore: number;
-  status: "draft" | "published";
+  status: "draft" | "published" | "cancelled";
+  cancelledAt?: string;
   publishScheduledFor: string | null;
   canPublishNow: boolean;
+  canCancel: boolean;
   savedAt: string | null;
 }
 
 export interface MeetingAutosaveResult {
   meetingId: string;
   savedAt: string;
-  status: "draft" | "published";
+  status: "draft" | "published" | "cancelled";
   publishScheduledFor: string | null;
   updatedFields: string[];
 }
@@ -103,6 +107,12 @@ export interface PublishMeetingResult {
   status: "published";
   publishedAt: string;
   attendanceEnabled: true;
+}
+
+export interface CancelMeetingResult {
+  meetingId: string;
+  status: "cancelled";
+  cancelledAt: string;
 }
 
 export interface CreateUpcomingMeetingFromDefaultsInput {
@@ -338,6 +348,15 @@ export const buildMeetingDetailResponse = async (
     throw new AuthError("Forbidden", 403);
   }
 
+  // If canceled, only admins and owners can view
+  if (
+    !!meeting.cancelledAt &&
+    userMembership.role !== "admin" &&
+    userMembership.role !== "owner"
+  ) {
+    throw new AuthError("Forbidden", 403);
+  }
+
   // Get attendance status
   const attendees = await listMeetingAttendeesByMeetingId(meeting._id);
   const attendeeStatuses = new Map(
@@ -366,10 +385,17 @@ export const buildMeetingDetailResponse = async (
     currentUserId,
   );
 
-  // Check if can check in (only for upcoming published meetings)
+  // Check if can check in (only for upcoming published meetings, not canceled)
   const now = new Date();
   const isUpcoming = meeting.occursAt > now;
   const canCheckin = isUpcoming && meeting.status === "published";
+  const canEdit =
+    (userMembership.role === "owner" || userMembership.role === "admin") &&
+    !!meeting.cancelledAt === false;
+  const canCancel =
+    isUpcoming &&
+    (userMembership.role === "owner" || userMembership.role === "admin") &&
+    meeting.status === "published";
 
   return {
     meetingId: meeting._id.toHexString(),
@@ -382,9 +408,13 @@ export const buildMeetingDetailResponse = async (
     startTime: meeting.startTime,
     durationMinutes: meeting.durationMinutes,
     status: meeting.status,
+    ...(meeting.cancelledAt && {
+      cancelledAt: meeting.cancelledAt.toISOString(),
+    }),
     userCheckinState,
     canCheckin,
-    canEdit: userMembership.role === "owner" || userMembership.role === "admin",
+    canEdit,
+    canCancel,
     attendingCount,
     readingCount,
     participantRows,
@@ -415,10 +445,20 @@ export const buildEditableMeetingResponse = async (
     throw new AuthError("Forbidden", 403);
   }
 
+  // Cannot edit canceled meetings
+  if (!!meeting.cancelledAt) {
+    throw new Error("Cannot edit a cancelled meeting.");
+  }
+
   const publishScheduledFor = computePublishScheduledFor(
     meeting.publishHoursBefore,
     meeting.occursAt,
   );
+
+  const now = new Date();
+  const isUpcoming = meeting.occursAt > now;
+  const canCancel =
+    isUpcoming && meeting.status === "published" && !meeting.cancelledAt;
 
   return {
     meetingId: meeting._id.toHexString(),
@@ -434,8 +474,10 @@ export const buildEditableMeetingResponse = async (
     publishHoursBefore: meeting.publishHoursBefore,
     notifyAttendanceHoursBefore: meeting.notifyAttendanceHoursBefore,
     status: meeting.status,
+    cancelledAt: "",
     publishScheduledFor: publishScheduledFor.toISOString(),
     canPublishNow: meeting.status === "draft",
+    canCancel,
     savedAt: null,
   };
 };
@@ -455,6 +497,7 @@ export const groupMeetingDocumentToResponse = (doc: GroupMeetingDocument) => {
     publishHoursBefore: doc.publishHoursBefore,
     notifyAttendanceHoursBefore: doc.notifyAttendanceHoursBefore,
     status: doc.status,
+    cancelledAt: doc.cancelledAt?.toISOString() ?? null,
   };
 };
 

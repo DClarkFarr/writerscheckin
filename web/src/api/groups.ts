@@ -1,6 +1,7 @@
 import { apiClient } from "../lib/apiClient";
 import { toApiError } from "./types";
 import type {
+  CancelMeetingResponse,
   CreateUpcomingMeetingResponse,
   EditableMeetingResponse,
   EditableGroupResponse,
@@ -228,6 +229,7 @@ const normalizeMeetingDetailResponse = (
   canEdit: data.canEdit ?? false,
   attendingCount: data.attendingCount ?? 0,
   readingCount: data.readingCount ?? 0,
+  canCancel: data.canCancel ?? false,
   participantRows: Array.isArray(data.participantRows)
     ? data.participantRows.map((row) => normalizeMeetingParticipantRow(row))
     : [],
@@ -252,6 +254,7 @@ const normalizeEditableMeetingResponse = (
   publishScheduledFor: data.publishScheduledFor ?? null,
   canPublishNow: data.canPublishNow ?? false,
   savedAt: data.savedAt ?? null,
+  canCancel: data.canCancel ?? false,
 });
 
 export async function listMyGroups(
@@ -364,6 +367,25 @@ export async function publishMeeting(
       status: data.status,
       publishedAt: data.publishedAt,
       attendanceEnabled: data.attendanceEnabled ?? false,
+    };
+  } catch (err) {
+    throw await toApiError(err);
+  }
+}
+
+export async function cancelMeeting(
+  groupId: string,
+  meetingId: string,
+): Promise<CancelMeetingResponse> {
+  try {
+    const { data } = await apiClient.post<CancelMeetingResponse>(
+      `/groups/${groupId}/meetings/${meetingId}/cancel`,
+      {},
+    );
+    return {
+      meetingId: data.meetingId,
+      status: data.status,
+      cancelledAt: data.cancelledAt,
     };
   } catch (err) {
     throw await toApiError(err);

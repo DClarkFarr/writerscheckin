@@ -147,7 +147,8 @@ export type GroupMeetingPublic = {
   durationMinutes: number;
   publishHoursBefore: number;
   notifyAttendanceHoursBefore: number;
-  status: "draft" | "published";
+  status: MeetingPublicationStatus;
+  cancelledAt?: string;
   createdAt: string;
   updatedAt: string;
   deletedAt?: string;
@@ -275,9 +276,11 @@ export interface MeetingDetailResponse {
   startTime: MeetingStartTime;
   durationMinutes: number;
   status: MeetingPublicationStatus;
+  cancelledAt?: string;
   userCheckinState: UserMeetingCheckinState;
   canCheckin: boolean;
   canEdit: boolean;
+  canCancel: boolean;
   attendingCount: number;
   readingCount: number;
   participantRows: MeetingParticipantRow[];
@@ -297,8 +300,10 @@ export interface EditableMeetingResponse {
   publishHoursBefore: number;
   notifyAttendanceHoursBefore: number;
   status: MeetingPublicationStatus;
+  cancelledAt?: string;
   publishScheduledFor: string | null;
   canPublishNow: boolean;
+  canCancel: boolean;
   savedAt: string | null;
 }
 
@@ -328,4 +333,10 @@ export interface PublishMeetingResponse {
   status: "published";
   publishedAt: string;
   attendanceEnabled: boolean;
+}
+
+export interface CancelMeetingResponse {
+  meetingId: string;
+  status: "cancelled";
+  cancelledAt: string;
 }

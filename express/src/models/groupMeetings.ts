@@ -42,6 +42,7 @@ export interface GroupMeetingDefinition extends BaseModelBlueprint {
   publishHoursBefore: number;
   notifyAttendanceHoursBefore: number;
   status: GroupMeetingStatus;
+  cancelledAt: Date | null;
   deletedAt?: Date;
 }
 
@@ -61,6 +62,7 @@ export interface CreateGroupMeetingInput {
   attendanceEmailMessage?: string;
   publishHoursBefore: number;
   notifyAttendanceHoursBefore: number;
+  cancelledAt?: Date;
   status?: GroupMeetingStatus;
 }
 
@@ -146,6 +148,9 @@ const normalizeCreateInput = (
     attendanceEmailMessage: normalizeString(input.attendanceEmailMessage ?? ""),
     publishHoursBefore: input.publishHoursBefore,
     notifyAttendanceHoursBefore: input.notifyAttendanceHoursBefore,
+    cancelledAt: input.cancelledAt
+      ? assertDate(input.cancelledAt, "cancelledAt")
+      : null,
     status: assertMeetingStatus(input.status ?? "draft"),
   };
 };
@@ -680,6 +685,28 @@ export const publishGroupMeetingById = async (
     {
       $set: {
         status: assertMeetingStatus("published"),
+        ...touchTimestamps(),
+      },
+    },
+    { returnDocument: "after" },
+  );
+
+  return result;
+};
+
+export const cancelGroupMeetingById = async (
+  id: string | ObjectId,
+): Promise<GroupMeetingDocument | null> => {
+  const collection = getGroupMeetingsCollection();
+  const result = await collection.findOneAndUpdate(
+    {
+      _id: toObjectId(id, "groupMeetingId"),
+      ...activeRecordFilter(),
+    },
+    {
+      $set: {
+        status: assertMeetingStatus("cancelled"),
+        cancelledAt: new Date(),
         ...touchTimestamps(),
       },
     },
