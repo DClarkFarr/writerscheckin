@@ -12,11 +12,45 @@ import { useHomeStore } from "@/store/homeStore";
 import { useMeetingViewQuery } from "@/queries/useMeetingViewQuery";
 import { Button } from "@/components/ui/button";
 import { formatStaticDateTime } from "@/lib/dateFormat";
+import type { UserMeetingCheckinState } from "@/api/types/groups";
+import { useMemo } from "react";
 
 export interface GroupMeetingViewPageProps {
   groupId: string;
   meetingId: string;
 }
+
+function getParticipantColors(checkinState: UserMeetingCheckinState) {
+  switch (checkinState) {
+    case "attending":
+      return {
+        borderColor: "border-green-500",
+        bgColor: "bg-green-50",
+      };
+    case "reading":
+      return {
+        borderColor: "border-blue-500",
+        bgColor: "bg-blue-50",
+      };
+    case "not_attending":
+      return {
+        borderColor: "border-red-500",
+        bgColor: "bg-red-50",
+      };
+    default:
+      return {
+        borderColor: "border-gray-300",
+        bgColor: "bg-gray-50",
+      };
+  }
+}
+
+const sortOrder: Record<UserMeetingCheckinState, number> = {
+  reading: 0,
+  attending: 1,
+  not_attending: 2,
+  none: 3,
+};
 
 export function GroupMeetingViewPage({
   groupId,
@@ -30,6 +64,18 @@ export function GroupMeetingViewPage({
     groupId,
     meetingId,
   });
+
+  const participantRows = meeting?.participantRows;
+  const sortedParticipants = useMemo(() => {
+    if (!participantRows) return [];
+
+    return participantRows.sort((a, b) => {
+      const stateA = a.attendanceState;
+      const stateB = b.attendanceState;
+
+      return sortOrder[stateA] - sortOrder[stateB];
+    });
+  }, [participantRows]);
 
   const header = (
     <Breadcrumb variant="light">
@@ -161,38 +207,41 @@ export function GroupMeetingViewPage({
             Participants
           </p>
           <div className="space-y-2">
-            {meeting.participantRows.map((participant) => (
-              <div
-                key={participant.memberId}
-                className="flex items-center justify-between rounded-md border p-3 text-sm"
-              >
-                <div className="flex items-center gap-2">
-                  {participant.avatarUrl && (
-                    <img
-                      src={participant.avatarUrl}
-                      alt={participant.displayName}
-                      className="h-8 w-8 rounded-full"
-                    />
-                  )}
-                  <div>
-                    <p className="font-medium">
-                      {participant.displayName}
-                      {participant.isCurrentUser && " (You)"}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {participant.role}
+            {sortedParticipants.map((participant) => {
+              const colors = getParticipantColors(participant.attendanceState);
+              return (
+                <div
+                  key={participant.memberId}
+                  className={`flex items-center justify-between rounded-md border p-3 text-sm ${colors.borderColor} ${colors.bgColor}`}
+                >
+                  <div className="flex items-center gap-2">
+                    {participant.avatarUrl && (
+                      <img
+                        src={participant.avatarUrl}
+                        alt={participant.displayName}
+                        className="h-8 w-8 rounded-full"
+                      />
+                    )}
+                    <div>
+                      <p className="font-medium">
+                        {participant.displayName}
+                        {participant.isCurrentUser && " (You)"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {participant.role}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-medium capitalize">
+                      {participant.attendanceState === "none"
+                        ? "Invited"
+                        : participant.attendanceState}
                     </p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-xs font-medium capitalize">
-                    {participant.attendanceState === "none"
-                      ? "Not responded"
-                      : participant.attendanceState}
-                  </p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
