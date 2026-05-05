@@ -158,7 +158,6 @@ export interface GroupEventsResponse {
   nextCursor: string | null;
 }
 
-export type MyMeetingsSegment = "upcoming" | "past";
 export type MeetingPublicationStatus = "draft" | "published";
 export type UserMeetingCheckinState =
   | "attending"
@@ -216,7 +215,6 @@ export interface MyMeetingFeedItem {
   groupName: string;
   name: string;
   occursAt: string;
-  segment: MyMeetingsSegment;
   status: MeetingPublicationStatus;
   isAdminOnly: boolean;
   showAdminOnlyBadge: boolean;

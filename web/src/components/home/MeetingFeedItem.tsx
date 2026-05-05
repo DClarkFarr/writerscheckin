@@ -17,12 +17,12 @@ import {
 } from "@/hooks/useMemberMeetingDerivedState";
 import IconEyeLock from "~icons/mdi/eye-lock";
 import IconClockTimeThree from "~icons/mdi/clock-time-three";
-
+import IconPencil from "~icons/mdi/pencil";
 import IconCheckCircle from "~icons/mdi/check-circle";
 import IconBookOpenPageVariant from "~icons/mdi/book-open-page-variant";
 import IconCloseCircle from "~icons/mdi/close-circle";
 import IconEye from "~icons/mdi/eye";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 
 interface MeetingFeedItemProps {
   item: MemberMeetingFeedItem;
@@ -105,6 +105,8 @@ export const MeetingFeedItem = ({
   const readingCount = getSafeCount(item.counts?.reading);
   const hasValidOccursAt = !Number.isNaN(new Date(item.occursAt).getTime());
 
+  const navigate = useNavigate();
+
   return (
     <Card className={`border-l-4 blabla p-0! ${borderColorClass}`} size="sm">
       <div className="flex">
@@ -138,18 +140,77 @@ export const MeetingFeedItem = ({
           <div className="space-y-2">
             {/* Title and Admin Badge */}
             <div className="flex items-start justify-between gap-2">
-              <h3 className="font-medium text-sm leading-tight max-w-xs">
-                {meetingTitle}
-              </h3>
-              {derivedState.showAdminOnlyBadge && (
-                <Badge
-                  variant="secondary"
-                  className="flex items-center gap-1 text-xs whitespace-nowrap"
-                >
-                  <IconEyeLock />
-                  <span>admin only</span>
-                </Badge>
-              )}
+              <div className="grow">
+                <h3 className="font-medium text-sm leading-tight">
+                  {meetingTitle}
+                </h3>
+              </div>
+              <div className="flex gap-1">
+                {derivedState.showAdminOnlyBadge && (
+                  <Badge
+                    variant="secondary"
+                    className="flex items-center gap-1 text-xs whitespace-nowrap"
+                  >
+                    <IconEyeLock />
+                    <span>admin only</span>
+                  </Badge>
+                )}
+
+                {derivedState.meetingTimeState === "upcoming" &&
+                derivedState.canEdit ? (
+                  <Link
+                    to="/groups/$groupId/meetings/$meetingId/view"
+                    params={{
+                      groupId: item.groupId,
+                      meetingId: item.meetingId,
+                    }}
+                  >
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      onClick={() =>
+                        navigate({
+                          to: "/groups/$groupId/meetings/$meetingId/edit",
+                          params: {
+                            groupId: item.groupId,
+                            meetingId: item.meetingId,
+                          },
+                        })
+                      }
+                    >
+                      <IconPencil />
+                    </Button>
+                  </Link>
+                ) : (
+                  <Link
+                    to="/groups/$groupId/meetings/$meetingId/view"
+                    params={{
+                      groupId: item.groupId,
+                      meetingId: item.meetingId,
+                    }}
+                  >
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="ghost"
+                      onClick={() =>
+                        navigate({
+                          to: "/groups/$groupId/meetings/$meetingId/view",
+                          params: {
+                            groupId: item.groupId,
+                            meetingId: item.meetingId,
+                          },
+                        })
+                      }
+                    >
+                      <IconEye />
+                    </Button>
+                  </Link>
+                )}
+
+                {/* <GroupAdminActionsMenu group={group} /> */}
+              </div>
             </div>
 
             {/* Group Name and Counts */}
@@ -213,17 +274,6 @@ export const MeetingFeedItem = ({
                 {userCheckinState === "none" ? "Check In" : "Update Check-In"}
               </Button>
             )}
-
-            {/* View Meeting Button */}
-            <Link
-              to="/groups/$groupId/meetings/$meetingId/view"
-              params={{ groupId: item.groupId, meetingId: item.meetingId }}
-            >
-              <Button size="sm" variant="outline" className="w-full mt-2">
-                <IconEye className="mr-1 h-4 w-4" />
-                View Meeting
-              </Button>
-            </Link>
           </div>
         </div>
       </div>

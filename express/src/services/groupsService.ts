@@ -31,9 +31,7 @@ import {
 } from "../models/groupMembers";
 import {
   countGroupMeetingsByGroupId,
-  getNextUpcomingPublishedMeetingByGroupId,
   getNextUpcomingMeetingByGroupId,
-  listGroupMeetingsForFeed,
   listGroupMeetingsByGroupIdPaginated,
 } from "../models/groupMeetings";
 import { ensureObjectId } from "../models/types";
@@ -45,15 +43,7 @@ import {
   type MeetingTimeOfDay,
 } from "../models/groupModelCommon";
 import { AuthError } from "./authService";
-import {
-  mapMeetingToMyMeetingFeedItem,
-  type MyMeetingFeedItem,
-} from "./groupMeetingsService";
 import { addGroupMember, removeGroupMember } from "./groupMembersService";
-import {
-  getMeetingCheckinAggregatesByMeetingIds,
-  getUserCheckinStatesForMeetingsByMemberIds,
-} from "../models/meetingCheckins";
 
 import { recordAuditEvent } from "../utils/audit";
 
@@ -417,86 +407,6 @@ export interface ListMyGroupsProps {
   limit?: number | undefined;
   status?: GroupMemberInviteStatus | undefined;
 }
-
-const compareMyMeetingItem = (
-  left: MyMeetingFeedItem,
-  right: MyMeetingFeedItem,
-): number => {
-  if (left.segment !== right.segment) {
-    return left.segment === "upcoming" ? -1 : 1;
-  }
-
-  const leftDate = new Date(left.occursAt).getTime();
-  const rightDate = new Date(right.occursAt).getTime();
-
-  if (left.segment === "upcoming") {
-    if (leftDate !== rightDate) {
-      return leftDate - rightDate;
-    }
-  } else if (leftDate !== rightDate) {
-    return rightDate - leftDate;
-  }
-
-  if (left.name !== right.name) {
-    return left.name.localeCompare(right.name);
-  }
-
-  return left.meetingId.localeCompare(right.meetingId);
-};
-
-const cursorFromMeetingItem = (
-  item: MyMeetingFeedItem,
-): DecodedMyMeetingsCursor => ({
-  segment: item.segment,
-  occursAt: new Date(item.occursAt),
-  name: item.name,
-  id: item.meetingId,
-});
-
-const compareMeetingItemToCursor = (
-  item: MyMeetingFeedItem,
-  cursor: DecodedMyMeetingsCursor,
-): number => {
-  const cursorComparable: MyMeetingFeedItem = {
-    ...item,
-    segment: cursor.segment,
-    occursAt: cursor.occursAt.toISOString(),
-    name: cursor.name,
-    meetingId: cursor.id,
-  };
-
-  return compareMyMeetingItem(item, cursorComparable);
-};
-
-const listAcceptedMembershipsByUserId = async (
-  userId: ObjectId,
-): Promise<GroupMemberDocument[]> => {
-  const rows: GroupMemberDocument[] = [];
-  let cursor: DecodedCursor | null = null;
-
-  for (let page = 0; page < 20; page += 1) {
-    const response = await listGroupMembershipsByUserIdPaginated({
-      userId,
-      status: "accepted",
-      limit: 50,
-      ...(cursor ? { cursor } : {}),
-    });
-
-    rows.push(...response.userMemberships);
-
-    const last = response.userMemberships.at(-1);
-    if (!last || response.countAfter <= 0) {
-      break;
-    }
-
-    cursor = {
-      date: last.createdAt,
-      id: last._id.toHexString(),
-    };
-  }
-
-  return rows;
-};
 
 export const listMyGroupsSummary = async (input: ListMyGroupsProps) => {
   const pageSize = normalizePageSize(input.limit);

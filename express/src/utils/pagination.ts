@@ -6,10 +6,7 @@ export interface DecodedCursor {
   id: string;
 }
 
-export type FeedSegment = "upcoming" | "past";
-
 export interface DecodedMyMeetingsCursor {
-  segment: FeedSegment;
   occursAt: Date;
   name: string;
   id: string;
@@ -89,7 +86,6 @@ export const encodeMyMeetingsCursor = (
   input: DecodedMyMeetingsCursor,
 ): string => {
   return encodeOpaqueCursor({
-    segment: input.segment,
     occursAt: input.occursAt.toISOString(),
     name: input.name,
     id: input.id,
@@ -100,7 +96,6 @@ export const decodeMyMeetingsCursor = (
   value?: string,
 ): DecodedMyMeetingsCursor | null => {
   const decoded = decodeOpaqueCursor<{
-    segment?: string;
     occursAt?: string;
     name?: string;
     id?: string;
@@ -111,7 +106,6 @@ export const decodeMyMeetingsCursor = (
   }
 
   if (
-    (decoded.segment !== "upcoming" && decoded.segment !== "past") ||
     typeof decoded.occursAt !== "string" ||
     typeof decoded.name !== "string" ||
     typeof decoded.id !== "string"
@@ -125,7 +119,6 @@ export const decodeMyMeetingsCursor = (
   }
 
   return {
-    segment: decoded.segment,
     occursAt,
     name: decoded.name,
     id: decoded.id,

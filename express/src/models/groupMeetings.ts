@@ -26,11 +26,7 @@ import {
   buildCurrentMemberMeetingAttendanceLookup,
   type MeetingAttendeeDocument,
 } from "./meetingAttendees";
-import {
-  normalizePageSize,
-  type DecodedCursor,
-  type FeedSegment,
-} from "../utils/pagination";
+import { normalizePageSize, type DecodedCursor } from "../utils/pagination";
 
 export interface GroupMeetingDefinition extends BaseModelBlueprint {
   groupId: ObjectId;
@@ -275,7 +271,6 @@ export const listGroupMeetingsByGroupId = async (
 
 export const listGroupMeetingsForFeed = async ({
   groupId,
-  segment,
   statuses,
   now,
   limit,
@@ -287,16 +282,10 @@ export const listGroupMeetingsForFeed = async ({
     .find({
       groupId: toObjectId(groupId, "groupId"),
       status: { $in: statuses },
-      ...(segment === "upcoming"
-        ? { occursAt: { $gte: reference } }
-        : { occursAt: { $lt: reference } }),
+      occursAt: { $lt: reference },
       ...activeRecordFilter(),
     })
-    .sort(
-      segment === "upcoming"
-        ? { occursAt: 1, name: 1, _id: 1 }
-        : { occursAt: -1, name: 1, _id: 1 },
-    )
+    .sort({ occursAt: 1, name: 1, _id: 1 })
     .limit(typeof limit === "number" ? limit : 500)
     .toArray();
 };
@@ -312,7 +301,6 @@ export interface ListGroupMeetingsByGroupIdPaginatedProps {
 
 export interface ListGroupMeetingsForFeedProps {
   groupId: string | ObjectId;
-  segment: FeedSegment;
   statuses: GroupMeetingStatus[];
   now?: Date;
   limit?: number;

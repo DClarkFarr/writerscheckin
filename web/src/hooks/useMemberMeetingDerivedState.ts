@@ -5,20 +5,22 @@ import type {
   UserMeetingCheckinState,
 } from "@/api/types/groups";
 
+type MeetingTimeState = "upcoming" | "past" | "ongoing";
 export interface MemberMeetingDerivedState {
-  segment: "upcoming" | "past";
   attendanceState: UserMeetingCheckinState;
   canCheckin: boolean;
   showAdminOnlyBadge: boolean;
   displayTone: MeetingDisplayTone;
+  meetingTimeState: MeetingTimeState;
+  canEdit: boolean;
 }
 
-export const getMemberMeetingSegment = (
-  meeting: Pick<MemberMeetingFeedItem, "occursAt">,
-  now: Date = new Date(),
-): "upcoming" | "past" => {
-  const occursAt = new Date(meeting.occursAt);
-  return occursAt.getTime() > now.getTime() ? "upcoming" : "past";
+export const getUserCanEditMeeting = (
+  meeting: Pick<MemberMeetingFeedItem, "membership">,
+): boolean => {
+  return (
+    meeting.membership.role === "owner" || meeting.membership.role === "admin"
+  );
 };
 
 export const getMemberMeetingAttendanceState = (
@@ -37,14 +39,30 @@ export const getMemberMeetingAttendanceState = (
   return attendanceStatus;
 };
 
+export const getMemberMeetingTimeState = (
+  meeting: Pick<MemberMeetingFeedItem, "occursAt" | "durationMinutes">,
+  now: Date = new Date(),
+) => {
+  const occursAt = new Date(meeting.occursAt);
+  const endsAt = new Date(occursAt.getTime() + meeting.durationMinutes * 60000);
+
+  if (now.getTime() < occursAt.getTime()) {
+    return "upcoming";
+  } else if (
+    now.getTime() >= occursAt.getTime() &&
+    now.getTime() <= endsAt.getTime()
+  ) {
+    return "ongoing";
+  } else {
+    return "past";
+  }
+};
 export const canCheckInToMemberMeeting = (
   meeting: Pick<MemberMeetingFeedItem, "occursAt" | "status">,
   now: Date = new Date(),
 ): boolean => {
-  return (
-    meeting.status === "published" &&
-    getMemberMeetingSegment(meeting, now) === "upcoming"
-  );
+  const occursAt = new Date(meeting.occursAt);
+  return meeting.status === "published" && occursAt.getTime() > now.getTime();
 };
 
 export const showMemberMeetingAdminOnlyBadge = (
@@ -60,10 +78,9 @@ export const getMemberMeetingDisplayTone = (
   meeting: Pick<MemberMeetingFeedItem, "attendance" | "occursAt" | "status">,
   now: Date = new Date(),
 ): MeetingDisplayTone => {
-  const segment = getMemberMeetingSegment(meeting, now);
   const attendanceState = getMemberMeetingAttendanceState(meeting);
-
-  if (segment === "upcoming") {
+  const occursAt = new Date(meeting.occursAt);
+  if (occursAt.getTime() > now.getTime()) {
     return attendanceState === "not_attending" ? "red" : "blue";
   }
 
@@ -75,18 +92,19 @@ export const getMemberMeetingDerivedState = (
   now: Date = new Date(),
 ): MemberMeetingDerivedState => {
   return {
-    segment: getMemberMeetingSegment(meeting, now),
     attendanceState: getMemberMeetingAttendanceState(meeting),
     canCheckin: canCheckInToMemberMeeting(meeting, now),
     showAdminOnlyBadge: showMemberMeetingAdminOnlyBadge(meeting),
     displayTone: getMemberMeetingDisplayTone(meeting, now),
+    meetingTimeState: getMemberMeetingTimeState(meeting, now),
+    canEdit: getUserCanEditMeeting(meeting),
   };
 };
 
 export const useMemberMeetingDerivedState = (
   meeting: MemberMeetingFeedItem,
   now: Date = new Date(),
-): MemberMeetingDerivedState => {
+) => {
   return useMemo(
     () => getMemberMeetingDerivedState(meeting, now),
     [meeting, now],

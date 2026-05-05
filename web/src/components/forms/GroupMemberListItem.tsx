@@ -14,6 +14,7 @@ export interface GroupMemberListItemProps {
 const ROLE_LABELS: Record<GroupMemberRole, string> = {
   admin: "Admin",
   member: "Member",
+  owner: "Owner",
 };
 
 const renderAvatar = (name: string, avatarUrl: string | null) => {

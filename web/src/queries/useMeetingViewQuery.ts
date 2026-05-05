@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getMeetingDetail } from "@/api/groups";
 import type { BaseQueryOptions } from "@/types/query.types";
-import type { MeetingDetailResponse } from "@/api/types/groups";
 
 export type UseMeetingViewQueryProps = {
   groupId: string | undefined;

@@ -27,7 +27,6 @@ import { groupMemberDocumentToResponse } from "./groupMembersService";
 import type { MeetingAttendeeDocument } from "../models/meetingAttendees";
 import { getMeetingCheckinAggregatesByMeetingIds } from "../models/meetingCheckins";
 
-export type MyMeetingsSegment = "upcoming" | "past";
 export type UserMeetingCheckinState =
   | "attending"
   | "reading"
@@ -106,26 +105,6 @@ export interface PublishMeetingResult {
   attendanceEnabled: true;
 }
 
-export interface MyMeetingFeedItem extends Omit<
-  CreateGroupMeetingInput,
-  | "emailMessage"
-  | "publishEmailMessage"
-  | "attendanceEmailMessage"
-  | "notifyAttendanceHoursBefore"
-  | "publishHoursBefore"
-  | "occursAt"
-> {
-  meetingId: string;
-  occursAt: string;
-  segment: MyMeetingsSegment;
-  isAdminOnly: boolean;
-  showAdminOnlyBadge: boolean;
-  attendingCount: number;
-  readingCount: number;
-  userCheckinState: UserMeetingCheckinState;
-  canCheckin: boolean;
-}
-
 export interface CreateUpcomingMeetingFromDefaultsInput {
   groupId: string;
   userId: string;
@@ -192,39 +171,6 @@ const computeNextOccurrence = (input: {
   );
   fallback.setHours(input.startTime.hours, input.startTime.minutes, 0, 0);
   return fallback;
-};
-
-export const mapMeetingToMyMeetingFeedItem = (input: {
-  meeting: GroupMeetingDocument;
-  group: GroupDocument;
-  segment: MyMeetingsSegment;
-  isAdminOnly: boolean;
-  attendingCount: number;
-  readingCount: number;
-  userCheckinState: UserMeetingCheckinState;
-}): MyMeetingFeedItem => {
-  const occursAt = input.meeting.occursAt ?? input.meeting.createdAt;
-  const canCheckin = input.segment === "upcoming";
-  const isDraft = input.meeting.status === "draft";
-
-  return {
-    meetingId: input.meeting._id.toHexString(),
-    groupId: input.meeting.groupId.toHexString(),
-    startTime: input.meeting.startTime,
-    address: input.meeting.address,
-    description: input.meeting.description,
-    durationMinutes: input.meeting.durationMinutes,
-    name: input.meeting.name,
-    occursAt: occursAt.toISOString(),
-    segment: input.segment,
-    status: input.meeting.status,
-    isAdminOnly: input.isAdminOnly,
-    showAdminOnlyBadge: isDraft && input.isAdminOnly,
-    attendingCount: input.attendingCount,
-    readingCount: input.readingCount,
-    userCheckinState: input.userCheckinState,
-    canCheckin,
-  };
 };
 
 export const createNextUpcomingMeetingFromGroupDefaults = async (
