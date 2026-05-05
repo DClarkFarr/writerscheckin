@@ -3,6 +3,7 @@ import { useEditableMeetingQuery } from "@/queries/useEditableMeetingQuery";
 import { useSaveMeetingMutation } from "@/queries/useSaveMeetingMutation";
 import { usePublishMeetingMutation } from "@/queries/usePublishMeetingMutation";
 import type { UpdateMeetingInput } from "@/api/types/groups";
+import { parseDateTimeFields } from "@/lib/dateFormat";
 
 const AUTOSAVE_DELAY = 1500; // 1.5 seconds
 
@@ -51,17 +52,27 @@ export function useMeetingForm({ groupId, meetingId }: UseMeetingFormProps) {
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
   const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedRef = useRef<Partial<UpdateMeetingInput>>({});
+  const latestFieldsRef = useRef<MeetingFormFields>(fields);
+  const latestMeetingRef = useRef(meeting);
+
+  useEffect(() => {
+    latestFieldsRef.current = fields;
+  }, [fields]);
+
+  useEffect(() => {
+    latestMeetingRef.current = meeting;
+  }, [meeting]);
 
   // Initialize fields from meeting data
   useEffect(() => {
     const syncFieldState = () => {
-      if (!meeting) return;
+      if (!meeting || fields.name) return;
 
       const occursAtDate = new Date(meeting.occursAt);
       const dateStr = occursAtDate.toISOString().split("T")[0];
       const timeStr = `${meeting.startTime.hours.toString().padStart(2, "0")}:${meeting.startTime.minutes.toString().padStart(2, "0")}`;
 
-      setFields({
+      const toSet = {
         name: meeting.name,
         occursAt: dateStr,
         occursAtTime: timeStr,
@@ -73,7 +84,9 @@ export function useMeetingForm({ groupId, meetingId }: UseMeetingFormProps) {
         publishHoursBefore: meeting.publishHoursBefore.toString(),
         notifyAttendanceHoursBefore:
           meeting.notifyAttendanceHoursBefore.toString(),
-      });
+      };
+      latestFieldsRef.current = toSet;
+      setFields(toSet);
 
       // Clear field errors on fresh load
       setFieldErrors({});
@@ -104,89 +117,123 @@ export function useMeetingForm({ groupId, meetingId }: UseMeetingFormProps) {
   };
 
   // Build update payload from current field state
-  const buildUpdatePayload = useCallback((): Partial<UpdateMeetingInput> => {
-    const payload: Partial<UpdateMeetingInput> = {};
+  const buildUpdatePayload = useCallback(
+    (
+      currentFields: MeetingFormFields,
+      currentMeeting: typeof meeting,
+    ): Partial<UpdateMeetingInput> => {
+      const payload: Partial<UpdateMeetingInput> = {};
 
-    if (fields.name !== meeting?.name) {
-      payload.name = fields.name;
-    }
-
-    // Reconstruct occursAt from date + time
-    if (fields.occursAt && fields.occursAtTime) {
-      const [hours, minutes] = fields.occursAtTime.split(":").map(Number);
-      const newDate = new Date(fields.occursAt);
-      newDate.setHours(hours, minutes, 0, 0);
-      if (newDate.toISOString() !== meeting?.occursAt) {
-        payload.occursAt = newDate.toISOString();
+      if (currentFields.name !== currentMeeting?.name) {
+        payload.name = currentFields.name;
       }
-    }
 
-    if (fields.description !== meeting?.description) {
-      payload.description = fields.description;
-    }
+      // Reconstruct occursAt from date + time
+      if (currentFields.occursAt && currentFields.occursAtTime) {
+        const newOccursAt =
+          parseDateTimeFields(
+            currentFields.occursAt,
+            currentFields.occursAtTime,
+          ) ?? undefined;
 
-    if (fields.address !== meeting?.address) {
-      payload.address = fields.address;
-    }
+        const [hours, minutes] = currentFields.occursAtTime
+          .split(":")
+          .map((part) => parseInt(part, 10));
 
-    if (parseInt(fields.durationMinutes, 10) !== meeting?.durationMinutes) {
-      payload.durationMinutes = parseInt(fields.durationMinutes, 10);
-    }
+        if (newOccursAt !== currentMeeting?.occursAt) {
+          payload.occursAt = newOccursAt;
+          payload.startTime = { hours, minutes };
+        }
+      }
 
-    if (fields.publishEmailMessage !== meeting?.publishEmailMessage) {
-      payload.publishEmailMessage = fields.publishEmailMessage;
-    }
+      if (currentFields.description !== currentMeeting?.description) {
+        payload.description = currentFields.description;
+      }
 
-    if (fields.attendanceEmailMessage !== meeting?.attendanceEmailMessage) {
-      payload.attendanceEmailMessage = fields.attendanceEmailMessage;
-    }
+      if (currentFields.address !== currentMeeting?.address) {
+        payload.address = currentFields.address;
+      }
 
-    if (
-      parseInt(fields.publishHoursBefore, 10) !== meeting?.publishHoursBefore
-    ) {
-      payload.publishHoursBefore = parseInt(fields.publishHoursBefore, 10);
-    }
+      if (
+        parseInt(currentFields.durationMinutes, 10) !==
+        currentMeeting?.durationMinutes
+      ) {
+        payload.durationMinutes = parseInt(currentFields.durationMinutes, 10);
+      }
 
-    if (
-      parseInt(fields.notifyAttendanceHoursBefore, 10) !==
-      meeting?.notifyAttendanceHoursBefore
-    ) {
-      payload.notifyAttendanceHoursBefore = parseInt(
-        fields.notifyAttendanceHoursBefore,
-        10,
-      );
-    }
+      if (
+        currentFields.publishEmailMessage !==
+        currentMeeting?.publishEmailMessage
+      ) {
+        payload.publishEmailMessage = currentFields.publishEmailMessage;
+      }
 
-    return payload;
-  }, [fields, meeting]);
+      if (
+        currentFields.attendanceEmailMessage !==
+        currentMeeting?.attendanceEmailMessage
+      ) {
+        payload.attendanceEmailMessage = currentFields.attendanceEmailMessage;
+      }
+
+      if (
+        parseInt(currentFields.publishHoursBefore, 10) !==
+        currentMeeting?.publishHoursBefore
+      ) {
+        payload.publishHoursBefore = parseInt(
+          currentFields.publishHoursBefore,
+          10,
+        );
+      }
+
+      if (
+        parseInt(currentFields.notifyAttendanceHoursBefore, 10) !==
+        currentMeeting?.notifyAttendanceHoursBefore
+      ) {
+        payload.notifyAttendanceHoursBefore = parseInt(
+          currentFields.notifyAttendanceHoursBefore,
+          10,
+        );
+      }
+
+      return payload;
+    },
+    [],
+  );
 
   // Perform autosave
-  const performAutosave = useCallback(async () => {
-    const payload = buildUpdatePayload();
+  const performAutosave = useCallback(
+    async (
+      currentFields: MeetingFormFields = latestFieldsRef.current,
+      currentMeeting = latestMeetingRef.current,
+    ) => {
+      const payload = buildUpdatePayload(currentFields, currentMeeting);
 
-    // Don't save if nothing changed
-    if (Object.keys(payload).length === 0) {
+      // Don't save if nothing changed
+      if (Object.keys(payload).length === 0) {
+        setSaveStatus(null);
+        return;
+      }
+
+      // Don't resend same payload
+      if (JSON.stringify(payload) === JSON.stringify(lastSavedRef.current)) {
+        setSaveStatus(null);
+        return;
+      }
+
+      lastSavedRef.current = payload;
+      setSaveStatus("Saving...");
+
+      await saveMutation.mutateAsync(payload as UpdateMeetingInput);
       setSaveStatus(null);
-      return;
-    }
-
-    // Don't resend same payload
-    if (JSON.stringify(payload) === JSON.stringify(lastSavedRef.current)) {
-      setSaveStatus(null);
-      return;
-    }
-
-    lastSavedRef.current = payload;
-    setSaveStatus("Saving...");
-
-    await saveMutation.mutateAsync(payload as UpdateMeetingInput);
-    setSaveStatus(null);
-  }, [buildUpdatePayload, saveMutation]);
+    },
+    [buildUpdatePayload, saveMutation],
+  );
 
   // Handle field change with debounced autosave
   const handleFieldChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       const { name, value } = e.target;
+      let nextFields: MeetingFormFields = latestFieldsRef.current;
 
       // Validate on change
       const error = validateField(name, value);
@@ -201,7 +248,11 @@ export function useMeetingForm({ groupId, meetingId }: UseMeetingFormProps) {
       }
 
       // Update field
-      setFields((prev) => ({ ...prev, [name]: value }));
+      setFields((prev) => {
+        nextFields = { ...prev, [name]: value };
+        latestFieldsRef.current = nextFields;
+        return nextFields;
+      });
 
       // Debounce autosave
       if (autosaveTimeoutRef.current) {
@@ -209,7 +260,7 @@ export function useMeetingForm({ groupId, meetingId }: UseMeetingFormProps) {
       }
 
       autosaveTimeoutRef.current = setTimeout(() => {
-        performAutosave();
+        void performAutosave(nextFields, latestMeetingRef.current);
       }, AUTOSAVE_DELAY);
     },
     [performAutosave],
@@ -226,8 +277,15 @@ export function useMeetingForm({ groupId, meetingId }: UseMeetingFormProps) {
 
   // Handle publish
   const handlePublish = useCallback(async () => {
+    if (autosaveTimeoutRef.current) {
+      clearTimeout(autosaveTimeoutRef.current);
+    }
+
     // First save any pending changes
-    const payload = buildUpdatePayload();
+    const payload = buildUpdatePayload(
+      latestFieldsRef.current,
+      latestMeetingRef.current,
+    );
     if (Object.keys(payload).length > 0) {
       setSaveStatus("Saving before publish...");
       await saveMutation.mutateAsync(payload as UpdateMeetingInput);
@@ -239,7 +297,17 @@ export function useMeetingForm({ groupId, meetingId }: UseMeetingFormProps) {
 
   const onChangeDescription = useCallback(
     (value: string) => {
-      setFields((prev) => ({ ...prev, description: value }));
+      if (value === latestFieldsRef.current.description) {
+        console.log("same description, skipping update");
+        return;
+      }
+      let nextFields: MeetingFormFields = latestFieldsRef.current;
+
+      setFields((prev) => {
+        nextFields = { ...prev, description: value };
+        latestFieldsRef.current = nextFields;
+        return nextFields;
+      });
 
       // Debounce autosave
       if (autosaveTimeoutRef.current) {
@@ -247,7 +315,7 @@ export function useMeetingForm({ groupId, meetingId }: UseMeetingFormProps) {
       }
 
       autosaveTimeoutRef.current = setTimeout(() => {
-        performAutosave();
+        void performAutosave(nextFields, latestMeetingRef.current);
       }, AUTOSAVE_DELAY);
     },
     [performAutosave],

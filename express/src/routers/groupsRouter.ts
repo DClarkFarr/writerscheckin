@@ -30,6 +30,7 @@ import {
   getGroupMeetingById,
   updateGroupMeetingById,
   publishGroupMeetingById,
+  UpdateGroupMeetingInput,
 } from "../models/groupMeetings";
 import { getGroupById } from "../models/groups";
 
@@ -414,7 +415,7 @@ const applyGroupRoutes = () => {
       }
 
       // Build patch from request body (only send changed fields)
-      const updateInput: any = {};
+      const updateInput: UpdateGroupMeetingInput = {};
       if (req.body?.name !== undefined) updateInput.name = req.body.name;
       if (req.body?.occursAt !== undefined)
         updateInput.occursAt = new Date(req.body.occursAt);
@@ -450,7 +451,8 @@ const applyGroupRoutes = () => {
 
       // Get updated fields list
       const updatedFields = Object.keys(updateInput).filter(
-        (key) => updateInput[key] !== undefined,
+        (key) =>
+          updateInput[key as keyof UpdateGroupMeetingInput] !== undefined,
       );
 
       const result: MeetingAutosaveResult = {

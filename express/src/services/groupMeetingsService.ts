@@ -3,8 +3,6 @@ import {
   CreateGroupMeetingInput,
   getLatestUpcomingMeetingByGroupId,
   type GroupMeetingDocument,
-  getGroupMeetingById,
-  updateGroupMeetingById,
 } from "../models/groupMeetings";
 import { getGroupById, GroupDocument } from "../models/groups";
 import {
@@ -483,3 +481,5 @@ export const buildEditableMeetingResponse = async (
     savedAt: null,
   };
 };
+export const getAggregationMemberUpcomingMeetings = () => {};
+export const getAggregationMemberMeetingFeed = () => {};

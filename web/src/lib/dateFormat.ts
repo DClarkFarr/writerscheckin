@@ -182,3 +182,38 @@ export function formatBookendYear(value: DateValue): string {
   if (!date.isValid()) return "";
   return date.format("YYYY");
 }
+
+/**
+ * Parse a date string (YYYY-MM-DD) and a time string (HH:mm) entered by the user
+ * into a UTC ISO string suitable for sending to the server.
+ *
+ * Both strings are treated as local time so that the date the user typed is always
+ * the date that gets stored, regardless of the browser's UTC offset.
+ *
+ * @param dateStr — Date string in YYYY-MM-DD format
+ * @param timeStr — Time string in HH:mm format
+ * @returns ISO string (UTC), or null if either input is missing / invalid
+ */
+export function parseDateTimeFields(
+  dateStr: string,
+  timeStr: string,
+): string | null {
+  if (!dateStr || !timeStr) return null;
+  const dt = dayjs(`${dateStr}T${timeStr}`);
+  if (!dt.isValid()) return null;
+  return dt.toISOString();
+}
+
+/**
+ * Extract a YYYY-MM-DD date string from a stored ISO timestamp, interpreting it
+ * in local time so the displayed date matches what the user originally entered.
+ *
+ * @param value — ISO timestamp or any value accepted by dayjs
+ * @returns YYYY-MM-DD string, or "" if invalid
+ */
+export function formatLocalDateField(value: DateValue): string {
+  if (!value) return "";
+  const dt = dayjs(value);
+  if (!dt.isValid()) return "";
+  return dt.format("YYYY-MM-DD");
+}

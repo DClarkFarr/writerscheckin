@@ -19,7 +19,6 @@ import {
   ModelInsertInput,
   touchTimestamps,
 } from "./types";
-import { DecodedCursor } from "../utils/pagination";
 
 export interface GroupDefinition extends BaseModelBlueprint {
   name: string;

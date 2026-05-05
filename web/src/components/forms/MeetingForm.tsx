@@ -147,6 +147,7 @@ export function MeetingForm({
             id="occursAtTime"
             name="occursAtTime"
             type="time"
+            step="900"
             value={fields.occursAtTime}
             onChange={onFieldChange}
             onBlur={onFieldBlur}
