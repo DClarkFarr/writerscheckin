@@ -3,7 +3,7 @@ import { useMyMeetingsQuery } from "@/queries/useMyMeetingsQuery";
 import { useMeetingCheckinMutation } from "@/queries/useMeetingCheckinMutation";
 import { MeetingCheckinDrawer } from "./MeetingCheckinDrawer";
 import { MeetingFeedItem } from "./MeetingFeedItem";
-import type { MyMeetingFeedItem } from "@/api/types/groups";
+import type { MemberMeetingFeedItem } from "@/api/types/groups";
 
 export function MyMeetingsTab() {
   const {
@@ -18,10 +18,10 @@ export function MyMeetingsTab() {
   } = useMyMeetingsQuery({ enabled: true });
 
   const [selectedMeetingForDrawer, setSelectedMeetingForDrawer] =
-    useState<MyMeetingFeedItem | null>(null);
+    useState<MemberMeetingFeedItem | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
 
-  const handleDrawerOpen = (meeting: MyMeetingFeedItem) => {
+  const handleDrawerOpen = (meeting: MemberMeetingFeedItem) => {
     setSelectedMeetingForDrawer(meeting);
     setIsDrawerOpen(true);
   };
@@ -70,8 +70,8 @@ export function MyMeetingsTab() {
 
   if (isLoading) {
     return (
-      <div className="py-6 text-sm text-muted-foreground">
-        Loading meetings...
+      <div className="py-6 text-sm text-muted-foreground" role="status">
+        Loading your meetings...
       </div>
     );
   }
@@ -95,8 +95,9 @@ export function MyMeetingsTab() {
 
   if (!items.length) {
     return (
-      <div className="py-6 text-sm text-center text-muted-foreground">
-        No meetings found yet.
+      <div className="py-6 text-sm text-center text-muted-foreground space-y-1">
+        <p>No meetings found yet.</p>
+        <p>Your upcoming and past meetings will appear here.</p>
       </div>
     );
   }

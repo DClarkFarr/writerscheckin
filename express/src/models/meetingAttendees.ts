@@ -1,4 +1,4 @@
-import { Collection, ObjectId } from "mongodb";
+import { Collection, ObjectId, type Document } from "mongodb";
 import { COLLECTIONS, getCollection } from "./collections";
 import {
   AttendanceStatus,
@@ -91,6 +91,68 @@ export const listMeetingAttendeesByMeetingId = async (
     .find({ meetingId: toObjectId(meetingId, "meetingId") })
     .sort({ createdAt: 1 })
     .toArray();
+};
+
+export const buildCurrentMemberMeetingAttendanceLookup = (
+  input: {
+    attendanceField?: string;
+    meetingIdField?: string;
+    memberIdField?: string;
+    preserveNullAndEmptyArrays?: boolean;
+  } = {},
+): Document[] => {
+  const attendanceField = input.attendanceField ?? "attendance";
+  const meetingIdField = input.meetingIdField ?? "_id";
+  const memberIdField = input.memberIdField ?? "membership._id";
+
+  return [
+    {
+      $lookup: {
+        from: COLLECTIONS.meetingAttendees,
+        let: {
+          meetingId: `$${meetingIdField}`,
+          memberId: `$${memberIdField}`,
+        },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$meetingId", "$$meetingId"] },
+                  { $eq: ["$memberId", "$$memberId"] },
+                ],
+              },
+            },
+          },
+          {
+            $limit: 1,
+          },
+        ],
+        as: attendanceField,
+      },
+    },
+    {
+      $unwind: {
+        path: `$${attendanceField}`,
+        preserveNullAndEmptyArrays: input.preserveNullAndEmptyArrays ?? true,
+      },
+    },
+  ];
+};
+
+export const meetingAttendeeDocumentToResponse = (
+  doc: MeetingAttendeeDocument,
+) => {
+  const createdAt = doc.createdAt.toISOString();
+
+  return {
+    meetingAttendeeId: doc._id.toHexString(),
+    meetingId: doc.meetingId.toHexString(),
+    memberId: doc.memberId.toHexString(),
+    status: doc.status,
+    createdAt,
+    updatedAt: doc.updatedAt?.toISOString() ?? createdAt,
+  };
 };
 
 export const updateMeetingAttendeeStatusById = async (

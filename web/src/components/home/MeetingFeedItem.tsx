@@ -7,7 +7,14 @@ import {
   formatBookendYear,
   formatDate,
 } from "@/lib/dateFormat";
-import type { MeetingDisplayTone, MyMeetingFeedItem } from "@/api/types/groups";
+import type {
+  MeetingDisplayTone,
+  MemberMeetingFeedItem,
+} from "@/api/types/groups";
+import {
+  getMemberMeetingAttendanceState,
+  useMemberMeetingDerivedState,
+} from "@/hooks/useMemberMeetingDerivedState";
 import IconEyeLock from "~icons/mdi/eye-lock";
 import IconClockTimeThree from "~icons/mdi/clock-time-three";
 
@@ -18,8 +25,8 @@ import IconEye from "~icons/mdi/eye";
 import { Link } from "@tanstack/react-router";
 
 interface MeetingFeedItemProps {
-  item: MyMeetingFeedItem;
-  onCheckInClick?: (item: MyMeetingFeedItem) => void;
+  item: MemberMeetingFeedItem;
+  onCheckInClick?: (item: MemberMeetingFeedItem) => void;
 }
 
 const getBookendAndBorderColor = (displayTone: string): string => {
@@ -62,21 +69,41 @@ const getButtonColors = (displayTone: string) => {
 };
 
 const getGroupStartTime = (occursAt: string): string => {
+  const parsedOccursAt = new Date(occursAt);
+
+  if (Number.isNaN(parsedOccursAt.getTime())) {
+    return "Time TBD";
+  }
+
   return formatDate(occursAt, "h:mm a");
+};
+
+const getMeetingTitle = (name: string): string => {
+  const trimmed = name.trim();
+  return trimmed.length > 0 ? trimmed : "Untitled meeting";
+};
+
+const getSafeCount = (value: number | undefined): number => {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0
+    ? value
+    : 0;
 };
 export const MeetingFeedItem = ({
   item,
   onCheckInClick,
 }: MeetingFeedItemProps) => {
-  let displayTone: MeetingDisplayTone = "gray";
-  if (item.segment === "upcoming") {
-    displayTone = item.userCheckinState === "not_attending" ? "red" : "blue";
-  }
+  const derivedState = useMemberMeetingDerivedState(item);
+  const displayTone: MeetingDisplayTone = derivedState.displayTone;
+  const userCheckinState = getMemberMeetingAttendanceState(item);
   const borderColorClass = getBookendAndBorderColor(displayTone);
   const bookendColorClass = getBookendColor(displayTone);
   const buttonColorClass = getButtonColors(displayTone);
 
   const groupStartTime = getGroupStartTime(item.occursAt);
+  const meetingTitle = getMeetingTitle(item.name);
+  const attendingCount = getSafeCount(item.counts?.attending);
+  const readingCount = getSafeCount(item.counts?.reading);
+  const hasValidOccursAt = !Number.isNaN(new Date(item.occursAt).getTime());
 
   return (
     <Card className={`border-l-4 blabla p-0! ${borderColorClass}`} size="sm">
@@ -86,15 +113,24 @@ export const MeetingFeedItem = ({
           className={`${bookendColorClass} flex flex-col items-center justify-center px-3 py-4 font-bold text-center`}
           style={{ minWidth: "60px" }}
         >
-          <div className="text-lg leading-tight">
-            {formatBookendDay(item.occursAt)}
-          </div>
-          <div className="text-xs leading-tight">
-            {formatBookendMonthDay(item.occursAt)}
-          </div>
-          <div className="text-xs leading-tight">
-            {formatBookendYear(item.occursAt)}
-          </div>
+          {hasValidOccursAt ? (
+            <>
+              <div className="text-lg leading-tight">
+                {formatBookendDay(item.occursAt)}
+              </div>
+              <div className="text-xs leading-tight">
+                {formatBookendMonthDay(item.occursAt)}
+              </div>
+              <div className="text-xs leading-tight">
+                {formatBookendYear(item.occursAt)}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="text-sm leading-tight">Date</div>
+              <div className="text-xs leading-tight">TBD</div>
+            </>
+          )}
         </div>
 
         {/* Main Content */}
@@ -103,9 +139,9 @@ export const MeetingFeedItem = ({
             {/* Title and Admin Badge */}
             <div className="flex items-start justify-between gap-2">
               <h3 className="font-medium text-sm leading-tight max-w-xs">
-                {item.name}
+                {meetingTitle}
               </h3>
-              {item.showAdminOnlyBadge && (
+              {derivedState.showAdminOnlyBadge && (
                 <Badge
                   variant="secondary"
                   className="flex items-center gap-1 text-xs whitespace-nowrap"
@@ -123,16 +159,15 @@ export const MeetingFeedItem = ({
                 {groupStartTime}
               </p>
               <p>
-                Attending:{" "}
-                <b className="text-foreground">{item.attendingCount}</b> |
-                Reading: <b className="text-foreground">{item.readingCount}</b>
+                Attending: <b className="text-foreground">{attendingCount}</b> |
+                Reading: <b className="text-foreground">{readingCount}</b>
               </p>
             </div>
 
             {/* Status Badges */}
-            {item.userCheckinState !== "none" && (
+            {userCheckinState !== "none" && (
               <div className="flex gap-2 flex-wrap">
-                {item.userCheckinState === "attending" && (
+                {userCheckinState === "attending" && (
                   <Badge
                     variant="outline"
                     className="text-sm bg-green-100 border-green-300 text-green-700"
@@ -143,7 +178,7 @@ export const MeetingFeedItem = ({
                     <span>you are coming</span>
                   </Badge>
                 )}
-                {item.userCheckinState === "reading" && (
+                {userCheckinState === "reading" && (
                   <Badge
                     variant="outline"
                     className="text-sm bg-blue-100 border-blue-300 text-blue-700"
@@ -154,7 +189,7 @@ export const MeetingFeedItem = ({
                     <span>you are reading</span>
                   </Badge>
                 )}
-                {item.userCheckinState === "not_attending" && (
+                {userCheckinState === "not_attending" && (
                   <Badge
                     variant="outline"
                     className="text-sm bg-red-100 border-red-300 text-red-700"
@@ -169,15 +204,13 @@ export const MeetingFeedItem = ({
             )}
 
             {/* Check-In Button */}
-            {item.canCheckin && (
+            {derivedState.canCheckin && (
               <Button
                 size="sm"
                 className={`w-full mt-2 ${buttonColorClass}`}
                 onClick={() => onCheckInClick?.(item)}
               >
-                {item.userCheckinState === "none"
-                  ? "Check In"
-                  : "Update Check-In"}
+                {userCheckinState === "none" ? "Check In" : "Update Check-In"}
               </Button>
             )}
 

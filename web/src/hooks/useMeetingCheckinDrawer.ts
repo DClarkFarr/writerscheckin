@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import type { MyMeetingFeedItem } from "@/api/types/groups";
+import type { MemberMeetingFeedItem } from "@/api/types/groups";
 
 interface UseMeetingCheckinDrawerProps {
   onCheckinSubmit?: (
@@ -13,10 +13,10 @@ export const useMeetingCheckinDrawer = ({
 }: UseMeetingCheckinDrawerProps = {}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedMeeting, setSelectedMeeting] =
-    useState<MyMeetingFeedItem | null>(null);
+    useState<MemberMeetingFeedItem | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const openDrawer = useCallback((meeting: MyMeetingFeedItem) => {
+  const openDrawer = useCallback((meeting: MemberMeetingFeedItem) => {
     setSelectedMeeting(meeting);
     setIsOpen(true);
   }, []);

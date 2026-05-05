@@ -7,15 +7,17 @@ import type {
   GroupEventsResponse,
   GroupFormDraft,
   GroupMeetingPublic,
+  GroupMembershipResponse,
   GroupMembersResponse,
   GroupSummaryItem,
+  ListMemberMeetingsResponse,
   ListMyMeetingsInput,
-  ListMyMeetingsResponse,
   ListMyGroupsInput,
   ListMyGroupsResponse,
+  MemberMeetingAttendance,
+  MemberMeetingFeedItem,
   MeetingDetailResponse,
   MeetingParticipantRow,
-  MyMeetingFeedItem,
   PublishMeetingResponse,
   SaveGroupResponse,
   SearchParticipantsResponse,
@@ -131,32 +133,66 @@ const normalizeGroupEventsResponse = (
   nextCursor: data.nextCursor ?? null,
 });
 
-const normalizeMyMeetingFeedItem = (
-  item: MyMeetingFeedItem,
-): MyMeetingFeedItem => ({
+const normalizeGroupMembershipResponse = (
+  membership: GroupMembershipResponse,
+): GroupMembershipResponse => ({
+  membershipId: membership.membershipId,
+  userId: membership.userId ?? null,
+  email: membership.email ?? "",
+  role: membership.role,
+  status: membership.status,
+  createdAt: membership.createdAt ?? new Date(0).toISOString(),
+  invitedBy: membership.invitedBy ?? null,
+  invitedAt: membership.invitedAt ?? null,
+  acceptedAt: membership.acceptedAt ?? null,
+});
+
+const normalizeMemberMeetingAttendance = (
+  attendance: MemberMeetingAttendance | null,
+): MemberMeetingAttendance | null => {
+  if (!attendance) {
+    return null;
+  }
+
+  return {
+    meetingAttendeeId: attendance.meetingAttendeeId,
+    meetingId: attendance.meetingId,
+    memberId: attendance.memberId,
+    status: attendance.status,
+    createdAt: attendance.createdAt ?? new Date(0).toISOString(),
+    updatedAt: attendance.updatedAt ?? new Date(0).toISOString(),
+  };
+};
+
+const normalizeMemberMeetingFeedItem = (
+  item: MemberMeetingFeedItem,
+): MemberMeetingFeedItem => ({
   meetingId: item.meetingId,
   groupId: item.groupId,
-  groupName: item.groupName,
   name: item.name,
   occursAt: item.occursAt,
-  segment: item.segment,
   status: item.status,
-  isAdminOnly: item.isAdminOnly ?? false,
-  showAdminOnlyBadge: item.showAdminOnlyBadge ?? false,
-  attendingCount: item.attendingCount ?? 0,
-  readingCount: item.readingCount ?? 0,
-  userCheckinState: item.userCheckinState ?? "none",
-  canCheckin: item.canCheckin ?? false,
   address: item.address ?? "",
   description: item.description ?? "",
   startTime: item.startTime ?? { hours: 0, minutes: 0 },
+  durationMinutes: item.durationMinutes ?? 0,
+  publishEmailMessage: item.publishEmailMessage ?? "",
+  attendanceEmailMessage: item.attendanceEmailMessage ?? "",
+  publishHoursBefore: item.publishHoursBefore ?? 0,
+  notifyAttendanceHoursBefore: item.notifyAttendanceHoursBefore ?? 0,
+  membership: normalizeGroupMembershipResponse(item.membership),
+  attendance: normalizeMemberMeetingAttendance(item.attendance),
+  counts: {
+    attending: item.counts?.attending ?? 0,
+    reading: item.counts?.reading ?? 0,
+  },
 });
 
-const normalizeListMyMeetingsResponse = (
-  data: ListMyMeetingsResponse,
-): ListMyMeetingsResponse => ({
-  items: Array.isArray(data.items)
-    ? data.items.map((item) => normalizeMyMeetingFeedItem(item))
+const normalizeListMemberMeetingsResponse = (
+  data: ListMemberMeetingsResponse,
+): ListMemberMeetingsResponse => ({
+  rows: Array.isArray(data.rows)
+    ? data.rows.map((item) => normalizeMemberMeetingFeedItem(item))
     : [],
   nextCursor: data.nextCursor ?? null,
 });
@@ -233,15 +269,15 @@ export async function listMyGroups(
 
 export async function getMyMeetings(
   input: ListMyMeetingsInput = {},
-): Promise<ListMyMeetingsResponse> {
+): Promise<ListMemberMeetingsResponse> {
   try {
-    const { data } = await apiClient.get<ListMyMeetingsResponse>(
+    const { data } = await apiClient.get<ListMemberMeetingsResponse>(
       "/groups/meetings/mine",
       {
         params: input,
       },
     );
-    return normalizeListMyMeetingsResponse(data);
+    return normalizeListMemberMeetingsResponse(data);
   } catch (err) {
     throw await toApiError(err);
   }

@@ -108,6 +108,18 @@ export interface GroupMembersResponse {
   nextCursor: string | null;
 }
 
+export interface GroupMembershipResponse {
+  membershipId: string;
+  userId: string | null;
+  email: string;
+  role: GroupMemberRole;
+  status: GroupMemberStatus;
+  createdAt: string;
+  invitedBy: string | null;
+  invitedAt: string | null;
+  acceptedAt: string | null;
+}
+
 export interface SaveGroupResponse {
   groupId: string;
   name: string;
@@ -159,6 +171,45 @@ export interface MeetingStartTime {
   hours: number;
   minutes: number;
 }
+
+export interface MemberMeetingCounts {
+  attending: number;
+  reading: number;
+}
+
+export interface MemberMeetingAttendance {
+  meetingAttendeeId: string;
+  meetingId: string;
+  memberId: string;
+  status: "invited" | "attending" | "reading" | "skipping";
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MemberMeetingFeedItem {
+  meetingId: string;
+  groupId: string;
+  name: string;
+  occursAt: string;
+  description: string;
+  address: string;
+  startTime: MeetingStartTime;
+  durationMinutes: number;
+  publishEmailMessage: string;
+  attendanceEmailMessage: string;
+  publishHoursBefore: number;
+  notifyAttendanceHoursBefore: number;
+  status: MeetingPublicationStatus;
+  membership: GroupMembershipResponse;
+  attendance: MemberMeetingAttendance | null;
+  counts: MemberMeetingCounts;
+}
+
+export interface ListMemberMeetingsResponse {
+  rows: MemberMeetingFeedItem[];
+  nextCursor: string | null;
+}
+
 export interface MyMeetingFeedItem {
   meetingId: string;
   groupId: string;
@@ -183,6 +234,10 @@ export interface ListMyMeetingsInput {
   limit?: number;
 }
 
+/**
+ * Legacy contract retained temporarily while meetings/mine consumers migrate
+ * to the aggregation-backed MemberMeetingFeedItem shape.
+ */
 export interface ListMyMeetingsResponse {
   items: MyMeetingFeedItem[];
   nextCursor: string | null;

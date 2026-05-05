@@ -3,7 +3,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { ApiError } from "@/api/types";
 import { getMyMeetings } from "@/api/groups";
 import type { BaseQueryOptions } from "@/types/query.types";
-import type { MyMeetingFeedItem } from "@/api/types/groups";
+import type { MemberMeetingFeedItem } from "@/api/types/groups";
 
 const mapErrorMessage = (error: unknown): string => {
   if (error instanceof ApiError) {
@@ -16,13 +16,13 @@ const mapErrorMessage = (error: unknown): string => {
 export const myMeetingsQueryKey = () => ["my-meetings"] as const;
 
 const flattenMeetingPages = (
-  pages: Array<{ items: MyMeetingFeedItem[] }>,
-): MyMeetingFeedItem[] => {
+  pages: Array<{ rows: MemberMeetingFeedItem[] }>,
+): MemberMeetingFeedItem[] => {
   const seenMeetingIds = new Set<string>();
-  const mergedItems: MyMeetingFeedItem[] = [];
+  const mergedItems: MemberMeetingFeedItem[] = [];
 
   for (const page of pages) {
-    for (const item of page.items ?? []) {
+    for (const item of page.rows ?? []) {
       if (!item?.meetingId || seenMeetingIds.has(item.meetingId)) {
         continue;
       }

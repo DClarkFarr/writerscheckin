@@ -2,16 +2,17 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateMeetingCheckin } from "@/api/groups";
 import { myMeetingsQueryKey } from "./useMyMeetingsQuery";
 import type {
-  MyMeetingFeedItem,
+  MemberMeetingFeedItem,
   UpdateMeetingCheckinInput,
 } from "@/api/types/groups";
+import { getMemberMeetingAttendanceState } from "@/hooks/useMemberMeetingDerivedState";
 
 interface UseMeetingCheckinMutationProps {
   meetingId: string;
 }
 
 interface MyMeetingsQueryPage {
-  items: MyMeetingFeedItem[];
+  rows: MemberMeetingFeedItem[];
 }
 
 interface MyMeetingsQueryCache {
@@ -20,15 +21,15 @@ interface MyMeetingsQueryCache {
 }
 
 interface OptimisticSnapshot {
-  originalFeedItems: MyMeetingFeedItem[] | undefined;
-  feedItemBefore: MyMeetingFeedItem | undefined;
+  originalFeedItems: MemberMeetingFeedItem[] | undefined;
+  feedItemBefore: MemberMeetingFeedItem | undefined;
 }
 
 const createOptimisticFeedItem = (
-  item: MyMeetingFeedItem,
+  item: MemberMeetingFeedItem,
   newState: "attending" | "reading" | "not_attending",
-): MyMeetingFeedItem => {
-  const stateOld = item.userCheckinState;
+): MemberMeetingFeedItem => {
+  const stateOld = getMemberMeetingAttendanceState(item);
   let attendingCountDelta = 0;
   let readingCountDelta = 0;
 
@@ -40,11 +41,29 @@ const createOptimisticFeedItem = (
   if (newState === "attending") attendingCountDelta++;
   else if (newState === "reading") readingCountDelta++;
 
+  const nextStatus = newState === "not_attending" ? "skipping" : newState;
+  const nextTimestamp = new Date().toISOString();
+
   return {
     ...item,
-    userCheckinState: newState,
-    attendingCount: item.attendingCount + attendingCountDelta,
-    readingCount: item.readingCount + readingCountDelta,
+    attendance: item.attendance
+      ? {
+          ...item.attendance,
+          status: nextStatus,
+          updatedAt: nextTimestamp,
+        }
+      : {
+          meetingAttendeeId: `optimistic-${item.meetingId}`,
+          meetingId: item.meetingId,
+          memberId: item.membership.membershipId,
+          status: nextStatus,
+          createdAt: nextTimestamp,
+          updatedAt: nextTimestamp,
+        },
+    counts: {
+      attending: item.counts.attending + attendingCountDelta,
+      reading: item.counts.reading + readingCountDelta,
+    },
   };
 };
 
@@ -69,13 +88,13 @@ export const useMeetingCheckinMutation = ({
       // Flatten items to find target meeting
       const allItems =
         previousData?.pages
-          .flatMap((page) => page.items ?? [])
+          .flatMap((page) => page.rows ?? [])
           .reduce((acc, item) => {
             if (!acc.has(item.meetingId)) {
               acc.set(item.meetingId, item);
             }
             return acc;
-          }, new Map<string, MyMeetingFeedItem>()) ?? new Map();
+          }, new Map<string, MemberMeetingFeedItem>()) ?? new Map();
 
       const feedItemBefore = allItems.get(meetingId);
 
@@ -99,7 +118,7 @@ export const useMeetingCheckinMutation = ({
             ...old,
             pages: old.pages.map((page) => ({
               ...page,
-              items: (page.items ?? []).map((item: MyMeetingFeedItem) =>
+              rows: (page.rows ?? []).map((item: MemberMeetingFeedItem) =>
                 item.meetingId === meetingId ? optimisticItem : item,
               ),
             })),
@@ -131,7 +150,7 @@ export const useMeetingCheckinMutation = ({
             ...old,
             pages: old.pages.map((page) => ({
               ...page,
-              items: (page.items ?? []).map((item: MyMeetingFeedItem) => {
+              rows: (page.rows ?? []).map((item: MemberMeetingFeedItem) => {
                 const original = itemMap.get(item.meetingId);
                 return original ?? item;
               }),
