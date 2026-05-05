@@ -2,6 +2,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   formatBookendDay,
   formatBookendMonthDay,
   formatBookendYear,
@@ -15,14 +27,19 @@ import {
   getMemberMeetingAttendanceState,
   useMemberMeetingDerivedState,
 } from "@/hooks/useMemberMeetingDerivedState";
+import { usePublishMeetingMutation } from "@/queries/usePublishMeetingMutation";
+import { myMeetingsQueryKey } from "@/queries/useMyMeetingsQuery";
+import { useQueryClient } from "@tanstack/react-query";
 import IconEyeLock from "~icons/mdi/eye-lock";
 import IconClockTimeThree from "~icons/mdi/clock-time-three";
+import IconDotsVertical from "~icons/mdi/dots-vertical";
 import IconPencil from "~icons/mdi/pencil";
 import IconCheckCircle from "~icons/mdi/check-circle";
 import IconBookOpenPageVariant from "~icons/mdi/book-open-page-variant";
 import IconCloseCircle from "~icons/mdi/close-circle";
 import IconEye from "~icons/mdi/eye";
 import { Link, useNavigate } from "@tanstack/react-router";
+import { ButtonGroup } from "../ui/button-group";
 
 interface MeetingFeedItemProps {
   item: MemberMeetingFeedItem;
@@ -92,6 +109,7 @@ export const MeetingFeedItem = ({
   item,
   onCheckInClick,
 }: MeetingFeedItemProps) => {
+  const queryClient = useQueryClient();
   const derivedState = useMemberMeetingDerivedState(item);
   const displayTone: MeetingDisplayTone = derivedState.displayTone;
   const userCheckinState = getMemberMeetingAttendanceState(item);
@@ -104,8 +122,20 @@ export const MeetingFeedItem = ({
   const attendingCount = getSafeCount(item.counts?.attending);
   const readingCount = getSafeCount(item.counts?.reading);
   const hasValidOccursAt = !Number.isNaN(new Date(item.occursAt).getTime());
+  const isUpcomingMeeting = derivedState.meetingTimeState === "upcoming";
+  const canPublishFromMenu =
+    derivedState.canEdit && isUpcomingMeeting && item.status === "draft";
 
   const navigate = useNavigate();
+  const publishMutation = usePublishMeetingMutation({
+    groupId: item.groupId,
+    meetingId: item.meetingId,
+  });
+
+  const handlePublishMeeting = async () => {
+    await publishMutation.mutateAsync();
+    await queryClient.invalidateQueries({ queryKey: myMeetingsQueryKey() });
+  };
 
   return (
     <Card className={`border-l-4 blabla p-0! ${borderColorClass}`} size="sm">
@@ -156,60 +186,107 @@ export const MeetingFeedItem = ({
                   </Badge>
                 )}
 
-                {derivedState.meetingTimeState === "upcoming" &&
-                derivedState.canEdit ? (
-                  <Link
-                    to="/groups/$groupId/meetings/$meetingId/view"
-                    params={{
-                      groupId: item.groupId,
-                      meetingId: item.meetingId,
-                    }}
-                  >
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      onClick={() =>
-                        navigate({
-                          to: "/groups/$groupId/meetings/$meetingId/edit",
-                          params: {
+                <ButtonGroup>
+                  {isUpcomingMeeting && derivedState.canEdit ? (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link
+                          to="/groups/$groupId/meetings/$meetingId/edit"
+                          params={{
                             groupId: item.groupId,
                             meetingId: item.meetingId,
-                          },
-                        })
-                      }
-                    >
-                      <IconPencil />
-                    </Button>
-                  </Link>
-                ) : (
-                  <Link
-                    to="/groups/$groupId/meetings/$meetingId/view"
-                    params={{
-                      groupId: item.groupId,
-                      meetingId: item.meetingId,
-                    }}
-                  >
-                    <Button
-                      type="button"
-                      size="icon"
-                      variant="ghost"
-                      onClick={() =>
-                        navigate({
-                          to: "/groups/$groupId/meetings/$meetingId/view",
-                          params: {
+                          }}
+                        >
+                          <Button type="button" size="icon" variant="ghost">
+                            <IconPencil />
+                          </Button>
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Edit meeting</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  ) : (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Link
+                          to="/groups/$groupId/meetings/$meetingId/view"
+                          params={{
                             groupId: item.groupId,
                             meetingId: item.meetingId,
-                          },
-                        })
-                      }
-                    >
-                      <IconEye />
-                    </Button>
-                  </Link>
-                )}
-
-                {/* <GroupAdminActionsMenu group={group} /> */}
+                          }}
+                        >
+                          <Button type="button" size="icon" variant="ghost">
+                            <IconEye />
+                          </Button>
+                        </Link>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>View meeting</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                  {derivedState.canEdit && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          aria-label="Meeting actions"
+                        >
+                          <IconDotsVertical />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        {isUpcomingMeeting ? (
+                          <DropdownMenuItem
+                            onSelect={() =>
+                              navigate({
+                                to: "/groups/$groupId/meetings/$meetingId/view",
+                                params: {
+                                  groupId: item.groupId,
+                                  meetingId: item.meetingId,
+                                },
+                              })
+                            }
+                          >
+                            View meeting
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem
+                            onSelect={() =>
+                              navigate({
+                                to: "/groups/$groupId/meetings/$meetingId/edit",
+                                params: {
+                                  groupId: item.groupId,
+                                  meetingId: item.meetingId,
+                                },
+                              })
+                            }
+                          >
+                            Edit meeting
+                          </DropdownMenuItem>
+                        )}
+                        {canPublishFromMenu && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              disabled={publishMutation.isPending}
+                              onSelect={() => {
+                                void handlePublishMeeting();
+                              }}
+                            >
+                              {publishMutation.isPending
+                                ? "Publishing..."
+                                : "Publish meeting"}
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </ButtonGroup>
               </div>
             </div>
 
