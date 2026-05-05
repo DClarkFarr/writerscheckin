@@ -337,12 +337,12 @@ export const listGroupMeetingsByGroupIdPaginated = async ({
   }
 
   const hasCursorDate =
-    cursor?.createdAt instanceof Date &&
-    !Number.isNaN(cursor.createdAt.getTime()) &&
+    cursor?.date instanceof Date &&
+    !Number.isNaN(cursor.date.getTime()) &&
     Boolean(cursor.id);
 
   if (hasCursorDate) {
-    const cursorDate = cursor.createdAt as Date;
+    const cursorDate = cursor.date as Date;
     const cursorId =
       typeof cursor?.id === "string" && ObjectId.isValid(cursor.id)
         ? new ObjectId(cursor.id)
@@ -370,7 +370,7 @@ export const listGroupMeetingsByGroupIdPaginated = async ({
   if (lastItem && hasMore) {
     const occursAt = lastItem.occursAt ?? lastItem.createdAt;
     nextCursor = {
-      createdAt: new Date(occursAt),
+      date: new Date(occursAt),
       id: lastItem._id.toHexString(),
     };
   }

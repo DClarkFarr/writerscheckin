@@ -501,7 +501,7 @@ const listAcceptedMembershipsByUserId = async (
     }
 
     cursor = {
-      createdAt: last.createdAt,
+      date: last.createdAt,
       id: last._id.toHexString(),
     };
   }
@@ -544,7 +544,7 @@ export const listMyGroupsSummary = async (input: ListMyGroupsProps) => {
 
     if (countAfter > 0) {
       nextCursor = encodeCursor({
-        createdAt: new Date(lastMembership.createdAt),
+        date: new Date(lastMembership.createdAt),
         id: lastMembership._id.toHexString(),
       });
     }

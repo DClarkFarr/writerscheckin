@@ -39,6 +39,14 @@ export const ensureObjectId = (
   return new ObjectId(value);
 };
 
+export const ensureDate = (value: string | Date, label = "date"): Date => {
+  const date = value instanceof Date ? value : new Date(value);
+  if (isNaN(date.getTime())) {
+    throw new Error(`Invalid ${label}`);
+  }
+  return date;
+};
+
 export const createTimestamps = (): ModelTimestamps => ({
   createdAt: new Date(),
 });

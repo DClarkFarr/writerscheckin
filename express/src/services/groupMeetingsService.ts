@@ -9,11 +9,14 @@ import {
   listGroupMembersByGroupId,
   type GroupMemberDocument,
 } from "../models/groupMembers";
-import { ensureObjectId } from "../models/types";
+import { ensureDate, ensureObjectId } from "../models/types";
 import { AuthError } from "./authService";
 import { listMeetingAttendeesByMeetingId } from "../models/meetingAttendees";
 import { getUserById } from "../models/users";
 import type { AttendanceStatus } from "../models/groupModelCommon";
+import { getCollection } from "../models/collections";
+import { ObjectId } from "mongodb";
+import { DecodedCursor } from "../utils/pagination";
 
 export type MyMeetingsSegment = "upcoming" | "past";
 export type UserMeetingCheckinState =
@@ -481,5 +484,210 @@ export const buildEditableMeetingResponse = async (
     savedAt: null,
   };
 };
-export const getAggregationMemberUpcomingMeetings = () => {};
-export const getAggregationMemberMeetingFeed = () => {};
+
+export type AggregationMemberNextUpcomingMeetingInput = {
+  userId: string | ObjectId;
+};
+
+export type MemberMeetingAggregationItem = GroupMeetingDocument & {
+  membership: GroupMemberDocument;
+};
+export const getAggregationMemberNextUpcomingMeetings = async ({
+  userId,
+}: AggregationMemberNextUpcomingMeetingInput) => {
+  const groupMembersCollection = getCollection("groupMembers");
+
+  const rows = await groupMembersCollection
+    .aggregate<MemberMeetingAggregationItem>([
+      ...GroupMeetingAggregation.userActiveMemberships(userId),
+      ...GroupMeetingAggregation.membershipsToMeetingLookup(),
+      ...GroupMeetingAggregation.matchUpcomingMeeting(new Date()),
+      ...GroupMeetingAggregation.matchPublishedOrAdminMeeting(),
+      ...GroupMeetingAggregation.sortMeetingsByOccursAt(1),
+      ...GroupMeetingAggregation.takeFirstOfEachGroup(),
+      ...GroupMeetingAggregation.sortMeetingsByOccursAt(-1),
+    ])
+    .toArray();
+
+  return rows;
+};
+
+export type AggregationMemberMeetingPaginatedInput = {
+  userId: string | ObjectId;
+  cursor?: DecodedCursor | null;
+  limit?: number;
+};
+export const getAggregationMemberMeetingPaginated = async ({
+  userId,
+  cursor,
+  limit = 20,
+}: AggregationMemberMeetingPaginatedInput) => {
+  const groupMembersCollection = getCollection("groupMembers");
+
+  const rows = await groupMembersCollection
+    .aggregate<MemberMeetingAggregationItem>([
+      ...GroupMeetingAggregation.userActiveMemberships(userId),
+      ...GroupMeetingAggregation.membershipsToMeetingLookup(),
+      ...GroupMeetingAggregation.matchPublishedOrAdminMeeting(),
+      ...GroupMeetingAggregation.matchAfterCursor(cursor),
+      ...GroupMeetingAggregation.sortMeetingsByOccursAt(-1),
+      ...GroupMeetingAggregation.takeByLimit(limit),
+    ])
+    .toArray();
+};
+
+export const GroupMeetingAggregation = {
+  userActiveMemberships: (userId: string | ObjectId) => {
+    return [
+      {
+        $match: {
+          $and: [
+            {
+              userId: ensureObjectId(userId, "userId"),
+            },
+            {
+              $or: [
+                {
+                  role: "owner",
+                },
+                {
+                  status: "accepted",
+                },
+              ],
+            },
+          ],
+        },
+      },
+    ];
+  },
+  membershipsToMeetingLookup: () => {
+    return [
+      {
+        $lookup: {
+          from: "groupMeetings",
+          localField: "groupId",
+          foreignField: "groupId",
+          as: "meeting",
+        },
+      },
+      {
+        $unwind: {
+          path: "$meeting",
+          includeArrayIndex: "string",
+          preserveNullAndEmptyArrays: false,
+        },
+      },
+      {
+        $replaceRoot: {
+          newRoot: {
+            $mergeObjects: [
+              "$meeting",
+              {
+                membership: "$$ROOT",
+              },
+            ],
+          },
+        },
+      },
+    ];
+  },
+  matchUpcomingMeeting: (date: Date | string) => {
+    return [
+      {
+        occursAt: {
+          $gte: ensureDate(date, "date"),
+        },
+      },
+    ];
+  },
+  matchPastMeeting: (date: Date | string) => {
+    return [
+      {
+        occursAt: {
+          $lte: ensureDate(date, "date"),
+        },
+      },
+    ];
+  },
+  matchPublishedOrAdminMeeting: () => {
+    return [
+      {
+        $match: {
+          $or: [
+            {
+              "membership.role": {
+                $in: ["admin", "owner"],
+              },
+            },
+            {
+              "membership.role": "member",
+              status: {
+                $ne: "draft",
+              },
+            },
+          ],
+        },
+      },
+    ];
+  },
+  sortMeetingsByOccursAt: (sort: 1 | -1) => {
+    return [
+      {
+        $sort: {
+          occursAt: sort,
+        },
+      },
+    ];
+  },
+  takeFirstOfEachGroup: () => {
+    return [
+      {
+        $group: {
+          _id: {
+            groupId: "$groupId",
+          },
+          row: {
+            $first: "$$ROOT",
+          },
+        },
+      },
+      {
+        $replaceRoot: {
+          newRoot: "$row",
+        },
+      },
+    ];
+  },
+  matchAfterCursor: (cursor: DecodedCursor | null | undefined) => {
+    if (!cursor) {
+      return [];
+    }
+
+    return [
+      {
+        $match: {
+          $or: [
+            {
+              date: {
+                $lt: cursor.date,
+              },
+            },
+            {
+              date: cursor.date,
+              _id: {
+                $lt: ensureObjectId(cursor.id, "cursor.id"),
+              },
+            },
+          ],
+        },
+      },
+    ];
+  },
+  takeByLimit: (limit: number) => {
+    return [
+      {
+        $limit: limit,
+      },
+    ];
+  },
+};

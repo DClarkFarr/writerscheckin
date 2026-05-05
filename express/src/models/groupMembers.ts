@@ -389,12 +389,12 @@ export const listGroupMembersByGroupIdPaginated = async ({
   }
 
   const hasCursorDate =
-    cursor?.createdAt instanceof Date &&
-    !Number.isNaN(cursor.createdAt.getTime()) &&
+    cursor?.date instanceof Date &&
+    !Number.isNaN(cursor.date.getTime()) &&
     Boolean(cursor.id);
 
   if (hasCursorDate) {
-    const createdAt = cursor.createdAt as Date;
+    const createdAt = cursor.date as Date;
     const cursorId =
       typeof cursor?.id === "string" && ObjectId.isValid(cursor.id)
         ? new ObjectId(cursor.id)
@@ -582,11 +582,10 @@ export const listGroupMembershipsByUserIdPaginated = async ({
   }
 
   const hasCursorDate =
-    cursor?.createdAt instanceof Date &&
-    !Number.isNaN(cursor.createdAt.getTime());
+    cursor?.date instanceof Date && !Number.isNaN(cursor.date.getTime());
 
   if (hasCursorDate) {
-    const createdAt = cursor.createdAt as Date;
+    const createdAt = cursor.date as Date;
 
     if (cursor.id && ObjectId.isValid(cursor.id)) {
       filter.$or = [
