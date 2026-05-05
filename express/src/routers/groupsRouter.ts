@@ -7,7 +7,6 @@ import {
   listManagedGroupMembersPaginated,
   getManagedGroupForm,
   leaveGroup,
-  listMyMeetings,
   listMyGroupsSummary,
   searchGroupParticipants,
   updateManagedGroup,
@@ -22,10 +21,12 @@ import {
   buildEditableMeetingResponse,
   type MeetingAutosaveResult,
   type PublishMeetingResult,
+  getAggregationMemberMeetingsPaginated,
+  memberMeetingAggregationRowToResponse,
 } from "../services/groupMeetingsService";
 import { updateMeetingCheckin } from "../services/meetingCheckinService";
 import { GroupMemberInviteStatus } from "../models/groupModelCommon";
-import { decodeCursor } from "../utils/pagination";
+import { decodeCursor, encodeCursor } from "../utils/pagination";
 import {
   getGroupMeetingById,
   updateGroupMeetingById,
@@ -179,7 +180,9 @@ const applyGroupRoutes = () => {
     handleAsync(async (req, res) => {
       const userId = getAuthenticatedUserId(req);
       const cursor =
-        typeof req.query.cursor === "string" ? req.query.cursor : undefined;
+        typeof req.query.cursor === "string"
+          ? decodeCursor(req.query.cursor)
+          : null;
       const parsedLimit =
         typeof req.query.limit === "string"
           ? Number.parseInt(req.query.limit, 10)
@@ -189,11 +192,22 @@ const applyGroupRoutes = () => {
           ? parsedLimit
           : undefined;
 
-      const data = await listMyMeetings({
+      const rows = await getAggregationMemberMeetingsPaginated({
         userId,
-        ...(cursor ? { cursor } : {}),
-        ...(typeof limit === "number" ? { limit } : {}),
+        cursor,
+        limit,
       });
+
+      const lastRow = rows.at(-1) ?? null;
+      const data = {
+        rows: rows.map(memberMeetingAggregationRowToResponse),
+        nextCursor: lastRow
+          ? encodeCursor({
+              date: lastRow.occursAt,
+              id: lastRow._id.toHexString(),
+            })
+          : null,
+      };
 
       res.status(200).json(data);
     }),

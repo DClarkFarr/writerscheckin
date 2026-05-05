@@ -203,3 +203,17 @@ export const attachUserToInvitedMembers = async (
 
   return updatedMembers;
 };
+
+export const groupMemberDocumentToResponse = (doc: GroupMemberDocument) => {
+  return {
+    membershipId: doc._id.toHexString(),
+    userId: doc.userId?.toHexString() ?? null,
+    email: doc.email,
+    role: doc.role,
+    status: doc.status,
+    createdAt: doc.createdAt.toISOString(),
+    invitedBy: doc.invitedBy?.toHexString() ?? null,
+    invitedAt: doc.invitedAt?.toISOString() ?? null,
+    acceptedAt: doc.acceptedAt?.toISOString() ?? null,
+  };
+};

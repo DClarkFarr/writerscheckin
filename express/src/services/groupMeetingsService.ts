@@ -17,6 +17,7 @@ import type { AttendanceStatus } from "../models/groupModelCommon";
 import { getCollection } from "../models/collections";
 import { ObjectId } from "mongodb";
 import { DecodedCursor } from "../utils/pagination";
+import { groupMemberDocumentToResponse } from "./groupMembersService";
 
 export type MyMeetingsSegment = "upcoming" | "past";
 export type UserMeetingCheckinState =
@@ -485,6 +486,24 @@ export const buildEditableMeetingResponse = async (
   };
 };
 
+export const groupMeetingDocumentToResponse = (doc: GroupMeetingDocument) => {
+  return {
+    meetingId: doc._id.toHexString(),
+    groupId: doc.groupId.toHexString(),
+    name: doc.name,
+    occursAt: doc.occursAt.toISOString(),
+    description: doc.description,
+    address: doc.address,
+    startTime: doc.startTime,
+    durationMinutes: doc.durationMinutes,
+    publishEmailMessage: doc.publishEmailMessage,
+    attendanceEmailMessage: doc.attendanceEmailMessage,
+    publishHoursBefore: doc.publishHoursBefore,
+    notifyAttendanceHoursBefore: doc.notifyAttendanceHoursBefore,
+    status: doc.status,
+  };
+};
+
 export type AggregationMemberNextUpcomingMeetingInput = {
   userId: string | ObjectId;
 };
@@ -512,16 +531,16 @@ export const getAggregationMemberNextUpcomingMeetings = async ({
   return rows;
 };
 
-export type AggregationMemberMeetingPaginatedInput = {
+export type AggregationMemberMeetingsPaginatedInput = {
   userId: string | ObjectId;
-  cursor?: DecodedCursor | null;
-  limit?: number;
+  cursor: DecodedCursor | null;
+  limit: number | undefined;
 };
-export const getAggregationMemberMeetingPaginated = async ({
+export const getAggregationMemberMeetingsPaginated = async ({
   userId,
   cursor,
   limit = 20,
-}: AggregationMemberMeetingPaginatedInput) => {
+}: AggregationMemberMeetingsPaginatedInput) => {
   const groupMembersCollection = getCollection("groupMembers");
 
   const rows = await groupMembersCollection
@@ -534,6 +553,17 @@ export const getAggregationMemberMeetingPaginated = async ({
       ...GroupMeetingAggregation.takeByLimit(limit),
     ])
     .toArray();
+
+  return rows;
+};
+
+export const memberMeetingAggregationRowToResponse = (
+  row: MemberMeetingAggregationItem,
+) => {
+  return {
+    ...groupMeetingDocumentToResponse(row),
+    membership: groupMemberDocumentToResponse(row.membership),
+  };
 };
 
 export const GroupMeetingAggregation = {
@@ -583,7 +613,12 @@ export const GroupMeetingAggregation = {
             $mergeObjects: [
               "$meeting",
               {
-                membership: "$$ROOT",
+                membership: {
+                  $unsetField: {
+                    field: "meeting",
+                    input: "$$ROOT",
+                  },
+                },
               },
             ],
           },
