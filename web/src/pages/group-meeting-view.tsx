@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { formatStaticDateTime } from "@/lib/dateFormat";
 import type { UserMeetingCheckinState } from "@/api/types/groups";
 import { useMemo } from "react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export interface GroupMeetingViewPageProps {
   groupId: string;
@@ -172,6 +173,14 @@ export function GroupMeetingViewPage({
             )}
           </div>
         </div>
+
+        {!!meeting?.cancelledAt && (
+          <Alert variant="destructive" className="mt-2">
+            <AlertDescription>
+              <p className="text-lg">This meeting has been cancelled.</p>
+            </AlertDescription>
+          </Alert>
+        )}
 
         {/* Attendance Summary */}
         <div className="flex gap-6 border-t pt-4">

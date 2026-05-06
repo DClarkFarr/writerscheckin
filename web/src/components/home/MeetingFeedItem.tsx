@@ -51,26 +51,39 @@ import IconCloseCircle from "~icons/mdi/close-circle";
 import IconEye from "~icons/mdi/eye";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ButtonGroup } from "../ui/button-group";
+import { Alert } from "../ui/alert";
 
 interface MeetingFeedItemProps {
   item: MemberMeetingFeedItem;
   onCheckInClick?: (item: MemberMeetingFeedItem) => void;
 }
 
-const getBookendAndBorderColor = (displayTone: string): string => {
+const getBookendAndBorderColor = (
+  displayTone: string,
+  isCancelled?: boolean,
+): string => {
+  if (isCancelled) {
+    return "border-dashed border-rose-700 bg-gray-200";
+  }
   switch (displayTone) {
     case "blue":
-      return "border-blue-500 bg-blue-50";
+      return "border-blue-500";
     case "red":
-      return "border-red-500 bg-red-50";
+      return "border-red-500";
     case "gray":
-      return "border-gray-300 bg-gray-50";
+      return "border-gray-300";
     default:
-      return "border-gray-300 bg-gray-50";
+      return "border-gray-300";
   }
 };
 
-const getBookendColor = (displayTone: string): string => {
+const getBookendColor = (
+  displayTone: string,
+  isCancelled?: boolean,
+): string => {
+  if (isCancelled) {
+    return "bg-rose-500 text-white";
+  }
   switch (displayTone) {
     case "blue":
       return "bg-blue-500 text-white";
@@ -135,8 +148,8 @@ export const MeetingFeedItem = ({
   const derivedState = useMemberMeetingDerivedState(item);
   const displayTone: MeetingDisplayTone = derivedState.displayTone;
   const userCheckinState = getMemberMeetingAttendanceState(item);
-  const borderColorClass = getBookendAndBorderColor(displayTone);
-  const bookendColorClass = getBookendColor(displayTone);
+  const borderColorClass = getBookendAndBorderColor(displayTone, isCancelled);
+  const bookendColorClass = getBookendColor(displayTone, isCancelled);
   const buttonColorClass = getButtonColors(displayTone);
   const timeUntilCheckin = getTimeUntilCheckin(
     derivedState.meetingTimeState === "upcoming",
@@ -180,7 +193,7 @@ export const MeetingFeedItem = ({
   };
 
   return (
-    <Card className={`border-l-4 blabla p-0! ${borderColorClass}`} size="sm">
+    <Card className={`p-0! border-2 ${borderColorClass}`} size="sm">
       <div className="flex">
         {/* Left Date Bookend */}
         <div
@@ -420,6 +433,12 @@ export const MeetingFeedItem = ({
               >
                 {userCheckinState === "none" ? "Check In" : "Update Check-In"}
               </Button>
+            )}
+
+            {isCancelled && (
+              <Alert variant="destructive" className="mt-2">
+                <p>This meeting has been cancelled.</p>
+              </Alert>
             )}
           </div>
         </div>
