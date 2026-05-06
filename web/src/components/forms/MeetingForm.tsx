@@ -8,25 +8,39 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   Field,
   FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
+
+import IconEye from "~icons/mdi/eye";
+
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { EditableMeetingResponse } from "@/api/types/groups";
 import { formatStaticDateTime } from "@/lib/dateFormat";
 import { RichTextEditor } from "./RichTextEditor";
+import { Link } from "@tanstack/react-router";
 
 export interface MeetingFormProps {
   meeting: EditableMeetingResponse | null;
   isLoading: boolean;
   isSaving: boolean;
   isPublishing: boolean;
+  isCancelling: boolean;
   formError: string | null;
   saveStatus: string | null;
+  isCancelDialogOpen: boolean;
   fieldErrors: Record<string, string>;
   touched: Record<string, boolean>;
   fields: {
@@ -49,6 +63,8 @@ export interface MeetingFormProps {
     e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => void;
   onPublish: () => void;
+  onCancelDialogOpenChange: (open: boolean) => void;
+  onCancelMeeting: () => void;
 }
 
 export function MeetingForm({
@@ -56,8 +72,10 @@ export function MeetingForm({
   isLoading,
   isSaving,
   isPublishing,
+  isCancelling,
   formError,
   saveStatus,
+  isCancelDialogOpen,
   fieldErrors,
   touched,
   fields,
@@ -65,7 +83,12 @@ export function MeetingForm({
   onChangeDescription,
   onFieldBlur,
   onPublish,
+  onCancelDialogOpenChange,
+  onCancelMeeting,
 }: MeetingFormProps) {
+  const formDisabled =
+    isSaving || isPublishing || isCancelling || !!meeting?.cancelledAt;
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -88,10 +111,29 @@ export function MeetingForm({
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           Meetings
         </p>
-        <h1 className="text-2xl font-semibold text-foreground">Edit Meeting</h1>
-        <p className="text-sm text-muted-foreground">
-          Update meeting details. Changes are saved automatically.
-        </p>
+        <div className="flex">
+          <div className="grow">
+            <h1 className="text-2xl font-semibold text-foreground">
+              Edit Meeting
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Update meeting details. Changes are saved automatically.
+            </p>
+          </div>
+          <div>
+            <Link
+              to={`/groups/$groupId/meetings/$meetingId/view`}
+              params={{
+                groupId: meeting.groupId,
+                meetingId: meeting.meetingId,
+              }}
+            >
+              <Button type="button" variant="ghost">
+                <IconEye className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        </div>
       </div>
 
       {formError && (
@@ -116,7 +158,7 @@ export function MeetingForm({
             value={fields.name}
             onChange={onFieldChange}
             onBlur={onFieldBlur}
-            disabled={isSaving || isPublishing}
+            disabled={formDisabled}
             aria-invalid={!!fieldErrors.name}
           />
           {touched.name && fieldErrors.name && (
@@ -133,7 +175,7 @@ export function MeetingForm({
             value={fields.occursAt}
             onChange={onFieldChange}
             onBlur={onFieldBlur}
-            disabled={isSaving || isPublishing}
+            disabled={formDisabled}
             aria-invalid={!!fieldErrors.occursAt}
           />
           {touched.occursAt && fieldErrors.occursAt && (
@@ -151,7 +193,7 @@ export function MeetingForm({
             value={fields.occursAtTime}
             onChange={onFieldChange}
             onBlur={onFieldBlur}
-            disabled={isSaving || isPublishing}
+            disabled={formDisabled}
             aria-invalid={!!fieldErrors.occursAtTime}
           />
           {touched.occursAtTime && fieldErrors.occursAtTime && (
@@ -167,7 +209,7 @@ export function MeetingForm({
             value={fields.address}
             onChange={onFieldChange}
             onBlur={onFieldBlur}
-            disabled={isSaving || isPublishing}
+            disabled={formDisabled}
             placeholder="e.g., 123 Main Street"
           />
         </Field>
@@ -178,6 +220,7 @@ export function MeetingForm({
             value={fields.description}
             onChange={onChangeDescription}
             isSimpleMode
+            disabled={formDisabled}
           />
           <FieldDescription>
             Use the basic editor mode for a public-facing description of the
@@ -198,7 +241,7 @@ export function MeetingForm({
             value={fields.durationMinutes}
             onChange={onFieldChange}
             onBlur={onFieldBlur}
-            disabled={isSaving || isPublishing}
+            disabled={formDisabled}
             aria-invalid={!!fieldErrors.durationMinutes}
           />
           {touched.durationMinutes && fieldErrors.durationMinutes && (
@@ -219,7 +262,7 @@ export function MeetingForm({
             value={fields.publishEmailMessage}
             onChange={onFieldChange}
             onBlur={onFieldBlur}
-            disabled={isSaving || isPublishing}
+            disabled={formDisabled}
             placeholder="Message sent when meeting is published..."
             rows={2}
           />
@@ -235,7 +278,7 @@ export function MeetingForm({
             value={fields.attendanceEmailMessage}
             onChange={onFieldChange}
             onBlur={onFieldBlur}
-            disabled={isSaving || isPublishing}
+            disabled={formDisabled}
             placeholder="Message sent before meeting asking for attendance..."
             rows={2}
           />
@@ -253,7 +296,7 @@ export function MeetingForm({
             value={fields.publishHoursBefore}
             onChange={onFieldChange}
             onBlur={onFieldBlur}
-            disabled={isSaving || isPublishing}
+            disabled={formDisabled}
           />
           {meeting.publishScheduledFor && (
             <FieldDescription>
@@ -275,7 +318,7 @@ export function MeetingForm({
             value={fields.notifyAttendanceHoursBefore}
             onChange={onFieldChange}
             onBlur={onFieldBlur}
-            disabled={isSaving || isPublishing}
+            disabled={formDisabled}
           />
         </Field>
       </fieldset>
@@ -307,7 +350,12 @@ export function MeetingForm({
             <Button
               type="button"
               onClick={onPublish}
-              disabled={isSaving || isPublishing}
+              disabled={
+                isSaving ||
+                isPublishing ||
+                isCancelling ||
+                !!meeting.cancelledAt
+              }
               className="w-full bg-blue-600 hover:bg-blue-700"
             >
               {isPublishing ? "Publishing..." : "Publish Meeting"}
@@ -322,13 +370,71 @@ export function MeetingForm({
             <CardTitle className="text-sm font-semibold">
               Publication Status: Published
             </CardTitle>
+
             <CardDescription>
-              This meeting is live and members can check in.
+              This meeting is live and members can check in. Canceling will
+              notify everyone who RSVP'd and lock further edits/check-in.
             </CardDescription>
           </CardHeader>
-          <CardContent>TODO: Cancel button here</CardContent>
+          <CardContent>
+            {!meeting.cancelledAt && (
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => onCancelDialogOpenChange(true)}
+                disabled={
+                  !meeting.canCancel ||
+                  isSaving ||
+                  isPublishing ||
+                  isCancelling ||
+                  !!meeting.cancelledAt
+                }
+                className="w-full"
+              >
+                {isCancelling ? "Cancelling..." : "Cancel Meeting"}
+              </Button>
+            )}
+            {!!meeting.cancelledAt && (
+              <Alert variant="destructive" className="mt-2">
+                <AlertDescription>
+                  This meeting has been cancelled. Members who RSVP'd have been
+                  notified and the meeting is locked from further edits.
+                </AlertDescription>
+              </Alert>
+            )}
+          </CardContent>
         </Card>
       )}
+
+      <Dialog open={isCancelDialogOpen} onOpenChange={onCancelDialogOpenChange}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel this meeting?</DialogTitle>
+            <DialogDescription>
+              This action marks the meeting as cancelled and sends a
+              notification to members who RSVP'd. You cannot undo this action.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onCancelDialogOpenChange(false)}
+              disabled={isCancelling}
+            >
+              Keep Meeting
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={onCancelMeeting}
+              disabled={isCancelling}
+            >
+              {isCancelling ? "Cancelling..." : "Confirm Cancel"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </form>
   );
 }

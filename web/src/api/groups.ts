@@ -168,11 +168,7 @@ const normalizeMemberMeetingAttendance = (
 const normalizeMemberMeetingFeedItem = (
   item: MemberMeetingFeedItem,
 ): MemberMeetingFeedItem => ({
-  meetingId: item.meetingId,
-  groupId: item.groupId,
-  name: item.name,
-  occursAt: item.occursAt,
-  status: item.status,
+  ...item,
   address: item.address ?? "",
   description: item.description ?? "",
   startTime: item.startTime ?? { hours: 0, minutes: 0 },
@@ -201,12 +197,9 @@ const normalizeListMemberMeetingsResponse = (
 const normalizeMeetingParticipantRow = (
   row: MeetingParticipantRow,
 ): MeetingParticipantRow => ({
-  memberId: row.memberId,
+  ...row,
   userId: row.userId ?? null,
-  displayName: row.displayName,
   avatarUrl: row.avatarUrl ?? null,
-  role: row.role,
-  membershipStatus: row.membershipStatus,
   attendanceState: row.attendanceState ?? "none",
   isCurrentUser: row.isCurrentUser ?? false,
 });
@@ -214,16 +207,11 @@ const normalizeMeetingParticipantRow = (
 const normalizeMeetingDetailResponse = (
   data: MeetingDetailResponse,
 ): MeetingDetailResponse => ({
-  meetingId: data.meetingId,
-  groupId: data.groupId,
-  groupName: data.groupName,
-  name: data.name,
-  occursAt: data.occursAt,
+  ...data,
   address: data.address ?? "",
   description: data.description ?? "",
   startTime: data.startTime ?? { hours: 0, minutes: 0 },
   durationMinutes: data.durationMinutes ?? 0,
-  status: data.status,
   userCheckinState: data.userCheckinState ?? "none",
   canCheckin: data.canCheckin ?? false,
   canEdit: data.canEdit ?? false,
@@ -238,10 +226,7 @@ const normalizeMeetingDetailResponse = (
 const normalizeEditableMeetingResponse = (
   data: EditableMeetingResponse,
 ): EditableMeetingResponse => ({
-  meetingId: data.meetingId,
-  groupId: data.groupId,
-  name: data.name,
-  occursAt: data.occursAt,
+  ...data,
   description: data.description ?? "",
   address: data.address ?? "",
   startTime: data.startTime ?? { hours: 0, minutes: 0 },
@@ -250,7 +235,6 @@ const normalizeEditableMeetingResponse = (
   attendanceEmailMessage: data.attendanceEmailMessage ?? "",
   publishHoursBefore: data.publishHoursBefore ?? 0,
   notifyAttendanceHoursBefore: data.notifyAttendanceHoursBefore ?? 0,
-  status: data.status,
   publishScheduledFor: data.publishScheduledFor ?? null,
   canPublishNow: data.canPublishNow ?? false,
   savedAt: data.savedAt ?? null,

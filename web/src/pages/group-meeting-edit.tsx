@@ -25,8 +25,10 @@ export function GroupMeetingEditPage({
     isLoading,
     isSaving,
     isPublishing,
+    isCancelling,
     formError,
     saveStatus,
+    isCancelDialogOpen,
     fieldErrors,
     touched,
     fields,
@@ -34,6 +36,8 @@ export function GroupMeetingEditPage({
     onChangeDescription,
     handleFieldBlur,
     handlePublish,
+    setIsCancelDialogOpen,
+    handleCancelMeeting,
   } = useMeetingForm({
     groupId,
     meetingId,
@@ -44,20 +48,14 @@ export function GroupMeetingEditPage({
       <BreadcrumbList>
         <BreadcrumbItem>
           <BreadcrumbLink asChild>
-            <Link to="/">My Groups</Link>
+            <Link to="/">My Meetings</Link>
           </BreadcrumbLink>
         </BreadcrumbItem>
+
         <BreadcrumbSeparator />
+
         <BreadcrumbItem>
-          <BreadcrumbLink asChild>
-            <Link to="/groups/$groupId/view" params={{ groupId }}>
-              {meeting?.groupId ? "Group Details" : "Back"}
-            </Link>
-          </BreadcrumbLink>
-        </BreadcrumbItem>
-        <BreadcrumbSeparator />
-        <BreadcrumbItem>
-          <BreadcrumbPage>{meeting?.name || "Edit Meeting"}</BreadcrumbPage>
+          <BreadcrumbPage>Edit Meeting</BreadcrumbPage>
         </BreadcrumbItem>
       </BreadcrumbList>
     </Breadcrumb>
@@ -70,8 +68,10 @@ export function GroupMeetingEditPage({
         isLoading={isLoading}
         isSaving={isSaving}
         isPublishing={isPublishing}
+        isCancelling={isCancelling}
         formError={formError}
         saveStatus={saveStatus}
+        isCancelDialogOpen={isCancelDialogOpen}
         fieldErrors={fieldErrors}
         touched={touched}
         fields={fields}
@@ -79,6 +79,8 @@ export function GroupMeetingEditPage({
         onFieldBlur={handleFieldBlur}
         onChangeDescription={onChangeDescription}
         onPublish={handlePublish}
+        onCancelDialogOpenChange={setIsCancelDialogOpen}
+        onCancelMeeting={handleCancelMeeting}
       />
     </PageCard>
   );

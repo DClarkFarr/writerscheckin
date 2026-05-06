@@ -47,10 +47,10 @@
 - [x] T012 [US1] Implement cancel meeting model mutation that sets status and cancelledAt in express/src/models/groupMeetings.ts
 - [ ] T013 [US1] Implement cancel meeting service orchestration and result mapping in express/src/services/groupMeetingsService.ts
 - [x] T014 [US1] Add POST /groups/:groupId/meetings/:meetingId/cancel route in express/src/routers/groupsRouter.ts
-- [ ] T015 [P] [US1] Wire cancel action visibility and handler into MeetingFeedItem dropdown in web/src/components/home/MeetingFeedItem.tsx
-- [ ] T016 [P] [US1] Wire cancel action controls for published meetings in meeting form hook in web/src/hooks/useMeetingForm.ts
-- [ ] T017 [US1] Replace published-meeting publish card with cancel action card in web/src/components/forms/MeetingForm.tsx
-- [ ] T018 [US1] Connect edit page to cancellation action state in web/src/pages/group-meeting-edit.tsx
+- [x] T015 [P] [US1] Wire cancel action visibility and handler into MeetingFeedItem dropdown in web/src/components/home/MeetingFeedItem.tsx
+- [x] T016 [P] [US1] Wire cancel action controls for published meetings in meeting form hook in web/src/hooks/useMeetingForm.ts
+- [x] T017 [US1] Replace published-meeting publish card with cancel action card in web/src/components/forms/MeetingForm.tsx
+- [x] T018 [US1] Connect edit page to cancellation action state in web/src/pages/group-meeting-edit.tsx
 
 **Checkpoint**: User Story 1 is fully functional and independently testable.
 
@@ -64,13 +64,13 @@
 
 ### Implementation for User Story 2
 
-- [ ] T019 [US2] Add cancellation confirmation state and handlers in web/src/hooks/useMeetingForm.ts
-- [ ] T020 [P] [US2] Add cancellation confirmation dialog state and handlers in web/src/components/home/MeetingFeedItem.tsx
-- [ ] T021 [US2] Render meeting-form confirmation dialog copy including RSVP notification warning in web/src/components/forms/MeetingForm.tsx
-- [ ] T022 [US2] Render feed-item confirmation dialog copy including RSVP notification warning in web/src/components/home/MeetingFeedItem.tsx
-- [ ] T023 [US2] Prevent duplicate cancellation submits while pending in web/src/hooks/useMeetingForm.ts
-- [ ] T024 [P] [US2] Prevent duplicate cancellation submits while pending in web/src/components/home/MeetingFeedItem.tsx
-- [ ] T025 [US2] Add cancellation success/error user feedback in web/src/queries/useCancelMeetingMutation.ts
+- [x] T019 [US2] Add cancellation confirmation state and handlers in web/src/hooks/useMeetingForm.ts
+- [x] T020 [P] [US2] Add cancellation confirmation dialog state and handlers in web/src/components/home/MeetingFeedItem.tsx
+- [x] T021 [US2] Render meeting-form confirmation dialog copy including RSVP notification warning in web/src/components/forms/MeetingForm.tsx
+- [x] T022 [US2] Render feed-item confirmation dialog copy including RSVP notification warning in web/src/components/home/MeetingFeedItem.tsx
+- [x] T023 [US2] Prevent duplicate cancellation submits while pending in web/src/hooks/useMeetingForm.ts
+- [x] T024 [P] [US2] Prevent duplicate cancellation submits while pending in web/src/components/home/MeetingFeedItem.tsx
+- [x] T025 [US2] Add cancellation success/error user feedback in web/src/queries/useCancelMeetingMutation.ts
 
 **Checkpoint**: User Stories 1 and 2 both work independently.
 

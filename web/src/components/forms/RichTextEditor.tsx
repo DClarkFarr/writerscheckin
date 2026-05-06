@@ -29,6 +29,7 @@ import { Button } from "../ui/button";
 export type RichTextEditorProps = {
   value: string;
   onChange: (value: string) => void;
+  disabled?: boolean;
   isSimpleMode?: boolean;
 };
 
@@ -39,8 +40,9 @@ export type RichTextEditorHandle = {
 export const RichTextEditor = forwardRef<
   RichTextEditorHandle,
   RichTextEditorProps
->(({ value, onChange, isSimpleMode = false }, ref) => {
+>(({ value, onChange, isSimpleMode = false, disabled = false }, ref) => {
   const editor = useEditor({
+    editable: !disabled,
     extensions: [StarterKit],
     content: value,
     onUpdate: ({ editor }) => {
@@ -79,7 +81,9 @@ export const RichTextEditor = forwardRef<
 
   return (
     <div className="">
-      {editor && <MenuBar editor={editor} isSimpleMode={isSimpleMode} />}
+      {editor && !disabled && (
+        <MenuBar editor={editor} isSimpleMode={isSimpleMode} />
+      )}
       <EditorContent editor={editor} />
     </div>
   );

@@ -2,6 +2,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -29,8 +37,10 @@ import {
   useMemberMeetingDerivedState,
 } from "@/hooks/useMemberMeetingDerivedState";
 import { usePublishMeetingMutation } from "@/queries/usePublishMeetingMutation";
+import { useCancelMeetingMutation } from "@/queries/useCancelMeetingMutation";
 import { myMeetingsQueryKey } from "@/queries/useMyMeetingsQuery";
 import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import IconEyeLock from "~icons/mdi/eye-lock";
 import IconClockTimeThree from "~icons/mdi/clock-time-three";
 import IconDotsVertical from "~icons/mdi/dots-vertical";
@@ -119,6 +129,9 @@ export const MeetingFeedItem = ({
   onCheckInClick,
 }: MeetingFeedItemProps) => {
   const queryClient = useQueryClient();
+
+  const isCancelled = !!item.cancelledAt;
+
   const derivedState = useMemberMeetingDerivedState(item);
   const displayTone: MeetingDisplayTone = derivedState.displayTone;
   const userCheckinState = getMemberMeetingAttendanceState(item);
@@ -138,16 +151,32 @@ export const MeetingFeedItem = ({
   const isUpcomingMeeting = derivedState.meetingTimeState === "upcoming";
   const canPublishFromMenu =
     derivedState.canEdit && isUpcomingMeeting && item.status === "draft";
+  const canCancelFromMenu =
+    derivedState.canEdit && isUpcomingMeeting && item.status === "published";
 
   const navigate = useNavigate();
   const publishMutation = usePublishMeetingMutation({
     groupId: item.groupId,
     meetingId: item.meetingId,
   });
+  const cancelMutation = useCancelMeetingMutation({
+    groupId: item.groupId,
+    meetingId: item.meetingId,
+  });
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
 
   const handlePublishMeeting = async () => {
     await publishMutation.mutateAsync();
     await queryClient.invalidateQueries({ queryKey: myMeetingsQueryKey() });
+  };
+
+  const handleCancelMeeting = async () => {
+    if (cancelMutation.isPending) {
+      return;
+    }
+
+    await cancelMutation.mutateAsync();
+    setIsCancelDialogOpen(false);
   };
 
   return (
@@ -296,6 +325,22 @@ export const MeetingFeedItem = ({
                             </DropdownMenuItem>
                           </>
                         )}
+                        {canCancelFromMenu && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-destructive focus:text-destructive"
+                              disabled={cancelMutation.isPending}
+                              onSelect={() => {
+                                setIsCancelDialogOpen(true);
+                              }}
+                            >
+                              {cancelMutation.isPending
+                                ? "Cancelling..."
+                                : "Cancel meeting"}
+                            </DropdownMenuItem>
+                          </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   )}
@@ -355,7 +400,8 @@ export const MeetingFeedItem = ({
             )}
 
             {/* Check-In Button */}
-            {derivedState.meetingTimeState === "upcoming" &&
+            {!isCancelled &&
+              derivedState.meetingTimeState === "upcoming" &&
               !derivedState.canCheckin && (
                 <Button
                   size="sm"
@@ -366,7 +412,7 @@ export const MeetingFeedItem = ({
                   Check-in starts {timeUntilCheckin}
                 </Button>
               )}
-            {derivedState.canCheckin && (
+            {!isCancelled && derivedState.canCheckin && (
               <Button
                 size="sm"
                 className={`w-full mt-2 ${buttonColorClass}`}
@@ -378,6 +424,38 @@ export const MeetingFeedItem = ({
           </div>
         </div>
       </div>
+
+      <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cancel this meeting?</DialogTitle>
+            <DialogDescription>
+              Members who RSVP'd will receive a cancellation notification. This
+              meeting will become non-editable and check-in will be disabled.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsCancelDialogOpen(false)}
+              disabled={cancelMutation.isPending}
+            >
+              Keep Meeting
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={() => {
+                void handleCancelMeeting();
+              }}
+              disabled={cancelMutation.isPending}
+            >
+              {cancelMutation.isPending ? "Cancelling..." : "Confirm Cancel"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };

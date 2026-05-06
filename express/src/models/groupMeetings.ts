@@ -659,8 +659,6 @@ export const updateGroupMeetingById = async (
   const collection = getGroupMeetingsCollection();
   const normalized = normalizeUpdateInput(updates);
 
-  console.log("got update", updates.occursAt, "vs", normalized.occursAt);
-
   const result = await collection.findOneAndUpdate(
     {
       _id: toObjectId(id, "groupMeetingId"),
@@ -705,7 +703,6 @@ export const cancelGroupMeetingById = async (
     },
     {
       $set: {
-        status: assertMeetingStatus("cancelled"),
         cancelledAt: new Date(),
         ...touchTimestamps(),
       },

@@ -2,6 +2,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useEditableMeetingQuery } from "@/queries/useEditableMeetingQuery";
 import { useSaveMeetingMutation } from "@/queries/useSaveMeetingMutation";
 import { usePublishMeetingMutation } from "@/queries/usePublishMeetingMutation";
+import { useCancelMeetingMutation } from "@/queries/useCancelMeetingMutation";
 import type { UpdateMeetingInput } from "@/api/types/groups";
 import { parseDateTimeFields } from "@/lib/dateFormat";
 
@@ -33,6 +34,7 @@ export function useMeetingForm({ groupId, meetingId }: UseMeetingFormProps) {
 
   const saveMutation = useSaveMeetingMutation({ groupId, meetingId });
   const publishMutation = usePublishMeetingMutation({ groupId, meetingId });
+  const cancelMutation = useCancelMeetingMutation({ groupId, meetingId });
 
   const [fields, setFields] = useState<MeetingFormFields>({
     name: "",
@@ -50,6 +52,7 @@ export function useMeetingForm({ groupId, meetingId }: UseMeetingFormProps) {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [saveStatus, setSaveStatus] = useState<string | null>(null);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const autosaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSavedRef = useRef<Partial<UpdateMeetingInput>>({});
   const latestFieldsRef = useRef<MeetingFormFields>(fields);
@@ -295,6 +298,19 @@ export function useMeetingForm({ groupId, meetingId }: UseMeetingFormProps) {
     await publishMutation.mutateAsync(undefined);
   }, [buildUpdatePayload, saveMutation, publishMutation]);
 
+  const handleCancelMeeting = useCallback(async () => {
+    if (cancelMutation.isPending) {
+      return;
+    }
+
+    if (autosaveTimeoutRef.current) {
+      clearTimeout(autosaveTimeoutRef.current);
+    }
+
+    await cancelMutation.mutateAsync(undefined);
+    setIsCancelDialogOpen(false);
+  }, [cancelMutation]);
+
   const onChangeDescription = useCallback(
     (value: string) => {
       if (value === latestFieldsRef.current.description) {
@@ -335,14 +351,18 @@ export function useMeetingForm({ groupId, meetingId }: UseMeetingFormProps) {
     isLoading,
     isSaving: saveMutation.isPending,
     isPublishing: publishMutation.isPending,
+    isCancelling: cancelMutation.isPending,
     formError: saveMutation.error ? "Failed to save meeting" : null,
     saveStatus,
+    isCancelDialogOpen,
     fieldErrors,
     touched,
     fields,
     handleFieldChange,
     handleFieldBlur,
     handlePublish,
+    setIsCancelDialogOpen,
+    handleCancelMeeting,
     onChangeDescription,
   };
 }

@@ -203,6 +203,7 @@ export interface MemberMeetingFeedItem {
   membership: GroupMembershipResponse;
   attendance: MemberMeetingAttendance | null;
   counts: MemberMeetingCounts;
+  cancelledAt?: string | null;
 }
 
 export interface ListMemberMeetingsResponse {

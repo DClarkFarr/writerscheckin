@@ -82,20 +82,13 @@ export function GroupMeetingViewPage({
       <BreadcrumbList>
         <BreadcrumbItem>
           <BreadcrumbLink asChild>
-            <Link to="/">My Groups</Link>
+            <Link to="/">My Meetings</Link>
           </BreadcrumbLink>
         </BreadcrumbItem>
         <BreadcrumbSeparator />
+
         <BreadcrumbItem>
-          <BreadcrumbLink asChild>
-            <Link to="/groups/$groupId/view" params={{ groupId }}>
-              {meeting?.groupName || "Group"}
-            </Link>
-          </BreadcrumbLink>
-        </BreadcrumbItem>
-        <BreadcrumbSeparator />
-        <BreadcrumbItem>
-          <BreadcrumbPage>{meeting?.name || "Meeting"}</BreadcrumbPage>
+          <BreadcrumbPage>Meeting Details</BreadcrumbPage>
         </BreadcrumbItem>
       </BreadcrumbList>
     </Breadcrumb>

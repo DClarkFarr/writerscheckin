@@ -14,7 +14,7 @@ import {
   type GroupMemberDocument,
 } from "../models/groupMembers";
 import { ensureDate, ensureObjectId } from "../models/types";
-import { AuthError } from "./authService";
+import { AuthError, ValidationError } from "./authService";
 import {
   listMeetingAttendeesByMeetingId,
   meetingAttendeeDocumentToResponse,
@@ -87,7 +87,7 @@ export interface EditableMeetingResponse {
   publishHoursBefore: number;
   notifyAttendanceHoursBefore: number;
   status: "draft" | "published" | "cancelled";
-  cancelledAt?: string;
+  cancelledAt: string | null;
   publishScheduledFor: string | null;
   canPublishNow: boolean;
   canCancel: boolean;
@@ -445,11 +445,6 @@ export const buildEditableMeetingResponse = async (
     throw new AuthError("Forbidden", 403);
   }
 
-  // Cannot edit canceled meetings
-  if (!!meeting.cancelledAt) {
-    throw new Error("Cannot edit a cancelled meeting.");
-  }
-
   const publishScheduledFor = computePublishScheduledFor(
     meeting.publishHoursBefore,
     meeting.occursAt,
@@ -474,7 +469,7 @@ export const buildEditableMeetingResponse = async (
     publishHoursBefore: meeting.publishHoursBefore,
     notifyAttendanceHoursBefore: meeting.notifyAttendanceHoursBefore,
     status: meeting.status,
-    cancelledAt: "",
+    cancelledAt: meeting.cancelledAt?.toISOString() ?? null,
     publishScheduledFor: publishScheduledFor.toISOString(),
     canPublishNow: meeting.status === "draft",
     canCancel,
