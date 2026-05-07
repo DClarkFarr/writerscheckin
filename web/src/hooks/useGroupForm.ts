@@ -15,6 +15,7 @@ import type {
   GroupMemberRole,
   SaveGroupResponse,
 } from "@/api/types/groups";
+import { alert } from "@/utils/alert";
 
 type Fields = {
   name: string;
@@ -385,6 +386,11 @@ export function useGroupForm(
       });
     },
     handleMemberRoleChange: (memberId: string, role: GroupMemberRole) => {
+      // Capture the member's old role before changing for error recovery
+      const oldRole = selectedGroupMembers.find(
+        (member) => (member._id ?? member.identifier) === memberId,
+      )?.role;
+
       setSelectedGroupMembers((current) =>
         current.map((member) =>
           (member._id ?? member.identifier) === memberId
@@ -405,8 +411,22 @@ export function useGroupForm(
               memberId,
               role,
             });
-          } catch {
-            // Local optimistic UI handles the immediate update; cache rollback is handled in mutation wrapper.
+          } catch (err) {
+            console.log("got err", err);
+            if (err instanceof ApiError) {
+              alert.error(err.serverMessage ?? "Failed to update member role.");
+            }
+            // Restore the old role if the update failed
+            // The mutation's onError has already rolled back the cache
+            if (oldRole !== undefined) {
+              setSelectedGroupMembers((current) =>
+                current.map((member) =>
+                  (member._id ?? member.identifier) === memberId
+                    ? { ...member, role: oldRole }
+                    : member,
+                ),
+              );
+            }
           }
         };
 
@@ -414,6 +434,11 @@ export function useGroupForm(
       }
     },
     handleMemberDelete: (memberId: string) => {
+      // Capture the member before removing for error recovery
+      const memberToRestore = selectedGroupMembers.find(
+        (member) => (member._id ?? member.identifier) === memberId,
+      );
+
       setSelectedGroupMembers((current) =>
         current.filter(
           (member) => (member._id ?? member.identifier) !== memberId,
@@ -431,8 +456,19 @@ export function useGroupForm(
               groupId,
               memberId,
             });
-          } catch {
-            // Local optimistic UI handles immediate removal; cache rollback is handled in mutation wrapper.
+          } catch (err) {
+            console.log("got err", err);
+            if (err instanceof ApiError) {
+              alert.error(err.serverMessage ?? "Failed to remove member.");
+            }
+            // Restore the member if the deletion failed
+            // The mutation's onError has already rolled back the cache
+            if (memberToRestore) {
+              setSelectedGroupMembers((current) => [
+                ...current,
+                memberToRestore,
+              ]);
+            }
           }
         };
 
