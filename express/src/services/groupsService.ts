@@ -356,6 +356,7 @@ const syncGroupMembers = async (
     identifier: ownerUserId,
     role: "owner",
     invitedBy: managerUserId,
+    status: "accepted",
   });
 
   const existingMembers = await listGroupMembersByGroupId(groupId, {

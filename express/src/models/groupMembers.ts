@@ -106,7 +106,7 @@ export interface UpdateGroupMemberInput {
   invitedBy?: string | ObjectId;
   invitedAt?: Date;
   acceptedAt?: Date | null;
-  status?: GroupMemberInviteStatus;
+  status?: GroupMemberInviteStatus | undefined;
 }
 
 export interface ListGroupMembersOptions {

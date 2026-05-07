@@ -110,6 +110,7 @@ export const MenuBar = ({
       <ButtonGroup className="button-group">
         <CustomTooltip content="Bold" className="whitespace-nowrap">
           <Button
+            type="button"
             color={editorState.isBold ? "dark" : "gray"}
             variant={!editorState.isBold ? "secondary" : "outline"}
             size="sm"
@@ -122,6 +123,7 @@ export const MenuBar = ({
         </CustomTooltip>
         <CustomTooltip content="Italic" className="whitespace-nowrap">
           <Button
+            type="button"
             color={editorState.isItalic ? "dark" : "gray"}
             variant={!editorState.isItalic ? "secondary" : "outline"}
             size="sm"
@@ -134,6 +136,7 @@ export const MenuBar = ({
         </CustomTooltip>
         <CustomTooltip content="Strike" className="whitespace-nowrap">
           <Button
+            type="button"
             color={editorState.isStrike ? "dark" : "gray"}
             variant={!editorState.isStrike ? "secondary" : "outline"}
             size="sm"
@@ -148,6 +151,7 @@ export const MenuBar = ({
       <ButtonGroup className="button-group">
         <CustomTooltip content="Clear marks" className="whitespace-nowrap">
           <Button
+            type="button"
             color="gray"
             variant="outline"
             size="sm"
@@ -161,6 +165,7 @@ export const MenuBar = ({
         {!isSimpleMode && (
           <CustomTooltip content="Clear nodes" className="whitespace-nowrap">
             <Button
+              type="button"
               color="gray"
               variant="outline"
               size="sm"
@@ -177,6 +182,7 @@ export const MenuBar = ({
         <ButtonGroup className="button-group">
           <CustomTooltip content="Paragraph" className="whitespace-nowrap">
             <Button
+              type="button"
               color={editorState.isParagraph ? "dark" : "gray"}
               variant={!editorState.isParagraph ? "secondary" : "outline"}
               size="sm"
@@ -188,6 +194,7 @@ export const MenuBar = ({
           </CustomTooltip>
           <CustomTooltip content="H1" className="whitespace-nowrap">
             <Button
+              type="button"
               color={editorState.isHeading1 ? "dark" : "gray"}
               variant={!editorState.isHeading1 ? "secondary" : "outline"}
               size="sm"
@@ -201,6 +208,7 @@ export const MenuBar = ({
           </CustomTooltip>
           <CustomTooltip content="H2" className="whitespace-nowrap">
             <Button
+              type="button"
               color={editorState.isHeading2 ? "dark" : "gray"}
               variant={!editorState.isHeading2 ? "secondary" : "outline"}
               size="sm"
@@ -214,6 +222,7 @@ export const MenuBar = ({
           </CustomTooltip>
           <CustomTooltip content="H3" className="whitespace-nowrap">
             <Button
+              type="button"
               color={editorState.isHeading3 ? "dark" : "gray"}
               variant={!editorState.isHeading3 ? "secondary" : "outline"}
               size="sm"
@@ -227,6 +236,7 @@ export const MenuBar = ({
           </CustomTooltip>
           <CustomTooltip content="H4" className="whitespace-nowrap">
             <Button
+              type="button"
               color={editorState.isHeading4 ? "dark" : "gray"}
               variant={!editorState.isHeading4 ? "secondary" : "outline"}
               size="sm"
@@ -240,6 +250,7 @@ export const MenuBar = ({
           </CustomTooltip>
           {/* <CustomTooltip content="H5" className="whitespace-nowrap">
           <Button
+            type="button"
             color={editorState.isHeading5 ? "dark" : "gray"}
             variant={!editorState.isHeading5 ? 'secondary' : 'outline'}
             size="sm"
@@ -253,6 +264,7 @@ export const MenuBar = ({
         </CustomTooltip>
         <CustomTooltip content="H6" className="whitespace-nowrap">
           <Button
+            type="button"
             color={editorState.isHeading6 ? "dark" : "gray"}
             variant={!editorState.isHeading6 ? 'secondary' : 'outline'}
             size="sm"
@@ -269,6 +281,7 @@ export const MenuBar = ({
       <ButtonGroup className="button-group">
         <CustomTooltip content="Bullet list" className="whitespace-nowrap">
           <Button
+            type="button"
             color={editorState.isBulletList ? "dark" : "gray"}
             variant={!editorState.isBulletList ? "secondary" : "outline"}
             size="sm"
@@ -280,6 +293,7 @@ export const MenuBar = ({
         </CustomTooltip>
         <CustomTooltip content="Ordered list" className="whitespace-nowrap">
           <Button
+            type="button"
             color={editorState.isOrderedList ? "dark" : "gray"}
             variant={!editorState.isOrderedList ? "secondary" : "outline"}
             size="sm"
@@ -294,6 +308,7 @@ export const MenuBar = ({
         <ButtonGroup className="button-group">
           <CustomTooltip content="Code" className="whitespace-nowrap">
             <Button
+              type="button"
               color={editorState.isCode ? "dark" : "gray"}
               variant={!editorState.isCode ? "secondary" : "outline"}
               size="sm"
@@ -306,6 +321,7 @@ export const MenuBar = ({
           </CustomTooltip>
           <CustomTooltip content="Code block" className="whitespace-nowrap">
             <Button
+              type="button"
               color={editorState.isCodeBlock ? "dark" : "gray"}
               variant={!editorState.isCodeBlock ? "secondary" : "outline"}
               size="sm"
@@ -317,6 +333,7 @@ export const MenuBar = ({
           </CustomTooltip>
           <CustomTooltip content="Blockquote" className="whitespace-nowrap">
             <Button
+              type="button"
               color={editorState.isBlockquote ? "dark" : "gray"}
               variant={!editorState.isBlockquote ? "secondary" : "outline"}
               size="sm"
@@ -335,6 +352,7 @@ export const MenuBar = ({
             className="whitespace-nowrap"
           >
             <Button
+              type="button"
               color="gray"
               variant="outline"
               size="sm"
@@ -346,6 +364,7 @@ export const MenuBar = ({
           </CustomTooltip>
           {/* <CustomTooltip content="Hard break" className="whitespace-nowrap">
           <Button
+            type="button"
             color="gray"
             outline
             size="sm"
@@ -360,6 +379,7 @@ export const MenuBar = ({
       <ButtonGroup className="button-group">
         <CustomTooltip content="Undo" className="whitespace-nowrap">
           <Button
+            type="button"
             color="gray"
             variant="outline"
             size="sm"
@@ -372,6 +392,7 @@ export const MenuBar = ({
         </CustomTooltip>
         <CustomTooltip content="Redo" className="whitespace-nowrap">
           <Button
+            type="button"
             color="gray"
             variant="outline"
             size="sm"

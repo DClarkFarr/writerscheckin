@@ -140,7 +140,9 @@ export function MyGroupsTab() {
         <p>
           Next upcoming meeting:{" "}
           <b className="text-gray-600">
-            {formatDate.full(group.nextUpcomingMeeting?.startsAt ?? null)}
+            {group.nextUpcomingMeeting
+              ? formatDate.full(group.nextUpcomingMeeting?.startsAt ?? null)
+              : "Unscheduled"}
           </b>
         </p>
       </CardContent>

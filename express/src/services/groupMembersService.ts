@@ -25,6 +25,7 @@ export interface AddGroupMemberInput {
   identifier: string;
   role: GroupMemberRole;
   invitedBy: string;
+  status?: GroupMemberInviteStatus;
 }
 
 export interface UpdateGroupMemberRoleInput {
@@ -99,7 +100,13 @@ export const addGroupMember = async (
     : await getEmailGroupMembership(resolved.email, input.groupId);
 
   const now = new Date();
-  const nextStatus = existingMember?.status ?? "invited";
+  // if the user has set the status, leave it unchanged.
+  // If status was set by admin, let this update it.
+
+  const nextStatus =
+    (["accepted", "declined"].includes(existingMember?.status ?? "")
+      ? existingMember?.status
+      : input.status) ?? "invited";
   const acceptedAt =
     nextStatus === "accepted" ? (existingMember?.acceptedAt ?? now) : undefined;
 

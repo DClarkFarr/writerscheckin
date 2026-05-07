@@ -11,9 +11,10 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { RichTextEditor } from "./RichTextEditor";
+import { RichTextEditor, type RichTextEditorHandle } from "./RichTextEditor";
 import { GroupUserMultiSelect } from "./GroupUserMultiSelect";
 import type { GroupFormProps } from "@/hooks/useGroupForm";
+import { useRef, type KeyboardEventHandler } from "react";
 
 const WEEKDAY_OPTIONS = [
   { value: 0, label: "Sun" },
@@ -46,7 +47,17 @@ export function GroupForm({
   handleMemberDelete,
   handleSubmit,
 }: GroupFormProps) {
+  const descriptionEditorRef = useRef<RichTextEditorHandle>(null);
+
+  const handleNextField: KeyboardEventHandler<HTMLInputElement> = (e) => {
+    if (e.currentTarget.name === "name" && e.key === "Tab" && !e.shiftKey) {
+      e.preventDefault();
+      descriptionEditorRef.current?.focus();
+    }
+  };
+
   const heading = mode === "edit" ? "Edit Group" : "Create Group";
+
   const summary =
     mode === "edit"
       ? "Update the group profile, recurrence, messages, and membership defaults."
@@ -83,6 +94,7 @@ export function GroupForm({
             value={fields.name}
             onChange={handleFieldChange}
             onBlur={handleFieldBlur}
+            onKeyDown={handleNextField}
             placeholder="Downtown Writers Circle"
             size="lg"
             aria-invalid={touched.name && !!fieldErrors.name}
@@ -94,6 +106,7 @@ export function GroupForm({
           <FieldLabel htmlFor="description">Description</FieldLabel>
           <div className="rounded-xl border border-border bg-white p-3">
             <RichTextEditor
+              ref={descriptionEditorRef}
               value={fields.description}
               onChange={handleDescriptionChange}
               isSimpleMode
