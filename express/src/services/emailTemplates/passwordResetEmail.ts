@@ -1,3 +1,5 @@
+import { buildBaseEmailTemplate, emailTypography } from "./baseEmailTemplate";
+
 export interface PasswordResetEmailInput {
   firstName?: string;
   resetCode: string;
@@ -27,13 +29,23 @@ export const buildPasswordResetEmail = (
     "If you did not request this reset, you can safely ignore this email.",
   ].join("\n");
 
-  const html = [
-    `<p>Hi ${greetingName},</p>`,
-    "<p>Use this code to reset your Writers CheckIn password:</p>",
-    `<p style=\"font-size: 24px; font-weight: bold; letter-spacing: 0.2em;\">${input.resetCode}</p>`,
-    `<p>This code expires in <strong>${input.expiresInMinutes} minutes</strong>.</p>`,
-    "<p>If you did not request this reset, you can safely ignore this email.</p>",
-  ].join("");
+  const html = buildBaseEmailTemplate({
+    previewText: "Use this code to reset your Writers CheckIn password.",
+    heading: "Password Reset Request",
+    bodyHtml: [
+      emailTypography.paragraph(`Hi ${greetingName},`),
+      emailTypography.paragraph(
+        "Use this code to reset your Writers CheckIn password:",
+      ),
+      emailTypography.codeBlock(input.resetCode),
+      emailTypography.paragraph(
+        `This code expires in ${input.expiresInMinutes} minutes.`,
+      ),
+      emailTypography.muted(
+        "If you did not request this reset, you can safely ignore this email.",
+      ),
+    ].join(""),
+  });
 
   return {
     subject,

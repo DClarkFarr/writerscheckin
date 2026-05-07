@@ -20,6 +20,8 @@ import { getUserByEmail, getUserById, normalizeEmail } from "../models/users";
 import { ensureObjectId } from "../models/types";
 import { validateEmail } from "../utils/validators";
 import { sendEmail } from "./emailService";
+import { buildGroupInviteEmail } from "./emailTemplates/groupInviteEmail";
+import { getGroupById } from "../models/groups";
 
 export interface AddGroupMemberInput {
   groupId: string;
@@ -120,10 +122,17 @@ export const addGroupMember = async (
   // if the user has set the status, leave it unchanged.
   // If status was set by admin, let this update it.
 
-  const nextStatus =
-    (["accepted", "declined"].includes(existingMember?.status ?? "")
-      ? existingMember?.status
-      : input.status) ?? "invited";
+  const group = await getGroupById(input.groupId);
+  if (!group) {
+    throw new Error("Group not found.");
+  }
+
+  if (["accepted"].includes(existingMember?.status ?? "")) {
+    // abort
+    throw new Error("Member already accepted.");
+  }
+
+  const nextStatus = existingMember?.status ?? input.status ?? "invited";
   const acceptedAt =
     nextStatus === "accepted" ? (existingMember?.acceptedAt ?? now) : undefined;
 
@@ -139,11 +148,13 @@ export const addGroupMember = async (
   });
 
   if (nextStatus === "invited") {
+    const inviteEmail = buildGroupInviteEmail();
+
     sendEmail({
       to: resolved.email,
-      subject: "You've been invited to a writers group",
-      text: `You've been invited to join a writers group on Writers CheckIn. Sign up to accept the invitation.`,
-      html: `<p>You've been invited to join a writers group on <strong>Writers CheckIn</strong>.</p><p>Sign up to accept the invitation.</p>`,
+      subject: inviteEmail.subject,
+      text: inviteEmail.text,
+      html: inviteEmail.html,
     }).catch(() => {
       // Best-effort — do not fail the invite if email delivery fails
     });
