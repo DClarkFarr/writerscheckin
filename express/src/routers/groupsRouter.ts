@@ -14,6 +14,7 @@ import {
 import {
   updateGroupMemberRole,
   removeGroupMember,
+  respondToGroupInvite,
 } from "../services/groupMembersService";
 import {
   createUpcomingMeetingFromDefaults,
@@ -234,6 +235,30 @@ const applyGroupRoutes = () => {
         meetingId,
         userId,
         state: stateRaw,
+      });
+
+      res.status(200).json(data);
+    }),
+  );
+
+  groupsRouter.post(
+    "/members/:membershipId/respond",
+    handleAsync(async (req, res) => {
+      const userId = getAuthenticatedUserId(req);
+      const membershipId = getRouteParam(
+        req.params.membershipId,
+        "membershipId",
+      );
+
+      const actionRaw = req.body?.action;
+      if (actionRaw !== "accept" && actionRaw !== "decline") {
+        throw new Error("Invalid invite action.");
+      }
+
+      const data = await respondToGroupInvite({
+        membershipId,
+        userId,
+        action: actionRaw,
       });
 
       res.status(200).json(data);

@@ -1,6 +1,7 @@
 import { ObjectId } from "mongodb";
 import {
   getGroupMemberById,
+  getGroupMemberByIdForUser,
   getUserGroupMembership,
   getEmailGroupMembership,
   listGroupMembersByEmail,
@@ -37,6 +38,22 @@ export interface UpdateGroupMemberRoleInput {
 export interface RemoveGroupMemberInput {
   groupId: string;
   memberId: string;
+}
+
+export type GroupInviteResponseAction = "accept" | "decline";
+
+export interface RespondToGroupInviteInput {
+  membershipId: string;
+  userId: string;
+  action: GroupInviteResponseAction;
+}
+
+export interface RespondToGroupInviteResult {
+  membershipId: string;
+  groupId: string;
+  status: "accepted" | "declined";
+  actedAt: string;
+  redirectTo: string | null;
 }
 
 const isObjectIdLike = (value: string): boolean => ObjectId.isValid(value);
@@ -171,6 +188,44 @@ export const removeGroupMember = async (
   }
 
   await softDeleteGroupMemberById(input.memberId);
+};
+
+export const respondToGroupInvite = async (
+  input: RespondToGroupInviteInput,
+): Promise<RespondToGroupInviteResult> => {
+  const membership = await getGroupMemberByIdForUser(
+    input.membershipId,
+    input.userId,
+  );
+
+  if (!membership) {
+    throw new Error("Group member not found.");
+  }
+
+  if (membership.status !== "invited") {
+    throw new Error("Invite has already been handled.");
+  }
+
+  const nextStatus = input.action === "accept" ? "accepted" : "declined";
+  const actedAt = new Date();
+  const updated = await updateGroupMemberById(membership._id, {
+    status: nextStatus,
+    ...(nextStatus === "accepted" ? { acceptedAt: actedAt } : {}),
+  });
+
+  if (!updated) {
+    throw new Error("Unable to respond to group invite.");
+  }
+
+  const groupId = updated.groupId.toHexString();
+
+  return {
+    membershipId: updated._id.toHexString(),
+    groupId,
+    status: nextStatus,
+    actedAt: (updated.updatedAt ?? actedAt).toISOString(),
+    redirectTo: nextStatus === "accepted" ? `/groups/${groupId}/view` : null,
+  };
 };
 
 export const attachUserToInvitedMembers = async (

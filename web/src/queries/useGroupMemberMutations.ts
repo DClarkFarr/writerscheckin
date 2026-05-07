@@ -4,6 +4,7 @@ import { cancelAndSnapshot, rollbackSnapshot } from "@/queries/optimisticCache";
 import { groupFormQueryKey } from "@/queries/useGroupFormQuery";
 import { myGroupQueryKey } from "@/queries/useMyGroupsQuery";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { groupMembersQueryKey } from "./useGroupMembersQuery";
 
 type UpdateRoleInput = {
   groupId: string;
@@ -62,6 +63,9 @@ export const useGroupMemberMutations = () => {
       await queryClient.invalidateQueries({
         queryKey: groupFormQueryKey(groupId),
       });
+      await queryClient.invalidateQueries({
+        queryKey: groupMembersQueryKey(groupId),
+      });
     },
   });
 
@@ -101,6 +105,9 @@ export const useGroupMemberMutations = () => {
     onSettled: async (_result, _error, { groupId }) => {
       await queryClient.invalidateQueries({
         queryKey: groupFormQueryKey(groupId),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: groupMembersQueryKey(groupId),
       });
       await queryClient.invalidateQueries({ queryKey: myGroupQueryKey() });
     },

@@ -505,7 +505,10 @@ export const populateGroupsasSummaryItems = async (
     summaryItems.push(
       mapToGroupSummaryItem({
         groupId: group._id.toHexString(),
+        membershipId: userMembership._id.toHexString(),
+        membershipCreatedAt: userMembership.createdAt.toISOString(),
         name: group.name,
+        address: group.address,
         recurrence: group.recurrenceRule.frequency,
         createdAt: group.createdAt.toISOString(),
         isActive: !group.deletedAt,

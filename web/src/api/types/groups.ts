@@ -18,7 +18,10 @@ export interface GroupSummaryAvailableActions {
 export type GroupUserRole = "owner" | "admin" | "member";
 export interface GroupSummaryItem {
   groupId: string;
+  membershipId?: string;
+  membershipCreatedAt?: string;
   name: string;
+  address?: string;
   recurrence: string;
   createdAt: string;
   isActive: boolean;
@@ -118,6 +121,20 @@ export interface GroupMembershipResponse {
   invitedBy: string | null;
   invitedAt: string | null;
   acceptedAt: string | null;
+}
+
+export type GroupInviteAction = "accept" | "decline";
+
+export interface RespondToGroupInviteInput {
+  action: GroupInviteAction;
+}
+
+export interface RespondToGroupInviteResponse {
+  membershipId: string;
+  groupId: string;
+  status: "accepted" | "declined";
+  actedAt: string;
+  redirectTo: string | null;
 }
 
 export interface SaveGroupResponse {

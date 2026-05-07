@@ -20,6 +20,8 @@ import type {
   MeetingDetailResponse,
   MeetingParticipantRow,
   PublishMeetingResponse,
+  RespondToGroupInviteInput,
+  RespondToGroupInviteResponse,
   SaveGroupResponse,
   SearchParticipantsResponse,
   UpdateMeetingInput,
@@ -34,6 +36,9 @@ const normalizeGroupSummaryItem = (
   item: GroupSummaryItem,
 ): GroupSummaryItem => ({
   ...item,
+  membershipId: item.membershipId,
+  membershipCreatedAt: item.membershipCreatedAt,
+  address: item.address ?? "",
   recurrence: item.recurrence ?? "weekly",
   createdAt: item.createdAt ?? new Date(0).toISOString(),
   counts: {
@@ -466,6 +471,28 @@ export async function getGroupMembers({
     );
 
     return normalizeGroupMembersResponse(data);
+  } catch (err) {
+    throw await toApiError(err);
+  }
+}
+
+export async function respondToGroupInvite(
+  membershipId: string,
+  input: RespondToGroupInviteInput,
+): Promise<RespondToGroupInviteResponse> {
+  try {
+    const { data } = await apiClient.post<RespondToGroupInviteResponse>(
+      `/groups/members/${membershipId}/respond`,
+      input,
+    );
+
+    return {
+      membershipId: data.membershipId,
+      groupId: data.groupId,
+      status: data.status,
+      actedAt: data.actedAt,
+      redirectTo: data.redirectTo ?? null,
+    };
   } catch (err) {
     throw await toApiError(err);
   }

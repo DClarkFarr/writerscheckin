@@ -6,7 +6,10 @@ export interface GroupSummaryAvailableActions {
 
 export interface GroupSummaryItem {
   groupId: string;
+  membershipId?: string;
+  membershipCreatedAt?: string;
   name: string;
+  address?: string;
   recurrence: string;
   createdAt: string;
   isActive: boolean;
@@ -25,7 +28,10 @@ export interface GroupSummaryItem {
 
 export interface GroupSummaryMapperInput {
   groupId: string;
+  membershipId?: string;
+  membershipCreatedAt?: string;
   name: string;
+  address?: string;
   recurrence: string;
   createdAt: string;
   isActive: boolean;
@@ -52,7 +58,12 @@ export const mapToGroupSummaryItem = (
 
   return {
     groupId: input.groupId,
+    ...(input.membershipId ? { membershipId: input.membershipId } : {}),
+    ...(input.membershipCreatedAt
+      ? { membershipCreatedAt: input.membershipCreatedAt }
+      : {}),
     name: input.name,
+    ...(input.address ? { address: input.address } : {}),
     recurrence: input.recurrence,
     createdAt: input.createdAt,
     isActive: input.isActive,

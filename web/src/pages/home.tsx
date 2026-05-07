@@ -2,11 +2,13 @@ import { Link } from "@tanstack/react-router";
 import Logo from "../assets/logo-icon-md.png";
 import { useAuthStore } from "@/store/authStore";
 import { PageCard } from "@/components/layout/PageCard";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useHomeStore } from "@/store/homeStore";
 import { useCallback } from "react";
 import { MyGroupsTab } from "@/components/home/MyGroupsTab";
 import { MyMeetingsTab } from "@/components/home/MyMeetingsTab";
+import { useGroupInvites } from "@/hooks/useGroupInvites";
 export function Home() {
   const user = useAuthStore((state) => state.user);
   return user ? <HomeAuthenticated /> : <HomeUnauthenticated />;
@@ -14,6 +16,13 @@ export function Home() {
 
 const HomeAuthenticated = () => {
   const { view, setView } = useHomeStore();
+  const {
+    pendingInviteCount,
+    isLoading: isInvitesLoading,
+    isError: isInvitesError,
+  } = useGroupInvites();
+  const showInviteBadge =
+    !isInvitesLoading && !isInvitesError && pendingInviteCount > 0;
 
   const onValueChange = useCallback(
     (value: string) => {
@@ -31,7 +40,20 @@ const HomeAuthenticated = () => {
               My Meetings
             </TabsTrigger>
             <TabsTrigger value="groups" size="lg" variant="cardTop">
-              My Groups
+              <span className="inline-flex items-center gap-2">
+                <span>My Groups</span>
+                {showInviteBadge ? (
+                  <Badge className="bg-orange-700 text-white">
+                    {pendingInviteCount}
+                  </Badge>
+                ) : null}
+                {isInvitesLoading ? (
+                  <span
+                    aria-hidden
+                    className="h-2.5 w-2.5 rounded-full bg-muted-foreground/30"
+                  />
+                ) : null}
+              </span>
             </TabsTrigger>
           </TabsList>
         </div>

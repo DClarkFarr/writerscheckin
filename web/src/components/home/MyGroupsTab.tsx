@@ -17,6 +17,8 @@ import { GroupMemberActionsDropdown } from "../group/GroupMemberActionsDropdown"
 import { GroupSummaryModal } from "../group/GroupSummaryModal";
 import { GroupAdminActionsMenu } from "../group/GroupAdminActionsDropdown";
 import { formatDate } from "@/lib/dateFormat";
+import { useGroupInvites } from "@/hooks/useGroupInvites";
+import { GroupInviteList } from "./GroupInviteList";
 
 export function MyGroupsTab() {
   const navigate = useNavigate();
@@ -37,6 +39,8 @@ export function MyGroupsTab() {
     },
     { enabled: true },
   );
+  const { pendingInvites, isResponding, actionError, handleInviteAction } =
+    useGroupInvites();
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
@@ -185,6 +189,12 @@ export function MyGroupsTab() {
 
   return (
     <div className="space-y-3 py-3">
+      <GroupInviteList
+        invites={pendingInvites}
+        isPendingAction={isResponding}
+        actionError={actionError}
+        onAction={handleInviteAction}
+      />
       <div className="flex justify-end">
         <div>
           <Button type="button" onClick={onClickCreate}>
