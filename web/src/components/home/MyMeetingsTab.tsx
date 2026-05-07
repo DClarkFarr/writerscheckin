@@ -15,7 +15,7 @@ export function MyMeetingsTab() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useMyMeetingsQuery({ enabled: true });
+  } = useMyMeetingsQuery();
 
   const [selectedMeetingForDrawer, setSelectedMeetingForDrawer] =
     useState<MemberMeetingFeedItem | null>(null);

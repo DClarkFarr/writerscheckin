@@ -33,12 +33,9 @@ export function MyGroupsTab() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useMyGroupsQuery(
-    {
-      status: "accepted",
-    },
-    { enabled: true },
-  );
+  } = useMyGroupsQuery({
+    status: "accepted",
+  });
   const { pendingInvites, isResponding, actionError, handleInviteAction } =
     useGroupInvites();
 
