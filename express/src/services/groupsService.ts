@@ -38,6 +38,7 @@ import { ensureObjectId } from "../models/types";
 import { listUsers, listUsersByIds } from "../models/users";
 import {
   assertTimeOfDay,
+  GROUP_MEMBER_INVITE_STATUSES,
   type GroupMemberInviteStatus,
   type GroupMeetingStatus,
   type MeetingTimeOfDay,
@@ -145,6 +146,8 @@ export interface GroupMeetingListItem {
 export interface ListManagedGroupMembersProps {
   groupId: string;
   userId: string;
+  includeStatuses?: GroupMemberInviteStatus[];
+  excludeStatuses?: GroupMemberInviteStatus[];
   cursor?: string;
   limit?: number;
 }
@@ -338,30 +341,21 @@ const assertCanManageGroup = async (
   }
 };
 
-const syncGroupMembers = async (
+const createMembersOnGroupCreation = async (
   groupId: string,
   ownerUserId: string,
-  managerUserId: string,
   members: GroupFormMemberInput[],
 ): Promise<void> => {
   const desiredMembers = dedupeMembers(members).filter(
     (member) => member.identifier !== ownerUserId,
-  );
-  const desiredIdentifiers = new Set(
-    desiredMembers.map((member) => member.identifier),
   );
 
   await addGroupMember({
     groupId,
     identifier: ownerUserId,
     role: "owner",
-    invitedBy: managerUserId,
+    invitedBy: null,
     status: "accepted",
-  });
-
-  const existingMembers = await listGroupMembersByGroupId(groupId, {
-    includeDeleted: true,
-    limit: 500,
   });
 
   for (const member of desiredMembers) {
@@ -369,26 +363,8 @@ const syncGroupMembers = async (
       groupId,
       identifier: member.identifier,
       role: member.role,
-      invitedBy: managerUserId,
+      invitedBy: ownerUserId,
     });
-  }
-
-  for (const existingMember of existingMembers) {
-    if (existingMember.role === "owner") {
-      continue;
-    }
-
-    const existingIdentifier = existingMember.userId?.toHexString();
-    if (!existingIdentifier) {
-      continue;
-    }
-
-    if (!desiredIdentifiers.has(existingIdentifier)) {
-      await removeGroupMember({
-        groupId,
-        memberId: existingMember._id.toHexString(),
-      });
-    }
   }
 };
 
@@ -596,7 +572,7 @@ export const createManagedGroup = async (
   });
 
   const groupId = group._id.toHexString();
-  await syncGroupMembers(groupId, ownerUserId, ownerUserId, input.members);
+  await createMembersOnGroupCreation(groupId, ownerUserId, input.members);
 
   // await createNextUpcomingMeetingFromGroupDefaults(groupId);
 
@@ -674,17 +650,41 @@ export const getManagedGroupForm = async (
 export const listManagedGroupMembersPaginated = async ({
   groupId,
   userId,
+  includeStatuses,
+  excludeStatuses,
   cursor,
   limit,
 }: ListManagedGroupMembersProps): Promise<ListManagedGroupMembersResult> => {
   await assertCanViewGroup(groupId, userId);
 
+  const statusSet = new Set<GroupMemberInviteStatus>(
+    includeStatuses && includeStatuses.length > 0
+      ? includeStatuses
+      : GROUP_MEMBER_INVITE_STATUSES.filter((status) => status !== "removed"),
+  );
+
+  for (const status of excludeStatuses ?? []) {
+    statusSet.delete(status);
+  }
+
+  const statuses = Array.from(statusSet);
+
+  if (statuses.length === 0) {
+    return {
+      rows: [],
+      nextCursor: null,
+    };
+  }
+
+  const statusFilter =
+    statuses.length === 1 ? statuses[0] : ({ $in: statuses } as const);
+
+  console.log("status filter", statusFilter);
+
   const pageSize = normalizePageSize(limit);
   const members = await listGroupMembersByGroupId(groupId, {
     limit: 1000,
-    status: {
-      $ne: "removed",
-    },
+    status: statusFilter,
   });
 
   const participantUsers = await listUsersByIds(
@@ -837,13 +837,6 @@ export const updateManagedGroup = async (
   if (!owner.userId) {
     throw new Error("Group owner is missing a userId.");
   }
-
-  await syncGroupMembers(
-    groupId,
-    owner.userId.toHexString(),
-    userId,
-    input.members,
-  );
 
   return toSaveResult({
     groupId: updatedGroup._id.toHexString(),

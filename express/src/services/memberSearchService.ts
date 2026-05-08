@@ -65,7 +65,10 @@ export const searchMembers = async (
     });
 
     for (const member of groupMembers) {
-      if (member.userId && member.status !== "removed") {
+      if (
+        member.userId &&
+        (member.status === "accepted" || member.status === "invited")
+      ) {
         excludedUserIds.add(member.userId.toHexString());
       }
     }

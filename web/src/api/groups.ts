@@ -452,13 +452,28 @@ export interface GetGroupMembersProps {
   groupId: string;
   cursor?: string;
   limit?: number;
+  includeStatuses?: Array<
+    "invited" | "accepted" | "declined" | "cancelled" | "removed"
+  >;
+  excludeStatuses?: Array<
+    "invited" | "accepted" | "declined" | "cancelled" | "removed"
+  >;
 }
 
 export async function getGroupMembers({
   groupId,
   cursor,
   limit,
+  includeStatuses,
+  excludeStatuses,
 }: GetGroupMembersProps): Promise<GroupMembersResponse> {
+  const includeStatus = includeStatuses?.length
+    ? includeStatuses.join(",")
+    : undefined;
+  const excludeStatus = excludeStatuses?.length
+    ? excludeStatuses.join(",")
+    : undefined;
+
   try {
     const { data } = await apiClient.get<GroupMembersResponse>(
       `/groups/${groupId}/members`,
@@ -466,6 +481,8 @@ export async function getGroupMembers({
         params: {
           cursor,
           limit,
+          includeStatus,
+          excludeStatus,
         },
       },
     );

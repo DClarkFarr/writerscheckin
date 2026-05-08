@@ -26,7 +26,7 @@ export interface GroupMemberDefinition extends BaseModelBlueprint {
   userId?: ObjectId;
   email?: string;
   role: GroupMemberRole;
-  invitedBy: ObjectId;
+  invitedBy: ObjectId | null;
   invitedAt: Date;
   acceptedAt?: Date;
   status: GroupMemberInviteStatus;
@@ -93,7 +93,7 @@ export interface SaveGroupMemberInput {
   userId?: string | ObjectId;
   email?: string;
   role: GroupMemberRole;
-  invitedBy: string | ObjectId;
+  invitedBy: string | ObjectId | null;
   invitedAt?: Date;
   acceptedAt?: Date;
   status: GroupMemberInviteStatus;
@@ -103,7 +103,7 @@ export interface UpdateGroupMemberInput {
   userId?: string | ObjectId;
   email?: string | null;
   role?: GroupMemberRole;
-  invitedBy?: string | ObjectId;
+  invitedBy?: string | ObjectId | null;
   invitedAt?: Date;
   acceptedAt?: Date | null;
   status?: GroupMemberInviteStatus | undefined;
@@ -248,7 +248,9 @@ export const saveGroupMember = async (
         ...(userId ? { userId } : {}),
         ...(email ? { email } : {}),
         role,
-        invitedBy: toObjectId(input.invitedBy, "invitedBy"),
+        invitedBy: input.invitedBy
+          ? toObjectId(input.invitedBy, "invitedBy")
+          : null,
         invitedAt,
         ...(acceptedAt ? { acceptedAt } : {}),
         status,
@@ -361,7 +363,7 @@ export const listGroupMembersByGroupId = async (
 
   const filters: Filter<GroupMemberDocument> = {
     groupId: toObjectId(groupId, "groupId"),
-    ...activeRecordFilter(options.includeDeleted),
+    // ...activeRecordFilter(options.includeDeleted),
   };
 
   if (options.role) {
@@ -493,7 +495,9 @@ export const updateGroupMemberById = async (
   }
 
   if (updates.invitedBy !== undefined) {
-    updatePayload.invitedBy = toObjectId(updates.invitedBy, "invitedBy");
+    updatePayload.invitedBy = updates.invitedBy
+      ? toObjectId(updates.invitedBy, "invitedBy")
+      : null;
   }
 
   if (updates.invitedAt !== undefined) {

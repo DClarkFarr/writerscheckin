@@ -27,7 +27,7 @@ export interface AddGroupMemberInput {
   groupId: string;
   identifier: string;
   role: GroupMemberRole;
-  invitedBy: string;
+  invitedBy: string | null;
   status?: GroupMemberInviteStatus;
 }
 
@@ -118,6 +118,15 @@ export const addGroupMember = async (
     ? await getUserGroupMembership(resolved.userId, input.groupId)
     : await getEmailGroupMembership(resolved.email, input.groupId);
 
+  console.log(
+    "got resolved",
+    resolved,
+    "and",
+    existingMember,
+    "for input",
+    input,
+  );
+
   const now = new Date();
   // if the user has set the status, leave it unchanged.
   // If status was set by admin, let this update it.
@@ -141,7 +150,7 @@ export const addGroupMember = async (
     ...(resolved.userId ? { userId: resolved.userId } : {}),
     email: resolved.email,
     role,
-    invitedBy: input.invitedBy,
+    invitedBy: input.invitedBy ?? null,
     invitedAt: existingMember?.invitedAt ?? now,
     ...(acceptedAt ? { acceptedAt } : {}),
     status: nextStatus,

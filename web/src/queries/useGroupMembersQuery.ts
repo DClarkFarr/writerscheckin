@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { ApiError } from "@/api/types";
 import { getGroupMembers } from "@/api/groups";
-import type { GroupFormMember } from "@/api/types/groups";
+import type { GroupFormMember, GroupMemberStatus } from "@/api/types/groups";
 import type { BaseQueryOptions } from "@/types/query.types";
 
 const mapErrorMessage = (error: unknown): string => {
@@ -16,13 +16,33 @@ const mapErrorMessage = (error: unknown): string => {
 export type UseGroupMembersQueryProps = {
   groupId: string | undefined;
   limit?: number;
+  includeStatuses?: GroupMemberStatus[];
+  excludeStatuses?: GroupMemberStatus[];
 };
 
-export const groupMembersQueryKey = (groupId: string | undefined) =>
-  ["group-members", groupId] as const;
+export const groupMembersQueryKey = (
+  groupId: string | undefined,
+  statusFilters?: {
+    includeStatuses?: GroupMemberStatus[];
+    excludeStatuses?: GroupMemberStatus[];
+  },
+) =>
+  [
+    "group-members",
+    groupId,
+    {
+      includeStatuses: statusFilters?.includeStatuses ?? [],
+      excludeStatuses: statusFilters?.excludeStatuses ?? [],
+    },
+  ] as const;
 
 export const useGroupMembersQuery = (
-  { groupId, limit }: UseGroupMembersQueryProps,
+  {
+    groupId,
+    limit,
+    includeStatuses,
+    excludeStatuses,
+  }: UseGroupMembersQueryProps,
   { enabled }: BaseQueryOptions = {},
 ) => {
   const {
@@ -35,7 +55,10 @@ export const useGroupMembersQuery = (
     hasNextPage,
     isFetchingNextPage,
   } = useInfiniteQuery({
-    queryKey: groupMembersQueryKey(groupId),
+    queryKey: groupMembersQueryKey(groupId, {
+      includeStatuses,
+      excludeStatuses,
+    }),
     queryFn: ({ pageParam }) =>
       getGroupMembers({
         groupId: groupId ?? "",
@@ -44,6 +67,8 @@ export const useGroupMembersQuery = (
             ? pageParam
             : undefined,
         limit,
+        includeStatuses,
+        excludeStatuses,
       }),
     enabled: enabled !== false && !!groupId,
     initialPageParam: undefined as string | undefined,

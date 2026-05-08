@@ -117,7 +117,7 @@ export const assertRecurrenceRule = (
   };
 };
 
-export const assertRole = (role: string): GroupMemberRole => {
+export const assertRole = (role: string | null): GroupMemberRole => {
   if (!GROUP_MEMBER_ROLES.includes(role as GroupMemberRole)) {
     throw new Error("Unsupported group member role.");
   }

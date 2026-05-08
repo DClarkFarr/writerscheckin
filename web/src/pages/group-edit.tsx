@@ -29,7 +29,11 @@ export interface GroupEditPageProps {
 
 export function GroupEditPage({ groupId }: GroupEditPageProps) {
   const groupQuery = useGroupFormQuery({ groupId });
-  const membersQuery = useGroupMembersQuery({ groupId, limit: 20 });
+  const membersQuery = useGroupMembersQuery({
+    groupId,
+    limit: 20,
+    excludeStatuses: ["cancelled", "declined"],
+  });
   const meetingsQuery = useGroupMeetingsQuery({ groupId, limit: 20 });
 
   const header = (

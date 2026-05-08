@@ -63,6 +63,30 @@ const ensureGroupMemberInviteStatus = (
     : undefined;
 };
 
+const ensureGroupMemberInviteStatuses = (
+  value: unknown,
+): GroupMemberInviteStatus[] | undefined => {
+  const queryValues = Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string")
+    : typeof value === "string"
+      ? [value]
+      : [];
+
+  const statusesRaw = queryValues.flatMap((item) => item.split(","));
+
+  const statuses = Array.from(
+    new Set(
+      statusesRaw
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0)
+        .map((item) => ensureGroupMemberInviteStatus(item))
+        .filter((item): item is GroupMemberInviteStatus => item !== undefined),
+    ),
+  );
+
+  return statuses.length > 0 ? statuses : undefined;
+};
+
 const getRouteParam = (
   value: string | string[] | undefined,
   label: string,
@@ -592,6 +616,21 @@ const applyGroupRoutes = () => {
     handleAsync(async (req, res) => {
       const userId = getAuthenticatedUserId(req);
       const groupId = getRouteParam(req.params.groupId, "groupId");
+
+      const queryParams = req.query as Record<string, unknown>;
+
+      const includeStatuses = ensureGroupMemberInviteStatuses(
+        queryParams.includeStatus ??
+          queryParams.includeStatuses ??
+          queryParams["includeStatus[]"] ??
+          queryParams["includeStatuses[]"],
+      );
+      const excludeStatuses = ensureGroupMemberInviteStatuses(
+        queryParams.excludeStatus ??
+          queryParams.excludeStatuses ??
+          queryParams["excludeStatus[]"] ??
+          queryParams["excludeStatuses[]"],
+      );
       const cursor =
         typeof req.query.cursor === "string" ? req.query.cursor : undefined;
       const parsedLimit =
@@ -606,6 +645,8 @@ const applyGroupRoutes = () => {
       const data = await listManagedGroupMembersPaginated({
         groupId,
         userId,
+        ...(includeStatuses ? { includeStatuses } : {}),
+        ...(excludeStatuses ? { excludeStatuses } : {}),
         ...(cursor ? { cursor } : {}),
         ...(typeof limit === "number" ? { limit } : {}),
       });
