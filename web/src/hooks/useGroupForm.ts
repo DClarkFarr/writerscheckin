@@ -197,7 +197,9 @@ export function useGroupForm(
     groupId: options.groupId,
   });
   const { mutateAsync: saveGroupAsync, isPending } = saveGroupMutation;
-  const { updateMemberRole, removeMember } = useGroupMemberMutations();
+  const { addMember, updateMemberRole, removeMember } =
+    useGroupMemberMutations();
+  const { mutateAsync: addMemberAsync } = addMember;
   const { mutateAsync: updateMemberRoleAsync } = updateMemberRole;
   const { mutateAsync: removeMemberAsync } = removeMember;
 
@@ -371,6 +373,8 @@ export function useGroupForm(
     handleDescriptionChange,
     handleRecurrenceDayToggle,
     handleMemberAdd: (member: GroupFormMember) => {
+      let wasAdded = false;
+
       setSelectedGroupMembers((current) => {
         const alreadyExists = current.some(
           (existing) =>
@@ -382,8 +386,58 @@ export function useGroupForm(
           return current;
         }
 
+        wasAdded = true;
+
         return [...current, member];
       });
+
+      if (!wasAdded) {
+        return;
+      }
+
+      if (options.mode === "edit" && options.groupId) {
+        const groupId = options.groupId;
+        const add = async () => {
+          try {
+            const created = await addMemberAsync({ groupId, member });
+
+            setSelectedGroupMembers((current) =>
+              current.map((existing) => {
+                const matches =
+                  existing.identifier === member.identifier ||
+                  (member.email && existing.email === member.email);
+
+                if (!matches || existing._id) {
+                  return existing;
+                }
+
+                return {
+                  ...existing,
+                  _id: created._id,
+                  identifier: created.identifier,
+                  userId: created.userId,
+                  email: created.email,
+                  status: created.status,
+                };
+              }),
+            );
+          } catch (err) {
+            if (err instanceof ApiError) {
+              alert.error(err.serverMessage ?? "Failed to add member.");
+            }
+
+            setSelectedGroupMembers((current) =>
+              current.filter(
+                (existing) =>
+                  existing.identifier !== member.identifier &&
+                  (!member.email || existing.email !== member.email),
+              ),
+            );
+          }
+        };
+
+        void add();
+      }
     },
     handleMemberRoleChange: (memberId: string, role: GroupMemberRole) => {
       // Capture the member's old role before changing for error recovery

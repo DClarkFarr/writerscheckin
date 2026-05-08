@@ -1,5 +1,9 @@
-import { removeGroupMember, updateGroupMemberRole } from "@/api/groups";
-import type { GroupMemberRole } from "@/api/types/groups";
+import {
+  addGroupMember,
+  removeGroupMember,
+  updateGroupMemberRole,
+} from "@/api/groups";
+import type { GroupFormMember, GroupMemberRole } from "@/api/types/groups";
 import { cancelAndSnapshot, rollbackSnapshot } from "@/queries/optimisticCache";
 import { groupFormQueryKey } from "@/queries/useGroupFormQuery";
 import { myGroupQueryKey } from "@/queries/useMyGroupsQuery";
@@ -15,6 +19,11 @@ type UpdateRoleInput = {
 type RemoveMemberInput = {
   groupId: string;
   memberId: string;
+};
+
+type AddMemberInput = {
+  groupId: string;
+  member: GroupFormMember;
 };
 
 export const useGroupMemberMutations = () => {
@@ -113,5 +122,60 @@ export const useGroupMemberMutations = () => {
     },
   });
 
-  return { updateMemberRole, removeMember };
+  const addMember = useMutation({
+    mutationFn: ({ groupId, member }: AddMemberInput) =>
+      addGroupMember(groupId, {
+        identifier: member.identifier,
+        role: member.role,
+      }),
+    onMutate: async ({ groupId, member }) => {
+      const key = groupFormQueryKey(groupId);
+      const snapshots = await cancelAndSnapshot(queryClient, [key]);
+
+      queryClient.setQueryData(key, (current: unknown) => {
+        if (!current || typeof current !== "object") {
+          return current;
+        }
+
+        const typed = current as {
+          members?: GroupFormMember[];
+        };
+
+        if (!Array.isArray(typed.members)) {
+          return typed;
+        }
+
+        const exists = typed.members.some(
+          (existing) =>
+            existing.identifier === member.identifier ||
+            (member.email && existing.email === member.email),
+        );
+
+        if (exists) {
+          return typed;
+        }
+
+        return {
+          ...typed,
+          members: [...typed.members, member],
+        };
+      });
+
+      return { snapshots };
+    },
+    onError: (_error, _input, context) => {
+      rollbackSnapshot(queryClient, context?.snapshots);
+    },
+    onSettled: async (_result, _error, { groupId }) => {
+      await queryClient.invalidateQueries({
+        queryKey: groupFormQueryKey(groupId),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: groupMembersQueryKey(groupId),
+      });
+      await queryClient.invalidateQueries({ queryKey: myGroupQueryKey() });
+    },
+  });
+
+  return { updateMemberRole, removeMember, addMember };
 };

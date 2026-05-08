@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Select, { type SingleValue, type StylesConfig } from "react-select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { deriveAvatarInitials } from "@/components/layout/AvatarInitials";
@@ -79,25 +79,36 @@ export function GroupUserMultiSelect({
     groupId,
   });
 
-  const options: GroupUserOption[] = [
-    ...(data?.results ?? []).map((result) => ({
-      value: result._id,
-      label: result.name,
-      avatarUrl: result.avatar,
-      email: result.email,
-    })),
-    ...(data?.inviteOption
-      ? [
-          {
-            value: `invite:${data.inviteOption.email}`,
-            label: `Invite "${data.inviteOption.email}"`,
-            avatarUrl: null,
-            isInviteOption: true,
-            email: data.inviteOption.email,
-          },
-        ]
-      : []),
-  ];
+  const options = useMemo(() => {
+    const arr: GroupUserOption[] = [
+      ...(data?.results ?? []).map((result) => ({
+        value: result._id,
+        label: result.name,
+        avatarUrl: result.avatar,
+        email: result.email,
+      })),
+      ...(data?.inviteOption
+        ? [
+            {
+              value: `invite:${data.inviteOption.email}`,
+              label: `Invite "${data.inviteOption.email}"`,
+              avatarUrl: null,
+              isInviteOption: true,
+              email: data.inviteOption.email,
+            },
+          ]
+        : []),
+    ];
+
+    return arr.filter((option) => {
+      const alreadyAdded = selected.some(
+        (member) =>
+          member.identifier === option.value ||
+          member.identifier === option.email,
+      );
+      return !alreadyAdded;
+    });
+  }, [data, selected]);
 
   const noOptionsMessage = () => {
     if (!hasQuery) {

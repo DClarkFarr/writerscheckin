@@ -12,6 +12,7 @@ import {
   updateManagedGroup,
 } from "../services/groupsService";
 import {
+  addGroupMember,
   updateGroupMemberRole,
   removeGroupMember,
   respondToGroupInvite,
@@ -368,6 +369,36 @@ const applyGroupRoutes = () => {
         success: true,
         message: "Member removed",
         memberStatus: "removed",
+      });
+    }),
+  );
+
+  groupsRouter.post(
+    "/:groupId/members",
+    handleAsync(async (req, res) => {
+      const userId = getAuthenticatedUserId(req);
+      const groupId = getRouteParam(req.params.groupId, "groupId");
+      const identifier =
+        typeof req.body?.identifier === "string" ? req.body.identifier : "";
+      const role = typeof req.body?.role === "string" ? req.body.role : "";
+
+      const created = await addGroupMember({
+        groupId,
+        identifier,
+        role,
+        invitedBy: userId,
+      });
+
+      res.status(201).json({
+        success: true,
+        _id: created._id.toHexString(),
+        identifier: created.userId
+          ? created.userId.toHexString()
+          : (created.email ?? identifier),
+        role: created.role,
+        userId: created.userId ? created.userId.toHexString() : null,
+        email: created.email ?? null,
+        status: created.status,
       });
     }),
   );

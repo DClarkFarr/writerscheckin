@@ -679,8 +679,6 @@ export const listManagedGroupMembersPaginated = async ({
   const statusFilter =
     statuses.length === 1 ? statuses[0] : ({ $in: statuses } as const);
 
-  console.log("status filter", statusFilter);
-
   const pageSize = normalizePageSize(limit);
   const members = await listGroupMembersByGroupId(groupId, {
     limit: 1000,

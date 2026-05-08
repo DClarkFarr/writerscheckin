@@ -10,6 +10,8 @@ import type {
   GroupMeetingPublic,
   GroupMembershipResponse,
   GroupMembersResponse,
+  GroupMemberRole,
+  GroupMemberStatus,
   GroupSummaryItem,
   ListMemberMeetingsResponse,
   ListMyMeetingsInput,
@@ -597,6 +599,31 @@ export interface RemoveGroupMemberResponse {
   success: boolean;
   message: string;
   memberStatus: string;
+}
+
+export interface AddGroupMemberResponse {
+  success: boolean;
+  _id: string;
+  identifier: string;
+  role: GroupMemberRole;
+  userId: string | null;
+  email: string | null;
+  status: GroupMemberStatus;
+}
+
+export async function addGroupMember(
+  groupId: string,
+  input: { identifier: string; role: GroupMemberRole },
+): Promise<AddGroupMemberResponse> {
+  try {
+    const { data } = await apiClient.post<AddGroupMemberResponse>(
+      `/groups/${groupId}/members`,
+      input,
+    );
+    return data;
+  } catch (err) {
+    throw await toApiError(err);
+  }
 }
 
 export async function removeGroupMember(
