@@ -118,15 +118,6 @@ export const addGroupMember = async (
     ? await getUserGroupMembership(resolved.userId, input.groupId)
     : await getEmailGroupMembership(resolved.email, input.groupId);
 
-  console.log(
-    "got resolved",
-    resolved,
-    "and",
-    existingMember,
-    "for input",
-    input,
-  );
-
   const now = new Date();
   // if the user has set the status, leave it unchanged.
   // If status was set by admin, let this update it.
@@ -141,7 +132,7 @@ export const addGroupMember = async (
     throw new Error("Member already accepted.");
   }
 
-  const nextStatus = existingMember?.status ?? input.status ?? "invited";
+  const nextStatus = input.status ?? "invited";
   const acceptedAt =
     nextStatus === "accepted" ? (existingMember?.acceptedAt ?? now) : undefined;
 
