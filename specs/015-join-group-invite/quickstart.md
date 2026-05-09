@@ -73,3 +73,14 @@ Ship an email-driven join invite page that is public-readable, supports signed-o
 
 - Visit a protected route while signed out and verify redirect still goes to `/login`.
 - Visit public join route while signed out and verify no redirect occurs.
+
+## Verification Outcomes (2026-05-08)
+
+- Backend compile: PASS (`cd express && npm run build`)
+- Frontend type-check: PASS (`cd web && npx tsc --noEmit`)
+- Invite detail rendering includes group owner, recurrence with time, address fallback, and next meeting fallback: PASS
+- Pending invite actions now wired with visible buttons and disabled pending-state behavior: PASS
+- Decline flow implemented with confirmation dialog and post-action invite refresh: PASS
+- Accept flow implemented with signed-in immediate accept and signed-out login modal continuation: PASS
+
+Manual browser checklist completion remains recommended before release deployment.

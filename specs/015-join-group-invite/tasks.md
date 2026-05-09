@@ -58,13 +58,13 @@
 
 **Independent Test**: Decline from join page in signed-in and signed-out sessions, confirm modal behavior, and verify final declined state after refresh.
 
-- [ ] T021 [P] [US2] Implement decline action branch in invite response service in express/src/services/groupInvitesService.ts
-- [ ] T022 [US2] Implement POST /api/group-invites/:membershipId/respond decline handling in express/src/routers/groupInvitesRouter.ts
-- [ ] T023 [P] [US2] Add respondToJoinGroupInvite API function in web/src/api/groupInvites.ts
-- [ ] T024 [P] [US2] Create invite decline confirmation dialog component in web/src/components/invite/InviteDeclineConfirmDialog.tsx
-- [ ] T025 [P] [US2] Implement invite respond mutation hook for decline in web/src/queries/useRespondToJoinInviteMutation.ts
-- [ ] T026 [US2] Implement decline flow state management in web/src/hooks/useJoinGroupInvite.ts
-- [ ] T027 [US2] Wire decline modal and post-decline status refresh in web/src/pages/join-group-invite.tsx
+- [x] T021 [P] [US2] Implement decline action branch in invite response service in express/src/services/groupInvitesService.ts
+- [x] T022 [US2] Implement POST /api/group-invites/:membershipId/respond decline handling in express/src/routers/groupInvitesRouter.ts
+- [x] T023 [P] [US2] Add respondToJoinGroupInvite API function in web/src/api/groupInvites.ts
+- [x] T024 [P] [US2] Create invite decline confirmation dialog component in web/src/components/invite/InviteDeclineConfirmDialog.tsx
+- [x] T025 [P] [US2] Implement invite respond mutation hook for decline in web/src/queries/useRespondToJoinInviteMutation.ts
+- [x] T026 [US2] Implement decline flow state management in web/src/hooks/useJoinGroupInvite.ts
+- [x] T027 [US2] Wire decline modal and post-decline status refresh in web/src/pages/join-group-invite.tsx
 
 **Checkpoint**: User Story 2 is independently functional and testable.
 
@@ -76,12 +76,12 @@
 
 **Independent Test**: Accept while signed in and verify redirect to /; accept while signed out, complete login in modal, and verify automatic accept + redirect to /.
 
-- [ ] T028 [US3] Implement accept authorization and ownership checks in express/src/services/groupInvitesService.ts
-- [ ] T029 [US3] Implement mixed-auth accept routing (accept requires session, decline remains public) in express/src/routers/groupInvitesRouter.ts
-- [ ] T030 [P] [US3] Create join invite login modal component in web/src/components/invite/JoinInviteLoginDialog.tsx
-- [ ] T031 [US3] Implement deferred accept state machine in web/src/hooks/useJoinGroupInvite.ts
-- [ ] T032 [US3] Integrate LoginForm-based modal and automatic accept continuation in web/src/pages/join-group-invite.tsx
-- [ ] T033 [US3] Add post-accept redirect and cache invalidation behavior in web/src/queries/useRespondToJoinInviteMutation.ts
+- [x] T028 [US3] Implement accept authorization and ownership checks in express/src/services/groupInvitesService.ts
+- [x] T029 [US3] Implement mixed-auth accept routing (accept requires session, decline remains public) in express/src/routers/groupInvitesRouter.ts
+- [x] T030 [P] [US3] Create join invite login modal component in web/src/components/invite/JoinInviteLoginDialog.tsx
+- [x] T031 [US3] Implement deferred accept state machine in web/src/hooks/useJoinGroupInvite.ts
+- [x] T032 [US3] Integrate LoginForm-based modal and automatic accept continuation in web/src/pages/join-group-invite.tsx
+- [x] T033 [US3] Add post-accept redirect and cache invalidation behavior in web/src/queries/useRespondToJoinInviteMutation.ts
 
 **Checkpoint**: User Story 3 is independently functional and testable.
 
@@ -91,9 +91,9 @@
 
 **Purpose**: Final integration hardening and verification across all stories.
 
-- [ ] T034 [P] Add consistent invalid/expired/handled invite copy states in web/src/components/invite/JoinGroupInviteCard.tsx
-- [ ] T035 [P] Refine join page error and loading states for modal/action failures in web/src/pages/join-group-invite.tsx
-- [ ] T036 [P] Record final manual verification outcomes in specs/015-join-group-invite/quickstart.md
+- [x] T034 [P] Add consistent invalid/expired/handled invite copy states in web/src/components/invite/JoinGroupInviteCard.tsx
+- [x] T035 [P] Refine join page error and loading states for modal/action failures in web/src/pages/join-group-invite.tsx
+- [x] T036 [P] Record final manual verification outcomes in specs/015-join-group-invite/quickstart.md
 
 ---
 

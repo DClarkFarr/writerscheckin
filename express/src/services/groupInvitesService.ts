@@ -2,10 +2,12 @@ import crypto from "crypto";
 import {
   getGroupMemberById,
   getGroupOwnerByGroupId,
+  updateGroupMemberById,
 } from "../models/groupMembers";
 import { getLatestUpcomingMeetingByGroupId } from "../models/groupMeetings";
 import { getGroupById } from "../models/groups";
-import { getUserById } from "../models/users";
+import { getUserById, normalizeEmail } from "../models/users";
+import { AuthError } from "./authService";
 import { env } from "../utils/env";
 
 export type JoinGroupInviteStatus =
@@ -26,6 +28,23 @@ export interface JoinGroupInviteDetails {
   status: JoinGroupInviteStatus;
   canAccept: boolean;
   canDecline: boolean;
+}
+
+export type JoinGroupInviteAction = "accept" | "decline";
+
+export interface RespondToJoinGroupInviteInput {
+  membershipId: string;
+  inviteToken: string;
+  action: JoinGroupInviteAction;
+  userId?: string;
+}
+
+export interface RespondToJoinGroupInviteResult {
+  membershipId: string;
+  groupId: string;
+  status: "accepted" | "declined";
+  actedAt: string;
+  redirectTo: string;
 }
 
 interface InviteTokenPayload {
@@ -238,5 +257,68 @@ export const getJoinGroupInviteDetails = async (
     status,
     canAccept: status === "pending",
     canDecline: status === "pending",
+  };
+};
+
+export const respondToJoinGroupInvite = async (
+  input: RespondToJoinGroupInviteInput,
+): Promise<RespondToJoinGroupInviteResult> => {
+  const membershipId = input.membershipId.trim();
+  if (membershipId.length === 0) {
+    throw new Error("membershipId is required.");
+  }
+
+  verifyInviteToken(membershipId, input.inviteToken);
+
+  const membership = await getGroupMemberById(membershipId);
+  if (!membership) {
+    throw new Error("Group invite not found.");
+  }
+
+  if (membership.status !== "invited") {
+    throw new Error("Invite has already been handled.");
+  }
+
+  if (input.action === "accept") {
+    if (!input.userId) {
+      throw new AuthError("Unauthorized", 401);
+    }
+
+    const user = await getUserById(input.userId);
+    if (!user) {
+      throw new AuthError("Unauthorized", 401);
+    }
+
+    const membershipUserId = membership.userId?.toHexString();
+    if (membershipUserId) {
+      if (membershipUserId !== user._id.toHexString()) {
+        throw new AuthError("Forbidden", 403);
+      }
+    } else if (membership.email) {
+      if (normalizeEmail(membership.email) !== normalizeEmail(user.email)) {
+        throw new AuthError("Forbidden", 403);
+      }
+    } else {
+      throw new AuthError("Forbidden", 403);
+    }
+  }
+
+  const nextStatus = input.action === "accept" ? "accepted" : "declined";
+  const actedAt = new Date();
+  const updated = await updateGroupMemberById(membership._id, {
+    status: nextStatus,
+    ...(nextStatus === "accepted" ? { acceptedAt: actedAt } : {}),
+  });
+
+  if (!updated) {
+    throw new Error("Unable to respond to group invite.");
+  }
+
+  return {
+    membershipId: updated._id.toHexString(),
+    groupId: updated.groupId.toHexString(),
+    status: nextStatus,
+    actedAt: (updated.updatedAt ?? actedAt).toISOString(),
+    redirectTo: nextStatus === "accepted" ? "/" : "",
   };
 };

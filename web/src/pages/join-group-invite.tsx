@@ -5,6 +5,9 @@ import { JoinGroupInviteCard } from "@/components/invite/JoinGroupInviteCard";
 import { useJoinGroupInviteQuery } from "@/queries/useJoinGroupInviteQuery";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
+import { useJoinGroupInvite } from "@/hooks/useJoinGroupInvite";
+import { InviteDeclineConfirmDialog } from "@/components/invite/InviteDeclineConfirmDialog";
+import { JoinInviteLoginDialog } from "@/components/invite/JoinInviteLoginDialog";
 
 export function JoinGroupInvitePage() {
   const params = useParams({
@@ -13,10 +16,18 @@ export function JoinGroupInvitePage() {
   const search = useSearch({
     from: "/_public/join/$membershipId",
   });
+  const inviteToken = search.inviteToken || "";
 
   const { data, isLoading, error } = useJoinGroupInviteQuery({
     membershipId: params.membershipId,
-    inviteToken: search.inviteToken,
+    inviteToken,
+  });
+
+  const joinInvite = useJoinGroupInvite({
+    membershipId: params.membershipId,
+    inviteToken,
+    canAccept: data?.canAccept ?? false,
+    canDecline: data?.canDecline ?? false,
   });
 
   if (!search.inviteToken) {
@@ -59,6 +70,33 @@ export function JoinGroupInvitePage() {
   }
 
   return (
-    <PageCard>{data ? <JoinGroupInviteCard invite={data} /> : null}</PageCard>
+    <PageCard>
+      {data ? (
+        <>
+          {joinInvite.respondError ? (
+            <Alert variant="destructive" className="mb-4">
+              <AlertDescription>{joinInvite.respondError}</AlertDescription>
+            </Alert>
+          ) : null}
+          <JoinGroupInviteCard
+            invite={data}
+            onAccept={joinInvite.onAccept}
+            onDecline={joinInvite.onDecline}
+            isActionPending={joinInvite.isResponding}
+          />
+          <InviteDeclineConfirmDialog
+            open={joinInvite.isDeclineDialogOpen}
+            onOpenChange={joinInvite.onDeclineDialogOpenChange}
+            onConfirm={joinInvite.onConfirmDecline}
+            isPending={joinInvite.isResponding}
+          />
+          <JoinInviteLoginDialog
+            open={joinInvite.isLoginDialogOpen}
+            onOpenChange={joinInvite.onLoginDialogOpenChange}
+            onLoginSuccess={joinInvite.onLoginSuccess}
+          />
+        </>
+      ) : null}
+    </PageCard>
   );
 }
