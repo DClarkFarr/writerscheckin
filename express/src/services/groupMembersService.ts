@@ -22,6 +22,7 @@ import { validateEmail } from "../utils/validators";
 import { sendEmail } from "./emailService";
 import { buildGroupInviteEmail } from "./emailTemplates/groupInviteEmail";
 import { getGroupById } from "../models/groups";
+import { createInviteToken } from "./groupInvitesService";
 
 export interface AddGroupMemberInput {
   groupId: string;
@@ -148,7 +149,9 @@ export const addGroupMember = async (
   });
 
   if (nextStatus === "invited") {
-    const inviteEmail = buildGroupInviteEmail(input.groupId);
+    const membershipId = saved._id.toHexString();
+    const inviteToken = createInviteToken(membershipId);
+    const inviteEmail = buildGroupInviteEmail(membershipId, inviteToken);
 
     sendEmail({
       to: resolved.email,

@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from "./routes/__root"
+import { Route as PublicRouteImport } from "./routes/_public"
 import { Route as AuthRouteImport } from "./routes/_auth"
 import { Route as IndexRouteImport } from "./routes/index"
 import { Route as GroupsCreateRouteImport } from "./routes/groups/create"
@@ -17,9 +18,14 @@ import { Route as AuthResetPasswordRouteImport } from "./routes/_auth/reset-pass
 import { Route as AuthLoginRouteImport } from "./routes/_auth/login"
 import { Route as GroupsGroupIdViewRouteImport } from "./routes/groups/$groupId/view"
 import { Route as GroupsGroupIdEditRouteImport } from "./routes/groups/$groupId/edit"
+import { Route as PublicJoinMembershipIdRouteImport } from "./routes/_public/join.$membershipId"
 import { Route as GroupsGroupIdMeetingsMeetingIdViewRouteImport } from "./routes/groups/$groupId/meetings/$meetingId/view"
 import { Route as GroupsGroupIdMeetingsMeetingIdEditRouteImport } from "./routes/groups/$groupId/meetings/$meetingId/edit"
 
+const PublicRoute = PublicRouteImport.update({
+  id: "/_public",
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: "/_auth",
   getParentRoute: () => rootRouteImport,
@@ -59,6 +65,11 @@ const GroupsGroupIdEditRoute = GroupsGroupIdEditRouteImport.update({
   path: "/groups/$groupId/edit",
   getParentRoute: () => rootRouteImport,
 } as any)
+const PublicJoinMembershipIdRoute = PublicJoinMembershipIdRouteImport.update({
+  id: "/join/$membershipId",
+  path: "/join/$membershipId",
+  getParentRoute: () => PublicRoute,
+} as any)
 const GroupsGroupIdMeetingsMeetingIdViewRoute =
   GroupsGroupIdMeetingsMeetingIdViewRouteImport.update({
     id: "/groups/$groupId/meetings/$meetingId/view",
@@ -78,6 +89,7 @@ export interface FileRoutesByFullPath {
   "/reset-password": typeof AuthResetPasswordRoute
   "/sign-up": typeof AuthSignUpRoute
   "/groups/create": typeof GroupsCreateRoute
+  "/join/$membershipId": typeof PublicJoinMembershipIdRoute
   "/groups/$groupId/edit": typeof GroupsGroupIdEditRoute
   "/groups/$groupId/view": typeof GroupsGroupIdViewRoute
   "/groups/$groupId/meetings/$meetingId/edit": typeof GroupsGroupIdMeetingsMeetingIdEditRoute
@@ -89,6 +101,7 @@ export interface FileRoutesByTo {
   "/reset-password": typeof AuthResetPasswordRoute
   "/sign-up": typeof AuthSignUpRoute
   "/groups/create": typeof GroupsCreateRoute
+  "/join/$membershipId": typeof PublicJoinMembershipIdRoute
   "/groups/$groupId/edit": typeof GroupsGroupIdEditRoute
   "/groups/$groupId/view": typeof GroupsGroupIdViewRoute
   "/groups/$groupId/meetings/$meetingId/edit": typeof GroupsGroupIdMeetingsMeetingIdEditRoute
@@ -98,10 +111,12 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   "/": typeof IndexRoute
   "/_auth": typeof AuthRouteWithChildren
+  "/_public": typeof PublicRouteWithChildren
   "/_auth/login": typeof AuthLoginRoute
   "/_auth/reset-password": typeof AuthResetPasswordRoute
   "/_auth/sign-up": typeof AuthSignUpRoute
   "/groups/create": typeof GroupsCreateRoute
+  "/_public/join/$membershipId": typeof PublicJoinMembershipIdRoute
   "/groups/$groupId/edit": typeof GroupsGroupIdEditRoute
   "/groups/$groupId/view": typeof GroupsGroupIdViewRoute
   "/groups/$groupId/meetings/$meetingId/edit": typeof GroupsGroupIdMeetingsMeetingIdEditRoute
@@ -115,6 +130,7 @@ export interface FileRouteTypes {
     | "/reset-password"
     | "/sign-up"
     | "/groups/create"
+    | "/join/$membershipId"
     | "/groups/$groupId/edit"
     | "/groups/$groupId/view"
     | "/groups/$groupId/meetings/$meetingId/edit"
@@ -126,6 +142,7 @@ export interface FileRouteTypes {
     | "/reset-password"
     | "/sign-up"
     | "/groups/create"
+    | "/join/$membershipId"
     | "/groups/$groupId/edit"
     | "/groups/$groupId/view"
     | "/groups/$groupId/meetings/$meetingId/edit"
@@ -134,10 +151,12 @@ export interface FileRouteTypes {
     | "__root__"
     | "/"
     | "/_auth"
+    | "/_public"
     | "/_auth/login"
     | "/_auth/reset-password"
     | "/_auth/sign-up"
     | "/groups/create"
+    | "/_public/join/$membershipId"
     | "/groups/$groupId/edit"
     | "/groups/$groupId/view"
     | "/groups/$groupId/meetings/$meetingId/edit"
@@ -147,6 +166,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthRoute: typeof AuthRouteWithChildren
+  PublicRoute: typeof PublicRouteWithChildren
   GroupsCreateRoute: typeof GroupsCreateRoute
   GroupsGroupIdEditRoute: typeof GroupsGroupIdEditRoute
   GroupsGroupIdViewRoute: typeof GroupsGroupIdViewRoute
@@ -156,6 +176,13 @@ export interface RootRouteChildren {
 
 declare module "@tanstack/react-router" {
   interface FileRoutesByPath {
+    "/_public": {
+      id: "/_public"
+      path: ""
+      fullPath: "/"
+      preLoaderRoute: typeof PublicRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/_auth": {
       id: "/_auth"
       path: ""
@@ -212,6 +239,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof GroupsGroupIdEditRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/_public/join/$membershipId": {
+      id: "/_public/join/$membershipId"
+      path: "/join/$membershipId"
+      fullPath: "/join/$membershipId"
+      preLoaderRoute: typeof PublicJoinMembershipIdRouteImport
+      parentRoute: typeof PublicRoute
+    }
     "/groups/$groupId/meetings/$meetingId/view": {
       id: "/groups/$groupId/meetings/$meetingId/view"
       path: "/groups/$groupId/meetings/$meetingId/view"
@@ -243,9 +277,21 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
+interface PublicRouteChildren {
+  PublicJoinMembershipIdRoute: typeof PublicJoinMembershipIdRoute
+}
+
+const PublicRouteChildren: PublicRouteChildren = {
+  PublicJoinMembershipIdRoute: PublicJoinMembershipIdRoute,
+}
+
+const PublicRouteWithChildren =
+  PublicRoute._addFileChildren(PublicRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthRoute: AuthRouteWithChildren,
+  PublicRoute: PublicRouteWithChildren,
   GroupsCreateRoute: GroupsCreateRoute,
   GroupsGroupIdEditRoute: GroupsGroupIdEditRoute,
   GroupsGroupIdViewRoute: GroupsGroupIdViewRoute,

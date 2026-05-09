@@ -11,10 +11,11 @@ export interface GroupInviteEmailContent {
 }
 
 export const buildGroupInviteEmail = (
-  groupId: string,
+  membershipId: string,
+  inviteToken: string,
 ): GroupInviteEmailContent => {
   const subject = "You've been invited to a writers group";
-  const joinUrl = emailLinks.joinGroup(groupId);
+  const joinUrl = emailLinks.joinGroup(membershipId, inviteToken);
 
   const text = [
     "You've been invited to join a writers group on Writers CheckIn.",

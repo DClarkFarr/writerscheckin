@@ -3,9 +3,8 @@ import { useEffect } from "react";
 import { ApiError } from "@/api/types";
 import { useMeQuery } from "@/queries/useMeQuery";
 import { useAuthStore } from "@/store/authStore";
+import { isPublicPath } from "@/lib/authPaths";
 import { Topbar } from "./Topbar";
-
-const nonAuthPaths = ["/login", "/signup", "/reset-password", "/"];
 
 export function RootLayout() {
   const { setUser, clearUser } = useAuthStore();
@@ -31,8 +30,8 @@ export function RootLayout() {
         );
         clearUser();
 
-        // check if is already on login page
-        if (!nonAuthPaths.includes(window.location.pathname)) {
+        // Only redirect away from protected routes.
+        if (!isPublicPath(window.location.pathname)) {
           navigate({
             to: "/login",
             search: {

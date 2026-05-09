@@ -14,7 +14,6 @@ const DEFAULT_LOGO_URL =
 // Fallback hex values are included for older email clients.
 const COLORS = {
   pageBackgroundHex: "#1f2f46",
-  pageBackgroundOklch: "oklch(0.24 0.056 225.2)",
   cardBackground: "#ffffff",
   cardBorder: "#dbe4f0",
   heading: "#0f172a",
@@ -62,7 +61,8 @@ export const emailComponents = {
 const BASE_URL = "https://writerscheck.in";
 
 export const emailLinks = {
-  joinGroup: (groupId: string) => `${BASE_URL}/join/${groupId}`,
+  joinGroup: (membershipId: string, inviteToken: string) =>
+    `${BASE_URL}/join/${membershipId}?inviteToken=${encodeURIComponent(inviteToken)}`,
 };
 
 export const buildBaseEmailTemplate = (
@@ -92,10 +92,11 @@ export const buildBaseEmailTemplate = (
     '  <meta name="viewport" content="width=device-width, initial-scale=1" />',
     `  <title>${escapeHtml(appTitle)}</title>`,
     "</head>",
-    `<body style=\"margin: 0; padding: 0; background: ${COLORS.pageBackgroundHex}; background: ${COLORS.pageBackgroundOklch}; font-family: ${BASE_FONT_FAMILY};\">`,
+    `<body style=\"margin: 0; padding: 0; background: ${COLORS.pageBackgroundHex}; font-family: ${BASE_FONT_FAMILY};\">`,
     previewText
       ? `  <div style=\"display: none; max-height: 0; overflow: hidden; opacity: 0;\">${escapeHtml(previewText)}</div>`
       : "",
+    `<div style="background: ${COLORS.pageBackgroundHex};">`,
     '  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse; background: inherit;">',
     "    <tr>",
     '      <td align="center" style="padding: 32px 16px;">',
@@ -115,6 +116,7 @@ export const buildBaseEmailTemplate = (
     "      </td>",
     "    </tr>",
     "  </table>",
+    "</div>",
     "</body>",
     "</html>",
   ]
