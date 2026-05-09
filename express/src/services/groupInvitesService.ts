@@ -1,7 +1,11 @@
 import crypto from "crypto";
-import { getGroupMemberById } from "../models/groupMembers";
+import {
+  getGroupMemberById,
+  getGroupOwnerByGroupId,
+} from "../models/groupMembers";
 import { getLatestUpcomingMeetingByGroupId } from "../models/groupMeetings";
 import { getGroupById } from "../models/groups";
+import { getUserById } from "../models/users";
 import { env } from "../utils/env";
 
 export type JoinGroupInviteStatus =
@@ -17,6 +21,8 @@ export interface JoinGroupInviteDetails {
   groupName: string;
   address: string;
   nextMeetingStartsAt: string | null;
+  meetingRecurrence: string;
+  groupOwnerName: string;
   status: JoinGroupInviteStatus;
   canAccept: boolean;
   canDecline: boolean;
@@ -126,6 +132,56 @@ const toJoinInviteStatus = (
   return "invalid";
 };
 
+const formatMeetingRecurrence = (
+  frequency: string,
+  daysOfWeek: number[],
+  startTime: { hours: number; minutes: number },
+): string => {
+  const dayNames = [
+    "Sunday",
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+  ];
+
+  const sortedDays = [...daysOfWeek].sort();
+  const dayLabels = sortedDays.map((day) => dayNames[day] || `Day ${day}`);
+
+  // Format time as "1PM", "2:30PM", etc.
+  const hours = startTime.hours % 12 || 12;
+  const minutes = startTime.minutes;
+  const period = startTime.hours >= 12 ? "PM" : "AM";
+  const timeStr =
+    minutes === 0
+      ? `${hours}${period}`
+      : `${hours}:${String(minutes).padStart(2, "0")}${period}`;
+
+  if (frequency === "weekly") {
+    if (dayLabels.length === 1) {
+      return `Meets every ${dayLabels[0]} at ${timeStr}`;
+    } else if (dayLabels.length === 2) {
+      return `Meets every ${dayLabels[0]} and ${dayLabels[1]} at ${timeStr}`;
+    } else {
+      const last = dayLabels.pop();
+      return `Meets every ${dayLabels.join(", ")}, and ${last} at ${timeStr}`;
+    }
+  } else if (frequency === "biweekly") {
+    if (dayLabels.length === 1) {
+      return `Meets every other ${dayLabels[0]} at ${timeStr}`;
+    } else if (dayLabels.length === 2) {
+      return `Meets every other ${dayLabels[0]} and ${dayLabels[1]} at ${timeStr}`;
+    } else {
+      const last = dayLabels.pop();
+      return `Meets every other ${dayLabels.join(", ")}, and ${last} at ${timeStr}`;
+    }
+  }
+
+  return "Meeting schedule TBD";
+};
+
 export const getJoinGroupInviteDetails = async (
   membershipId: string,
   inviteToken: string,
@@ -150,6 +206,25 @@ export const getJoinGroupInviteDetails = async (
   const nextMeeting = await getLatestUpcomingMeetingByGroupId(group._id);
   const status = toJoinInviteStatus(membership.status);
 
+  // Fetch the group owner to include their name
+  const ownerMembership = await getGroupOwnerByGroupId(group._id);
+  let groupOwnerName = "Group Owner";
+
+  if (ownerMembership?.userId) {
+    const ownerUser = await getUserById(ownerMembership.userId);
+    if (ownerUser) {
+      groupOwnerName = `${ownerUser.firstName} ${ownerUser.lastName}`.trim();
+    }
+  } else if (ownerMembership?.email) {
+    groupOwnerName = ownerMembership.email;
+  }
+
+  const meetingRecurrence = formatMeetingRecurrence(
+    group.recurrenceRule.frequency,
+    group.recurrenceRule.daysOfWeek,
+    group.startTime,
+  );
+
   return {
     membershipId: membership._id.toHexString(),
     groupId: group._id.toHexString(),
@@ -158,6 +233,8 @@ export const getJoinGroupInviteDetails = async (
     nextMeetingStartsAt: nextMeeting?.occursAt
       ? nextMeeting.occursAt.toISOString()
       : null,
+    meetingRecurrence,
+    groupOwnerName,
     status,
     canAccept: status === "pending",
     canDecline: status === "pending",

@@ -16,17 +16,37 @@ const statusText: Record<JoinGroupInviteResponse["status"], string> = {
 
 export function JoinGroupInviteCard({ invite }: JoinGroupInviteCardProps) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-xl">{invite.groupName}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-2 text-sm text-muted-foreground">
-        <p>{statusText[invite.status]}</p>
-        {invite.address ? <p>Address: {invite.address}</p> : null}
-        {invite.nextMeetingStartsAt ? (
-          <p>Next meeting: {formatDate.dateTime(invite.nextMeetingStartsAt)}</p>
-        ) : null}
-      </CardContent>
-    </Card>
+    <>
+      <h1 className="text-theme-900 text-lg font-semibold mb-6">
+        Join Your Next Writing Group
+      </h1>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl">{invite.groupName}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm text-muted-foreground">
+          <p>
+            Organized by: <b>{invite.groupOwnerName || "N/A"}</b>
+          </p>
+
+          <p className="text-gray-800 text-base">{invite.meetingRecurrence}</p>
+
+          <p>
+            Address: <b>{invite.address || "N/A"}</b>
+          </p>
+          <p>
+            {invite.nextMeetingStartsAt ? (
+              <>
+                Next meeting {formatDate.dateTime(invite.nextMeetingStartsAt)}
+              </>
+            ) : null}
+          </p>
+
+          <p>{statusText[invite.status]}</p>
+
+          {invite.status === "pending" && <div>buttons here</div>}
+        </CardContent>
+      </Card>
+    </>
   );
 }

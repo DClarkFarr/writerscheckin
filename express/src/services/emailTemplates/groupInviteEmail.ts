@@ -2,6 +2,7 @@ import {
   buildBaseEmailTemplate,
   emailLinks,
   emailTypography,
+  escapeHtml,
 } from "./baseEmailTemplate";
 
 export interface GroupInviteEmailContent {
@@ -33,9 +34,13 @@ export const buildGroupInviteEmail = (
       emailTypography.paragraph(
         `Accept your invitation by clicking the following link: `,
       ),
-      emailTypography.codeLink(joinUrl, joinUrl),
+      emailTypography.codeLink("https://writerscheckin.com/join", joinUrl),
       emailTypography.paragraph(
         "Sign in or create an account to accept your invitation.",
+      ),
+
+      emailTypography.muted(
+        `If the above link doesn't work, copy and paste the following URL into your browser:<br><small>${escapeHtml(joinUrl)}</small>`,
       ),
       emailTypography.muted(
         "If you were not expecting this invite, you can safely ignore this email.",

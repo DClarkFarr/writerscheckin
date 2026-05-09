@@ -3,6 +3,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useParams, useSearch } from "@tanstack/react-router";
 import { JoinGroupInviteCard } from "@/components/invite/JoinGroupInviteCard";
 import { useJoinGroupInviteQuery } from "@/queries/useJoinGroupInviteQuery";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Spinner } from "@/components/ui/spinner";
 
 export function JoinGroupInvitePage() {
   const params = useParams({
@@ -32,7 +34,16 @@ export function JoinGroupInvitePage() {
   if (isLoading) {
     return (
       <PageCard>
-        <p className="text-sm text-muted-foreground">Loading invitation...</p>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-xl">
+              Join Your Next Writing Group
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex items-center justify-center py-8">
+            <Spinner className="size-6" />
+          </CardContent>
+        </Card>
       </PageCard>
     );
   }

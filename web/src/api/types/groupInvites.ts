@@ -11,6 +11,8 @@ export interface JoinGroupInviteResponse {
   groupName: string;
   address: string;
   nextMeetingStartsAt: string | null;
+  meetingRecurrence: string;
+  groupOwnerName: string;
   status: JoinGroupInviteStatus;
   canAccept: boolean;
   canDecline: boolean;

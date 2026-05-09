@@ -6,19 +6,6 @@ import type {
   RespondToJoinGroupInviteResponse,
 } from "./types/groupInvites";
 
-const normalizeJoinGroupInviteResponse = (
-  data: JoinGroupInviteResponse,
-): JoinGroupInviteResponse => ({
-  membershipId: data.membershipId,
-  groupId: data.groupId,
-  groupName: data.groupName ?? "",
-  address: data.address ?? "",
-  nextMeetingStartsAt: data.nextMeetingStartsAt ?? null,
-  status: data.status,
-  canAccept: data.canAccept ?? false,
-  canDecline: data.canDecline ?? false,
-});
-
 export async function getJoinGroupInvite(
   membershipId: string,
   inviteToken: string,
@@ -33,7 +20,7 @@ export async function getJoinGroupInvite(
       },
     );
 
-    return normalizeJoinGroupInviteResponse(data);
+    return data;
   } catch (err) {
     throw await toApiError(err);
   }
