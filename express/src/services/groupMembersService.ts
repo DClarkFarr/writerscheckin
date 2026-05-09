@@ -148,7 +148,7 @@ export const addGroupMember = async (
   });
 
   if (nextStatus === "invited") {
-    const inviteEmail = buildGroupInviteEmail();
+    const inviteEmail = buildGroupInviteEmail(input.groupId);
 
     sendEmail({
       to: resolved.email,

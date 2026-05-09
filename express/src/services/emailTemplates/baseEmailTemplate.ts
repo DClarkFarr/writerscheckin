@@ -24,6 +24,8 @@ const COLORS = {
   accentOklch: "oklch(0.54 0.12 223)",
   codeBackground: "#f8fafc",
   codeBorder: "#cbd5e1",
+  codeInlineBackground: "#d1d5db",
+  codeInlineBorder: "#3b82f6",
   white: "#ffffff",
 };
 
@@ -47,11 +49,20 @@ export const emailTypography = {
 
   codeBlock: (value: string): string =>
     `<p style=\"margin: 0 0 18px; padding: 14px 16px; background: ${COLORS.codeBackground}; border: 1px solid ${COLORS.codeBorder}; border-radius: 10px; color: ${COLORS.heading}; font-size: 28px; line-height: 1; letter-spacing: 0.2em; font-weight: 700; text-align: center;\">${escapeHtml(value)}</p>`,
+
+  codeLink: (value: string, href: string): string =>
+    `<p style=\"margin: 0 0 16px;\"><a href=\"${escapeHtml(href)}\" style=\"display: inline-block; padding: 10px 12px; background: ${COLORS.codeInlineBackground}; border: 1px solid ${COLORS.codeInlineBorder}; border-radius: 8px; color: ${COLORS.heading}; font-size: 18px; line-height: 1.5; font-weight: 700; text-decoration: none; word-break: break-all;\">${escapeHtml(value)}</a></p>`,
 };
 
 export const emailComponents = {
   button: (label: string, href: string): string =>
     `<p style=\"margin: 0 0 20px;\"><a href=\"${escapeHtml(href)}\" style=\"display: inline-block; background: ${COLORS.accentHex}; background: ${COLORS.accentOklch}; color: ${COLORS.white}; font-size: 15px; font-weight: 600; line-height: 1; text-decoration: none; padding: 12px 16px; border-radius: 10px;\">${escapeHtml(label)}</a></p>`,
+};
+
+const BASE_URL = "https://writerscheck.in";
+
+export const emailLinks = {
+  joinGroup: (groupId: string) => `${BASE_URL}/join/${groupId}`,
 };
 
 export const buildBaseEmailTemplate = (

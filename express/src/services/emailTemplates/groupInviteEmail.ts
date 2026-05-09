@@ -1,4 +1,8 @@
-import { buildBaseEmailTemplate, emailTypography } from "./baseEmailTemplate";
+import {
+  buildBaseEmailTemplate,
+  emailLinks,
+  emailTypography,
+} from "./baseEmailTemplate";
 
 export interface GroupInviteEmailContent {
   subject: string;
@@ -6,11 +10,15 @@ export interface GroupInviteEmailContent {
   html: string;
 }
 
-export const buildGroupInviteEmail = (): GroupInviteEmailContent => {
+export const buildGroupInviteEmail = (
+  groupId: string,
+): GroupInviteEmailContent => {
   const subject = "You've been invited to a writers group";
+  const joinUrl = emailLinks.joinGroup(groupId);
 
   const text = [
     "You've been invited to join a writers group on Writers CheckIn.",
+    `Accept your invitation by clicking the following link: ${joinUrl}`,
     "Sign in or create an account to accept your invitation.",
   ].join("\n");
 
@@ -21,6 +29,10 @@ export const buildGroupInviteEmail = (): GroupInviteEmailContent => {
       emailTypography.paragraph(
         "You've been invited to join a writers group on Writers CheckIn.",
       ),
+      emailTypography.paragraph(
+        `Accept your invitation by clicking the following link: `,
+      ),
+      emailTypography.codeLink(joinUrl, joinUrl),
       emailTypography.paragraph(
         "Sign in or create an account to accept your invitation.",
       ),
