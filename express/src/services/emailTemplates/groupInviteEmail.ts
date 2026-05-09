@@ -41,6 +41,7 @@ export const buildGroupInviteEmail = (
 
       emailTypography.muted(
         `If the above link doesn't work, copy and paste the following URL into your browser:<br><small>${escapeHtml(joinUrl)}</small>`,
+        false,
       ),
       emailTypography.muted(
         "If you were not expecting this invite, you can safely ignore this email.",

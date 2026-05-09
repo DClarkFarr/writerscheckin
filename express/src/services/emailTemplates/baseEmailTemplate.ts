@@ -40,22 +40,22 @@ export const escapeHtml = (value: string): string =>
     .replaceAll("'", "&#39;");
 
 export const emailTypography = {
-  paragraph: (value: string): string =>
-    `<p style=\"margin: 0 0 16px; color: ${COLORS.text}; font-size: 16px; line-height: 1.6;\">${escapeHtml(value)}</p>`,
+  paragraph: (value: string, escape = false): string =>
+    `<p style=\"margin: 0 0 16px; color: ${COLORS.text}; font-size: 16px; line-height: 1.6;\">${escape ? escapeHtml(value) : value}</p>`,
 
-  muted: (value: string): string =>
-    `<p style=\"margin: 0 0 14px; color: ${COLORS.mutedText}; font-size: 14px; line-height: 1.6;\">${escapeHtml(value)}</p>`,
+  muted: (value: string, escape = false): string =>
+    `<p style=\"margin: 0 0 14px; color: ${COLORS.mutedText}; font-size: 14px; line-height: 1.6;\">${escape ? escapeHtml(value) : value}</p>`,
 
-  codeBlock: (value: string): string =>
-    `<p style=\"margin: 0 0 18px; padding: 14px 16px; background: ${COLORS.codeBackground}; border: 1px solid ${COLORS.codeBorder}; border-radius: 10px; color: ${COLORS.heading}; font-size: 28px; line-height: 1; letter-spacing: 0.2em; font-weight: 700; text-align: center;\">${escapeHtml(value)}</p>`,
+  codeBlock: (value: string, escape = false): string =>
+    `<p style=\"margin: 0 0 18px; padding: 14px 16px; background: ${COLORS.codeBackground}; border: 1px solid ${COLORS.codeBorder}; border-radius: 10px; color: ${COLORS.heading}; font-size: 28px; line-height: 1; letter-spacing: 0.2em; font-weight: 700; text-align: center;\">${escape ? escapeHtml(value) : value}</p>`,
 
-  codeLink: (value: string, href: string): string =>
-    `<p style=\"margin: 0 0 16px;\"><a href=\"${escapeHtml(href)}\" style=\"display: inline-block; padding: 10px 12px; background: ${COLORS.codeInlineBackground}; border: 1px solid ${COLORS.codeInlineBorder}; border-radius: 8px; color: ${COLORS.heading}; font-size: 18px; line-height: 1.5; font-weight: 700; text-decoration: none; word-break: break-all;\">${escapeHtml(value)}</a></p>`,
+  codeLink: (value: string, href: string, escape = false): string =>
+    `<p style=\"margin: 0 0 16px;\"><a href=\"${escape ? escapeHtml(href) : href}\" style=\"display: inline-block; padding: 10px 12px; background: ${COLORS.codeInlineBackground}; border: 1px solid ${COLORS.codeInlineBorder}; border-radius: 8px; color: ${COLORS.heading}; font-size: 18px; line-height: 1.5; font-weight: 700; text-decoration: none; word-break: break-all;\">${escape ? escapeHtml(value) : value}</a></p>`,
 };
 
 export const emailComponents = {
-  button: (label: string, href: string): string =>
-    `<p style=\"margin: 0 0 20px;\"><a href=\"${escapeHtml(href)}\" style=\"display: inline-block; background: ${COLORS.accentHex}; background: ${COLORS.accentOklch}; color: ${COLORS.white}; font-size: 15px; font-weight: 600; line-height: 1; text-decoration: none; padding: 12px 16px; border-radius: 10px;\">${escapeHtml(label)}</a></p>`,
+  button: (label: string, href: string, escape = false): string =>
+    `<p style=\"margin: 0 0 20px;\"><a href=\"${escape ? escapeHtml(href) : href}\" style=\"display: inline-block; background: ${COLORS.accentHex}; background: ${COLORS.accentOklch}; color: ${COLORS.white}; font-size: 15px; font-weight: 600; line-height: 1; text-decoration: none; padding: 12px 16px; border-radius: 10px;\">${escape ? escapeHtml(label) : label}</a></p>`,
 };
 
 const BASE_URL = "https://writerscheck.in";

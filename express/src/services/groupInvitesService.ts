@@ -3,10 +3,11 @@ import {
   getGroupMemberById,
   getGroupOwnerByGroupId,
   updateGroupMemberById,
+  UpdateGroupMemberInput,
 } from "../models/groupMembers";
 import { getLatestUpcomingMeetingByGroupId } from "../models/groupMeetings";
 import { getGroupById } from "../models/groups";
-import { getUserById, normalizeEmail } from "../models/users";
+import { getUserById, normalizeEmail, UserDocument } from "../models/users";
 import { AuthError } from "./authService";
 import { env } from "../utils/env";
 
@@ -279,36 +280,28 @@ export const respondToJoinGroupInvite = async (
     throw new Error("Invite has already been handled.");
   }
 
+  let user: UserDocument | null = null;
   if (input.action === "accept") {
     if (!input.userId) {
       throw new AuthError("Unauthorized", 401);
     }
 
-    const user = await getUserById(input.userId);
+    user = await getUserById(input.userId);
     if (!user) {
       throw new AuthError("Unauthorized", 401);
-    }
-
-    const membershipUserId = membership.userId?.toHexString();
-    if (membershipUserId) {
-      if (membershipUserId !== user._id.toHexString()) {
-        throw new AuthError("Forbidden", 403);
-      }
-    } else if (membership.email) {
-      if (normalizeEmail(membership.email) !== normalizeEmail(user.email)) {
-        throw new AuthError("Forbidden", 403);
-      }
-    } else {
-      throw new AuthError("Forbidden", 403);
     }
   }
 
   const nextStatus = input.action === "accept" ? "accepted" : "declined";
   const actedAt = new Date();
-  const updated = await updateGroupMemberById(membership._id, {
+
+  const toSet: UpdateGroupMemberInput = {
     status: nextStatus,
+    ...(user ? { userId: user._id, email: user.email } : {}),
     ...(nextStatus === "accepted" ? { acceptedAt: actedAt } : {}),
-  });
+  };
+
+  const updated = await updateGroupMemberById(membership._id, toSet);
 
   if (!updated) {
     throw new Error("Unable to respond to group invite.");

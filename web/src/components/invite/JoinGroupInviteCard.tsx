@@ -36,12 +36,11 @@ export function JoinGroupInviteCard({
           <CardTitle className="text-xl">{invite.groupName}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <p>
-            Organized by: <b>{invite.groupOwnerName || "N/A"}</b>
-          </p>
-
           <p className="text-gray-800 text-base">
             {invite.meetingRecurrence || "N/A"}
+          </p>
+          <p>
+            Organized by: <b>{invite.groupOwnerName || "N/A"}</b>
           </p>
 
           <p>
