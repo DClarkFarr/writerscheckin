@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateMeetingCheckin } from "@/api/groups";
 import { myMeetingsQueryKey } from "./useMyMeetingsQuery";
+import { meetingViewQueryKey } from "./useMeetingViewQuery";
 import type {
   MemberMeetingFeedItem,
   UpdateMeetingCheckinInput,
@@ -9,6 +10,7 @@ import { getMemberMeetingAttendanceState } from "@/hooks/useMemberMeetingDerived
 
 interface UseMeetingCheckinMutationProps {
   meetingId: string;
+  groupId?: string;
 }
 
 interface MyMeetingsQueryPage {
@@ -69,6 +71,7 @@ const createOptimisticFeedItem = (
 
 export const useMeetingCheckinMutation = ({
   meetingId,
+  groupId,
 }: UseMeetingCheckinMutationProps) => {
   const queryClient = useQueryClient();
 
@@ -162,6 +165,11 @@ export const useMeetingCheckinMutation = ({
     onSettled: () => {
       // Refetch to ensure canonical state
       queryClient.invalidateQueries({ queryKey: myMeetingsQueryKey() });
+      if (groupId) {
+        queryClient.invalidateQueries({
+          queryKey: meetingViewQueryKey(groupId, meetingId),
+        });
+      }
     },
   });
 };

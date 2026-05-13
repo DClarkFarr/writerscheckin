@@ -26,7 +26,6 @@ import {
 import IconEye from "~icons/mdi/eye";
 
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import type { EditableMeetingResponse } from "@/api/types/groups";
 import { formatStaticDateTime } from "@/lib/dateFormat";
 import { RichTextEditor } from "./RichTextEditor";
@@ -59,6 +58,8 @@ export interface MeetingFormProps {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => void;
   onChangeDescription: (value: string) => void;
+  onChangePublishEmailMessage: (value: string) => void;
+  onChangeAttendanceEmailMessage: (value: string) => void;
   onFieldBlur: (
     e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => void;
@@ -81,6 +82,8 @@ export function MeetingForm({
   fields,
   onFieldChange,
   onChangeDescription,
+  onChangePublishEmailMessage,
+  onChangeAttendanceEmailMessage,
   onFieldBlur,
   onPublish,
   onCancelDialogOpenChange,
@@ -256,15 +259,10 @@ export function MeetingForm({
 
         <Field>
           <FieldLabel htmlFor="publishEmailMessage">Publish message</FieldLabel>
-          <Textarea
-            id="publishEmailMessage"
-            name="publishEmailMessage"
+          <RichTextEditor
             value={fields.publishEmailMessage}
-            onChange={onFieldChange}
-            onBlur={onFieldBlur}
+            onChange={onChangePublishEmailMessage}
             disabled={formDisabled}
-            placeholder="Message sent when meeting is published..."
-            rows={2}
           />
         </Field>
 
@@ -272,15 +270,10 @@ export function MeetingForm({
           <FieldLabel htmlFor="attendanceEmailMessage">
             Attendance message
           </FieldLabel>
-          <Textarea
-            id="attendanceEmailMessage"
-            name="attendanceEmailMessage"
+          <RichTextEditor
             value={fields.attendanceEmailMessage}
-            onChange={onFieldChange}
-            onBlur={onFieldBlur}
+            onChange={onChangeAttendanceEmailMessage}
             disabled={formDisabled}
-            placeholder="Message sent before meeting asking for attendance..."
-            rows={2}
           />
         </Field>
 

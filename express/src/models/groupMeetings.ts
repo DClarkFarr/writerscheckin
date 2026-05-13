@@ -110,6 +110,9 @@ export const ensureGroupMeetingIndexes = async (): Promise<void> => {
 
 const normalizeString = (value: string): string => value.trim();
 
+// Template fields store HTML-compatible rich text and should only be trimmed.
+const normalizeTemplateHtml = (value: string): string => value.trim();
+
 const assertDate = (value: Date, label: string): Date => {
   if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
     throw new Error(`${label} must be a valid datetime.`);
@@ -144,8 +147,10 @@ const normalizeCreateInput = (
     address: normalizeString(input.address ?? ""),
     startTime: input.startTime,
     durationMinutes: input.durationMinutes,
-    publishEmailMessage: normalizeString(input.publishEmailMessage ?? ""),
-    attendanceEmailMessage: normalizeString(input.attendanceEmailMessage ?? ""),
+    publishEmailMessage: normalizeTemplateHtml(input.publishEmailMessage ?? ""),
+    attendanceEmailMessage: normalizeTemplateHtml(
+      input.attendanceEmailMessage ?? "",
+    ),
     publishHoursBefore: input.publishHoursBefore,
     notifyAttendanceHoursBefore: input.notifyAttendanceHoursBefore,
     cancelledAt: input.cancelledAt
@@ -197,13 +202,13 @@ const normalizeUpdateInput = (
   }
 
   if (typeof updates.publishEmailMessage === "string") {
-    normalized.publishEmailMessage = normalizeString(
+    normalized.publishEmailMessage = normalizeTemplateHtml(
       updates.publishEmailMessage,
     );
   }
 
   if (typeof updates.attendanceEmailMessage === "string") {
-    normalized.attendanceEmailMessage = normalizeString(
+    normalized.attendanceEmailMessage = normalizeTemplateHtml(
       updates.attendanceEmailMessage,
     );
   }

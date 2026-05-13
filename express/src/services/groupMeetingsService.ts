@@ -33,6 +33,8 @@ import { groupMemberDocumentToResponse } from "./groupMembersService";
 import type { MeetingAttendeeDocument } from "../models/meetingAttendees";
 import { getMeetingCheckinAggregatesByMeetingIds } from "../models/meetingCheckins";
 import { sendEmail } from "./emailService";
+import { emailLinks } from "./emailTemplates/baseEmailTemplate";
+import { GROUP_MESSAGE_TEMPLATE_DEFAULTS } from "./emailTemplates/groupMessageTemplateDefaults";
 import { buildGroupMeetingPublishEmail } from "./emailTemplates/groupMeetingPublish";
 
 export type UserMeetingCheckinState =
@@ -115,6 +117,16 @@ export interface PublishMeetingResult {
   status: "published";
   publishedAt: string;
   attendanceEnabled: true;
+}
+
+export interface PublishEmailTemplateRenderContext {
+  meetingName: string;
+  meetingDateText: string;
+  meetingTimeText: string;
+  meetingAddress: string;
+  dateOfNotificationText: string;
+  meetingUrl: string;
+  publishMessageHtml: string;
 }
 
 export interface CancelMeetingResult {
@@ -379,7 +391,13 @@ export const publishMeetingFromSchedule = async (
       const email = buildGroupMeetingPublishEmail({
         meetingName: meeting.name,
         occursAt: meeting.occursAt,
+        meetingAddress: meeting.address,
+        meetingUrl: emailLinks.meetingDetail(
+          meeting.groupId.toHexString(),
+          meeting._id.toHexString(),
+        ),
         publishMessage: meeting.publishEmailMessage,
+        sentAt: now,
       });
 
       await sendEmail({
@@ -544,12 +562,18 @@ export const createNextUpcomingMeetingFromGroupDefaults = async (
     name: group.name,
     occursAt,
     description: group.description,
-    emailMessage: group.publishEmailMessage,
+    emailMessage:
+      group.publishEmailMessage ||
+      GROUP_MESSAGE_TEMPLATE_DEFAULTS.publishEmailMessage,
     address: group.address,
     startTime: group.startTime,
     durationMinutes: group.durationMinutes,
-    publishEmailMessage: group.publishEmailMessage,
-    attendanceEmailMessage: group.attendanceEmailMessage,
+    publishEmailMessage:
+      group.publishEmailMessage ||
+      GROUP_MESSAGE_TEMPLATE_DEFAULTS.publishEmailMessage,
+    attendanceEmailMessage:
+      group.attendanceEmailMessage ||
+      GROUP_MESSAGE_TEMPLATE_DEFAULTS.attendanceEmailMessage,
     publishHoursBefore: group.publishHoursBefore,
     notifyAttendanceHoursBefore: group.notifyAttendanceHoursBefore,
     status: "draft",

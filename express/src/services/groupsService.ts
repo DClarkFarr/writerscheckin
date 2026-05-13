@@ -19,6 +19,7 @@ import {
   getGroupById,
   GroupDocument,
   listGroupsByIds,
+  updateGroupEmailTemplatesById,
   updateGroupById,
 } from "../models/groups";
 import {
@@ -47,6 +48,10 @@ import { AuthError } from "./authService";
 import { addGroupMember, removeGroupMember } from "./groupMembersService";
 
 import { recordAuditEvent } from "../utils/audit";
+import {
+  GROUP_MESSAGE_TEMPLATE_DEFAULTS,
+  type GroupMessageTemplateDefaults,
+} from "./emailTemplates/groupMessageTemplateDefaults";
 
 export interface SearchGroupParticipantsInput {
   query?: string;
@@ -122,6 +127,84 @@ export interface EditableGroupFormResult {
   publicMessage: string;
   attendanceMessage: string;
 }
+
+export interface ResolvedGroupEmailTemplates {
+  publishEmailMessage: string;
+  attendanceEmailMessage: string;
+}
+
+export interface GroupTemplateAliases {
+  publicMessage: string;
+  attendanceMessage: string;
+}
+
+export const toGroupTemplateAliases = (
+  input: ResolvedGroupEmailTemplates,
+): GroupTemplateAliases => ({
+  publicMessage: input.publishEmailMessage,
+  attendanceMessage: input.attendanceEmailMessage,
+});
+
+interface ResolveGroupTemplatesResult {
+  resolvedTemplates: GroupMessageTemplateDefaults;
+  patch: Partial<GroupMessageTemplateDefaults>;
+}
+
+const normalizeTemplateValue = (value: string | null | undefined): string =>
+  typeof value === "string" ? value.trim() : "";
+
+const resolveGroupTemplates = (
+  group: Pick<GroupDocument, "publishEmailMessage" | "attendanceEmailMessage">,
+): ResolveGroupTemplatesResult => {
+  const publishEmailMessage = normalizeTemplateValue(group.publishEmailMessage);
+  const attendanceEmailMessage = normalizeTemplateValue(
+    group.attendanceEmailMessage,
+  );
+
+  const patch: Partial<GroupMessageTemplateDefaults> = {
+    ...(publishEmailMessage.length === 0
+      ? {
+          publishEmailMessage:
+            GROUP_MESSAGE_TEMPLATE_DEFAULTS.publishEmailMessage,
+        }
+      : {}),
+    ...(attendanceEmailMessage.length === 0
+      ? {
+          attendanceEmailMessage:
+            GROUP_MESSAGE_TEMPLATE_DEFAULTS.attendanceEmailMessage,
+        }
+      : {}),
+  };
+
+  return {
+    resolvedTemplates: {
+      publishEmailMessage:
+        patch.publishEmailMessage ?? group.publishEmailMessage,
+      attendanceEmailMessage:
+        patch.attendanceEmailMessage ?? group.attendanceEmailMessage,
+    },
+    patch,
+  };
+};
+
+const resolveAndPersistGroupTemplates = async (
+  group: GroupDocument,
+): Promise<GroupMessageTemplateDefaults> => {
+  const { resolvedTemplates, patch } = resolveGroupTemplates(group);
+  if (Object.keys(patch).length === 0) {
+    return resolvedTemplates;
+  }
+
+  const updated = await updateGroupEmailTemplatesById(group._id, patch);
+  if (!updated) {
+    throw new Error("Failed to persist group template defaults.");
+  }
+
+  return {
+    publishEmailMessage: updated.publishEmailMessage,
+    attendanceEmailMessage: updated.attendanceEmailMessage,
+  };
+};
 
 export interface GroupMeetingListItem {
   meetingId: string;
@@ -448,6 +531,8 @@ export const populateGroupsasSummaryItems = async (
   const summaryItems: Array<GroupSummaryItem> = [];
 
   for (const group of groups) {
+    await resolveAndPersistGroupTemplates(group);
+
     const [pastMeetings, nextUpcomingMeeting, members] = await Promise.all([
       countGroupMeetingsByGroupId(group._id, {
         status: "published",
@@ -594,6 +679,8 @@ export const getManagedGroupForm = async (
     throw new Error("Group not found.");
   }
 
+  const resolvedTemplates = await resolveAndPersistGroupTemplates(group);
+
   const members = await listGroupMembersByGroupId(groupId, { limit: 500 });
   const userObjectId = ensureObjectId(userId, "userId");
   const userRole =
@@ -642,8 +729,7 @@ export const getManagedGroupForm = async (
     durationMinutes: group.durationMinutes,
     recurrenceFrequency: group.recurrenceRule.frequency,
     recurrenceDaysOfWeek: group.recurrenceRule.daysOfWeek,
-    publicMessage: group.publishEmailMessage,
-    attendanceMessage: group.attendanceEmailMessage,
+    ...toGroupTemplateAliases(resolvedTemplates),
   };
 };
 

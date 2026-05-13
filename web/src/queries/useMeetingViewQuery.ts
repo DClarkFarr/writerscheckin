@@ -11,6 +11,7 @@ export const meetingViewQueryKey = (
   groupId: string | undefined,
   meetingId: string | undefined,
 ) => {
+  // Keep this key stable so check-in mutations can invalidate detail queries.
   return ["meetingView", groupId, meetingId] as const;
 };
 

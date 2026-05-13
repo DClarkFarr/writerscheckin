@@ -63,6 +63,11 @@ export interface UpdateGroupInput {
   recurrenceRule?: RecurrenceRule;
 }
 
+export interface UpdateGroupEmailTemplatesInput {
+  publishEmailMessage?: string;
+  attendanceEmailMessage?: string;
+}
+
 export const getGroupsCollection = (): Collection<GroupDocument> =>
   getCollection<GroupDocument>(COLLECTIONS.groups);
 
@@ -243,6 +248,26 @@ export const updateGroupById = async (
   );
 
   return result;
+};
+
+export const updateGroupEmailTemplatesById = async (
+  id: string | ObjectId,
+  updates: UpdateGroupEmailTemplatesInput,
+): Promise<GroupDocument | null> => {
+  const patch: UpdateGroupInput = {
+    ...(typeof updates.publishEmailMessage === "string"
+      ? { publishEmailMessage: updates.publishEmailMessage }
+      : {}),
+    ...(typeof updates.attendanceEmailMessage === "string"
+      ? { attendanceEmailMessage: updates.attendanceEmailMessage }
+      : {}),
+  };
+
+  if (Object.keys(patch).length === 0) {
+    return getGroupById(id);
+  }
+
+  return updateGroupById(id, patch);
 };
 
 export const softDeleteGroupById = async (

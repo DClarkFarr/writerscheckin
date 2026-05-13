@@ -314,7 +314,6 @@ export function useMeetingForm({ groupId, meetingId }: UseMeetingFormProps) {
   const onChangeDescription = useCallback(
     (value: string) => {
       if (value === latestFieldsRef.current.description) {
-        console.log("same description, skipping update");
         return;
       }
       let nextFields: MeetingFormFields = latestFieldsRef.current;
@@ -326,6 +325,54 @@ export function useMeetingForm({ groupId, meetingId }: UseMeetingFormProps) {
       });
 
       // Debounce autosave
+      if (autosaveTimeoutRef.current) {
+        clearTimeout(autosaveTimeoutRef.current);
+      }
+
+      autosaveTimeoutRef.current = setTimeout(() => {
+        void performAutosave(nextFields, latestMeetingRef.current);
+      }, AUTOSAVE_DELAY);
+    },
+    [performAutosave],
+  );
+
+  const onChangePublishEmailMessage = useCallback(
+    (value: string) => {
+      if (value === latestFieldsRef.current.publishEmailMessage) {
+        return;
+      }
+
+      let nextFields: MeetingFormFields = latestFieldsRef.current;
+      setFields((prev) => {
+        nextFields = { ...prev, publishEmailMessage: value };
+        latestFieldsRef.current = nextFields;
+        return nextFields;
+      });
+
+      if (autosaveTimeoutRef.current) {
+        clearTimeout(autosaveTimeoutRef.current);
+      }
+
+      autosaveTimeoutRef.current = setTimeout(() => {
+        void performAutosave(nextFields, latestMeetingRef.current);
+      }, AUTOSAVE_DELAY);
+    },
+    [performAutosave],
+  );
+
+  const onChangeAttendanceEmailMessage = useCallback(
+    (value: string) => {
+      if (value === latestFieldsRef.current.attendanceEmailMessage) {
+        return;
+      }
+
+      let nextFields: MeetingFormFields = latestFieldsRef.current;
+      setFields((prev) => {
+        nextFields = { ...prev, attendanceEmailMessage: value };
+        latestFieldsRef.current = nextFields;
+        return nextFields;
+      });
+
       if (autosaveTimeoutRef.current) {
         clearTimeout(autosaveTimeoutRef.current);
       }
@@ -364,5 +411,7 @@ export function useMeetingForm({ groupId, meetingId }: UseMeetingFormProps) {
     setIsCancelDialogOpen,
     handleCancelMeeting,
     onChangeDescription,
+    onChangePublishEmailMessage,
+    onChangeAttendanceEmailMessage,
   };
 }

@@ -1,13 +1,21 @@
 import {
   buildBaseEmailTemplate,
+  emailComponents,
   emailTypography,
   escapeHtml,
 } from "./baseEmailTemplate";
+import {
+  buildGroupTemplateReplacementMap,
+  renderGroupTemplate,
+} from "./groupMessageTemplateRenderer";
 
 export interface GroupMeetingPublishEmailInput {
   meetingName: string;
   occursAt: Date;
+  meetingAddress: string;
+  meetingUrl: string;
   publishMessage: string;
+  sentAt?: Date;
 }
 
 export interface GroupMeetingPublishEmailContent {
@@ -21,27 +29,69 @@ export const buildGroupMeetingPublishEmail = (
 ): GroupMeetingPublishEmailContent => {
   const subject = `Meeting published: ${input.meetingName}`;
   const occursAtText = input.occursAt.toLocaleString();
-  const message = input.publishMessage.trim();
+  const meetingDateText = input.occursAt.toLocaleDateString();
+  const meetingTimeText = input.occursAt.toLocaleTimeString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  const dateOfNotificationText = (
+    input.sentAt ?? new Date()
+  ).toLocaleDateString();
+  const messageTemplate = input.publishMessage.trim();
+
+  const checkinButtonHtml = emailComponents.button(
+    "Check-In on WritersCheck.in",
+    input.meetingUrl,
+    true,
+  );
+
+  const renderedHtmlTemplate = renderGroupTemplate(
+    messageTemplate,
+    buildGroupTemplateReplacementMap({
+      meetingName: escapeHtml(input.meetingName),
+      meetingDate: escapeHtml(meetingDateText),
+      meetingTime: escapeHtml(meetingTimeText),
+      meetingAddress: escapeHtml(input.meetingAddress),
+      dateOfNotification: escapeHtml(dateOfNotificationText),
+      checkinButton: checkinButtonHtml,
+    }),
+  );
+
+  const renderedTextTemplate = renderGroupTemplate(
+    messageTemplate,
+    buildGroupTemplateReplacementMap({
+      meetingName: input.meetingName,
+      meetingDate: meetingDateText,
+      meetingTime: meetingTimeText,
+      meetingAddress: input.meetingAddress,
+      dateOfNotification: dateOfNotificationText,
+      checkinButton: `Check in: ${input.meetingUrl}`,
+    }),
+  )
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]*>/g, "")
+    .trim();
 
   const text = [
-    `A group meeting has been published: ${input.meetingName}`,
-    `Scheduled for: ${occursAtText}`,
-    message ? `Message: ${message}` : "",
+    renderedTextTemplate,
+    renderedTextTemplate.includes("Check in:")
+      ? ""
+      : `Check in: ${input.meetingUrl}`,
   ]
     .filter(Boolean)
     .join("\n");
 
   const html = buildBaseEmailTemplate({
-    previewText: `Meeting published: ${input.meetingName}`,
-    heading: "Meeting Published",
+    previewText: `Check-in available for meeting: ${input.meetingName}`,
+    heading: "Join our next meeting",
     bodyHtml: [
       emailTypography.paragraph(
-        `A group meeting has been published: <strong>${escapeHtml(input.meetingName)}</strong>.`,
+        `Group Name: <strong>${escapeHtml(input.meetingName)}</strong>.`,
       ),
-      emailTypography.paragraph(`Scheduled for: ${escapeHtml(occursAtText)}.`),
-      ...(message
-        ? [emailTypography.paragraph(`Message: ${escapeHtml(message)}`)]
-        : []),
+      renderedHtmlTemplate,
+      messageTemplate.includes("[checkinButton]")
+        ? ""
+        : emailComponents.button("check in", input.meetingUrl, true),
     ].join(""),
   });
 

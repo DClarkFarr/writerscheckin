@@ -90,7 +90,9 @@ export interface GroupFormDraft {
   durationMinutes: number;
   recurrenceFrequency: GroupRecurrenceFrequency;
   recurrenceDaysOfWeek: number[];
+  // HTML-compatible template source mapped to groups.publishEmailMessage.
   publicMessage: string;
+  // HTML-compatible template source mapped to groups.attendanceEmailMessage.
   attendanceMessage: string;
   members: GroupFormMember[];
 }
@@ -102,7 +104,9 @@ export interface EditableGroupResponse extends GroupSummaryItem {
   durationMinutes: number;
   recurrenceFrequency: GroupRecurrenceFrequency;
   recurrenceDaysOfWeek: number[];
+  // Alias for groups.publishEmailMessage used by existing group form contract.
   publicMessage: string;
+  // Alias for groups.attendanceEmailMessage used by existing group form contract.
   attendanceMessage: string;
 }
 
@@ -212,7 +216,9 @@ export interface MemberMeetingFeedItem {
   address: string;
   startTime: MeetingStartTime;
   durationMinutes: number;
+  // HTML-compatible meeting-level publish template.
   publishEmailMessage: string;
+  // HTML-compatible meeting-level attendance template.
   attendanceEmailMessage: string;
   publishHoursBefore: number;
   notifyAttendanceHoursBefore: number;
@@ -313,7 +319,9 @@ export interface EditableMeetingResponse {
   address: string;
   startTime: MeetingStartTime;
   durationMinutes: number;
+  // HTML-compatible meeting-level publish template.
   publishEmailMessage: string;
+  // HTML-compatible meeting-level attendance template.
   attendanceEmailMessage: string;
   publishHoursBefore: number;
   notifyAttendanceHoursBefore: number;

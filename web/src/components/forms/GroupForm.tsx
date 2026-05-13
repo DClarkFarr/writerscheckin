@@ -15,6 +15,7 @@ import { RichTextEditor, type RichTextEditorHandle } from "./RichTextEditor";
 import { GroupUserMultiSelect } from "./GroupUserMultiSelect";
 import type { GroupFormProps } from "@/hooks/useGroupForm";
 import { useRef, type KeyboardEventHandler } from "react";
+import { GROUP_TEMPLATE_PLACEHOLDER_HELPER_TEXT } from "@/lib/groupTemplatePlaceholders";
 
 const WEEKDAY_OPTIONS = [
   { value: 0, label: "Sun" },
@@ -41,6 +42,8 @@ export function GroupForm({
   handleFieldChange,
   handleFieldBlur,
   handleDescriptionChange,
+  handlePublicMessageChange,
+  handleAttendanceMessageChange,
   handleRecurrenceDayToggle,
   handleMemberAdd,
   handleMemberRoleChange,
@@ -219,28 +222,30 @@ export function GroupForm({
       <FieldGroup>
         <Field>
           <FieldLabel htmlFor="publicMessage">Invitation message</FieldLabel>
-          <Textarea
-            id="publicMessage"
-            name="publicMessage"
-            value={fields.publicMessage}
-            onChange={handleFieldChange}
-            onBlur={handleFieldBlur}
-            placeholder="Notify attendees of upcoming meeting."
-          />
+          <div className="rounded-xl border border-border bg-white p-3">
+            <RichTextEditor
+              value={fields.publicMessage}
+              onChange={handlePublicMessageChange}
+            />
+          </div>
+          <FieldDescription>
+            {GROUP_TEMPLATE_PLACEHOLDER_HELPER_TEXT}
+          </FieldDescription>
         </Field>
 
         <Field>
           <FieldLabel htmlFor="attendanceMessage">
             Attendance message
           </FieldLabel>
-          <Textarea
-            id="attendanceMessage"
-            name="attendanceMessage"
-            value={fields.attendanceMessage}
-            onChange={handleFieldChange}
-            onBlur={handleFieldBlur}
-            placeholder="Share attendance instructions or reminders for members."
-          />
+          <div className="rounded-xl border border-border bg-white p-3">
+            <RichTextEditor
+              value={fields.attendanceMessage}
+              onChange={handleAttendanceMessageChange}
+            />
+          </div>
+          <FieldDescription>
+            {GROUP_TEMPLATE_PLACEHOLDER_HELPER_TEXT}
+          </FieldDescription>
         </Field>
       </FieldGroup>
 

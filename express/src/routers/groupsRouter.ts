@@ -128,6 +128,8 @@ const applyGroupRoutes = () => {
           durationMinutes: req.body?.durationMinutes,
           recurrenceFrequency: req.body?.recurrenceFrequency,
           recurrenceDaysOfWeek: req.body?.recurrenceDaysOfWeek,
+          // Keep frontend aliases stable: publicMessage/attendanceMessage map
+          // to backend publishEmailMessage/attendanceEmailMessage fields.
           publicMessage: req.body?.publicMessage,
           attendanceMessage: req.body?.attendanceMessage,
           members: Array.isArray(req.body?.members) ? req.body.members : [],
@@ -316,6 +318,8 @@ const applyGroupRoutes = () => {
           durationMinutes: req.body?.durationMinutes,
           recurrenceFrequency: req.body?.recurrenceFrequency,
           recurrenceDaysOfWeek: req.body?.recurrenceDaysOfWeek,
+          // Keep frontend aliases stable: publicMessage/attendanceMessage map
+          // to backend publishEmailMessage/attendanceEmailMessage fields.
           publicMessage: req.body?.publicMessage,
           attendanceMessage: req.body?.attendanceMessage,
           members: Array.isArray(req.body?.members) ? req.body.members : [],

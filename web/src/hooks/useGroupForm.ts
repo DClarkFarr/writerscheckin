@@ -83,6 +83,8 @@ export interface GroupFormProps {
     >,
   ) => void;
   handleDescriptionChange: (value: string) => void;
+  handlePublicMessageChange: (value: string) => void;
+  handleAttendanceMessageChange: (value: string) => void;
   handleRecurrenceDayToggle: (day: number) => void;
   handleMemberAdd: (member: GroupFormMember) => void;
   handleMemberRoleChange: (memberId: string, role: GroupMemberRole) => void;
@@ -279,6 +281,18 @@ export function useGroupForm(
     setFormError(null);
   };
 
+  const handlePublicMessageChange = (value: string) => {
+    setFields((current) => ({ ...current, publicMessage: value }));
+    setSubmitNotice(null);
+    setFormError(null);
+  };
+
+  const handleAttendanceMessageChange = (value: string) => {
+    setFields((current) => ({ ...current, attendanceMessage: value }));
+    setSubmitNotice(null);
+    setFormError(null);
+  };
+
   const handleRecurrenceDayToggle = (day: number) => {
     setRecurrenceDaysOfWeek((current) => {
       const nextValue = current.includes(day)
@@ -371,6 +385,8 @@ export function useGroupForm(
     handleFieldChange,
     handleFieldBlur,
     handleDescriptionChange,
+    handlePublicMessageChange,
+    handleAttendanceMessageChange,
     handleRecurrenceDayToggle,
     handleMemberAdd: (member: GroupFormMember) => {
       let wasAdded = false;

@@ -63,6 +63,8 @@ const BASE_URL = "https://writerscheck.in";
 export const emailLinks = {
   joinGroup: (membershipId: string, inviteToken: string) =>
     `${BASE_URL}/join/${membershipId}?inviteToken=${encodeURIComponent(inviteToken)}`,
+  meetingDetail: (groupId: string, meetingId: string) =>
+    `${BASE_URL}/groups/${groupId}/meetings/${meetingId}/view`,
 };
 
 export const buildBaseEmailTemplate = (

@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/breadcrumb";
 
 import { useMeetingViewQuery } from "@/queries/useMeetingViewQuery";
+import { useMeetingCheckinMutation } from "@/queries/useMeetingCheckinMutation";
 import { Button } from "@/components/ui/button";
 import { formatStaticDateTime } from "@/lib/dateFormat";
 import type { UserMeetingCheckinState } from "@/api/types/groups";
@@ -57,6 +58,7 @@ export function GroupMeetingViewPage({
   groupId,
   meetingId,
 }: GroupMeetingViewPageProps) {
+  const checkinMutation = useMeetingCheckinMutation({ meetingId, groupId });
   const {
     data: meeting,
     isLoading,
@@ -181,6 +183,71 @@ export function GroupMeetingViewPage({
             </AlertDescription>
           </Alert>
         )}
+
+        {/* Check-In Actions */}
+        <div className="space-y-3 border-t pt-4">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Check-In
+          </p>
+          <div className="grid gap-2 md:grid-cols-3">
+            <Button
+              type="button"
+              variant={
+                meeting.userCheckinState === "attending" ? "default" : "outline"
+              }
+              disabled={!meeting.canCheckin || checkinMutation.isPending}
+              onClick={() =>
+                checkinMutation.mutate({
+                  state: "attending",
+                })
+              }
+            >
+              Attending
+            </Button>
+            <Button
+              type="button"
+              variant={
+                meeting.userCheckinState === "reading" ? "default" : "outline"
+              }
+              disabled={!meeting.canCheckin || checkinMutation.isPending}
+              onClick={() =>
+                checkinMutation.mutate({
+                  state: "reading",
+                })
+              }
+            >
+              Reading
+            </Button>
+            <Button
+              type="button"
+              variant={
+                meeting.userCheckinState === "not_attending"
+                  ? "destructive"
+                  : "outline"
+              }
+              disabled={!meeting.canCheckin || checkinMutation.isPending}
+              onClick={() =>
+                checkinMutation.mutate({
+                  state: "not_attending",
+                })
+              }
+            >
+              Not Attending
+            </Button>
+          </div>
+          {!meeting.canCheckin && (
+            <p className="text-sm text-muted-foreground">
+              Check-in is unavailable for this meeting right now.
+            </p>
+          )}
+          {checkinMutation.error && (
+            <Alert variant="destructive">
+              <AlertDescription>
+                Unable to update your check-in status right now.
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
 
         {/* Attendance Summary */}
         <div className="flex gap-6 border-t pt-4">

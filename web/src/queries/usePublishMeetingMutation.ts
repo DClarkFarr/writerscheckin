@@ -20,7 +20,7 @@ export const usePublishMeetingMutation = ({
     mutationFn: async () => {
       return publishMeeting(groupId, meetingId);
     },
-    onSuccess: (data: PublishMeetingResponse) => {
+    onSuccess: (_data: PublishMeetingResponse) => {
       // Invalidate both view and edit queries to reflect published state
       queryClient.invalidateQueries({
         queryKey: meetingViewQueryKey(groupId, meetingId),

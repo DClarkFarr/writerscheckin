@@ -34,6 +34,9 @@ import type {
   UpdateGroupStateResponse,
 } from "./types/groups";
 
+const normalizeHtmlTemplate = (value: string | null | undefined): string =>
+  typeof value === "string" ? value : "";
+
 const normalizeGroupSummaryItem = (
   item: GroupSummaryItem,
 ): GroupSummaryItem => ({
@@ -94,6 +97,9 @@ const normalizeEditableGroupResponse = (
       canViewUpcomingMeeting:
         data.availableActions?.canViewUpcomingMeeting ?? false,
     },
+    // Keep aliases stable for existing group form contracts.
+    publicMessage: normalizeHtmlTemplate(data.publicMessage),
+    attendanceMessage: normalizeHtmlTemplate(data.attendanceMessage),
   };
 };
 
@@ -180,8 +186,8 @@ const normalizeMemberMeetingFeedItem = (
   description: item.description ?? "",
   startTime: item.startTime ?? { hours: 0, minutes: 0 },
   durationMinutes: item.durationMinutes ?? 0,
-  publishEmailMessage: item.publishEmailMessage ?? "",
-  attendanceEmailMessage: item.attendanceEmailMessage ?? "",
+  publishEmailMessage: normalizeHtmlTemplate(item.publishEmailMessage),
+  attendanceEmailMessage: normalizeHtmlTemplate(item.attendanceEmailMessage),
   publishHoursBefore: item.publishHoursBefore ?? 0,
   notifyAttendanceHoursBefore: item.notifyAttendanceHoursBefore ?? 0,
   membership: normalizeGroupMembershipResponse(item.membership),
@@ -238,8 +244,8 @@ const normalizeEditableMeetingResponse = (
   address: data.address ?? "",
   startTime: data.startTime ?? { hours: 0, minutes: 0 },
   durationMinutes: data.durationMinutes ?? 0,
-  publishEmailMessage: data.publishEmailMessage ?? "",
-  attendanceEmailMessage: data.attendanceEmailMessage ?? "",
+  publishEmailMessage: normalizeHtmlTemplate(data.publishEmailMessage),
+  attendanceEmailMessage: normalizeHtmlTemplate(data.attendanceEmailMessage),
   publishHoursBefore: data.publishHoursBefore ?? 0,
   notifyAttendanceHoursBefore: data.notifyAttendanceHoursBefore ?? 0,
   publishScheduledFor: data.publishScheduledFor ?? null,

@@ -34,6 +34,8 @@ export function GroupMeetingEditPage({
     fields,
     handleFieldChange,
     onChangeDescription,
+    onChangePublishEmailMessage,
+    onChangeAttendanceEmailMessage,
     handleFieldBlur,
     handlePublish,
     setIsCancelDialogOpen,
@@ -78,6 +80,8 @@ export function GroupMeetingEditPage({
         onFieldChange={handleFieldChange}
         onFieldBlur={handleFieldBlur}
         onChangeDescription={onChangeDescription}
+        onChangePublishEmailMessage={onChangePublishEmailMessage}
+        onChangeAttendanceEmailMessage={onChangeAttendanceEmailMessage}
         onPublish={handlePublish}
         onCancelDialogOpenChange={setIsCancelDialogOpen}
         onCancelMeeting={handleCancelMeeting}
