@@ -38,6 +38,7 @@ const startServer = async () => {
   /**
    * Setup cronjob
    */
+  console.log("initiating cronjobs");
   initCronJobs();
 };
 
@@ -64,4 +65,6 @@ const initCronJobs = () => {
     },
     "America/Denver", // MST
   );
+
+  publishScheduledMeetingsJob.start();
 };
