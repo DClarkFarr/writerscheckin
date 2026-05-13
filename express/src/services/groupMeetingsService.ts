@@ -1,21 +1,27 @@
 import {
   createGroupMeeting,
   CreateGroupMeetingInput,
+  getGroupMeetingById,
+  listDueDraftMeetingsByPublishWindow,
+  publishGroupMeetingById as publishGroupMeetingDocumentById,
   getAggregationMemberMeetingsPaginated as getAggregationMemberMeetingsPaginatedModel,
   getAggregationMemberNextUpcomingMeetings as getAggregationMemberNextUpcomingMeetingsModel,
   getLatestUpcomingMeetingByGroupId,
+  type DueDraftMeetingCandidateRow,
   type MemberMeetingAggregationBaseItem,
   type MemberMeetingAggregationItem,
   type GroupMeetingDocument,
 } from "../models/groupMeetings";
 import { getGroupById, GroupDocument } from "../models/groups";
 import {
+  listActivePublicationRecipientsByGroupId,
   listGroupMembersByGroupId,
   type GroupMemberDocument,
 } from "../models/groupMembers";
 import { ensureDate, ensureObjectId } from "../models/types";
 import { AuthError, ValidationError } from "./authService";
 import {
+  createMeetingAttendeeIfMissing,
   listMeetingAttendeesByMeetingId,
   meetingAttendeeDocumentToResponse,
 } from "../models/meetingAttendees";
@@ -26,6 +32,8 @@ import { DecodedCursor } from "../utils/pagination";
 import { groupMemberDocumentToResponse } from "./groupMembersService";
 import type { MeetingAttendeeDocument } from "../models/meetingAttendees";
 import { getMeetingCheckinAggregatesByMeetingIds } from "../models/meetingCheckins";
+import { sendEmail } from "./emailService";
+import { buildGroupMeetingPublishEmail } from "./emailTemplates/groupMeetingPublish";
 
 export type UserMeetingCheckinState =
   | "attending"
@@ -126,6 +134,296 @@ export interface CreateUpcomingMeetingFromDefaultsResult {
   redirectTo: string;
   createdFromDefaults: true;
 }
+
+export interface ListDueDraftMeetingsInput {
+  now?: Date;
+  windowMinutes?: number;
+  limit?: number;
+}
+
+export interface ScheduledMeetingPublicationCandidate {
+  meetingId: string;
+  groupId: string;
+  occursAt: string;
+  publishHoursBefore: number;
+  publishEmailMessage: string;
+  status: "draft";
+  publishAtComputed: string;
+}
+
+export type PublishMeetingFromScheduleReason =
+  | "published"
+  | "not_due"
+  | "already_published"
+  | "cancelled"
+  | "skipped"
+  | "error";
+
+export interface PublishMeetingFromScheduleResult {
+  meetingId: string;
+  groupId: string;
+  published: boolean;
+  reason: PublishMeetingFromScheduleReason;
+  publishedAt: string | null;
+  recipientCount: number;
+  attendeeCreatedCount: number;
+  emailSentCount: number;
+  errorMessage?: string;
+}
+
+export interface PublishDueMeetingsBatchResult {
+  startedAt: string;
+  finishedAt: string;
+  candidateCount: number;
+  publishedCount: number;
+  skippedCount: number;
+  errorCount: number;
+  results: PublishMeetingFromScheduleResult[];
+}
+
+export interface PublishDueMeetingsBatchInput {
+  now?: Date;
+  windowMinutes?: number;
+  limit?: number;
+}
+
+export interface PublishMeetingFromScheduleInput {
+  candidate: ScheduledMeetingPublicationCandidate;
+  now?: Date;
+}
+
+const dueDraftMeetingRowToCandidate = (
+  row: DueDraftMeetingCandidateRow,
+): ScheduledMeetingPublicationCandidate => {
+  return {
+    meetingId: row._id.toHexString(),
+    groupId: row.groupId.toHexString(),
+    occursAt: row.occursAt.toISOString(),
+    publishHoursBefore: row.publishHoursBefore,
+    publishEmailMessage: row.publishEmailMessage,
+    status: "draft",
+    publishAtComputed: row.publishAtComputed.toISOString(),
+  };
+};
+
+export const listDueDraftMeetingsForPublicationWindow = async (
+  input: ListDueDraftMeetingsInput = {},
+): Promise<ScheduledMeetingPublicationCandidate[]> => {
+  const rows = await listDueDraftMeetingsByPublishWindow(input);
+  return rows.map(dueDraftMeetingRowToCandidate);
+};
+
+const resolvePublicationRecipientEmail = async (
+  member: GroupMemberDocument,
+): Promise<string | null> => {
+  if (member.userId) {
+    const user = await getUserById(member.userId);
+    if (user?.email) {
+      return user.email;
+    }
+  }
+
+  return member.email ?? null;
+};
+
+export const publishMeetingFromSchedule = async (
+  input: PublishMeetingFromScheduleInput,
+): Promise<PublishMeetingFromScheduleResult> => {
+  const now = input.now ?? new Date();
+  const { candidate } = input;
+
+  const meeting = await getGroupMeetingById(candidate.meetingId);
+  if (!meeting) {
+    return {
+      meetingId: candidate.meetingId,
+      groupId: candidate.groupId,
+      published: false,
+      reason: "skipped",
+      publishedAt: null,
+      recipientCount: 0,
+      attendeeCreatedCount: 0,
+      emailSentCount: 0,
+      errorMessage: "Meeting not found.",
+    };
+  }
+
+  if (meeting.cancelledAt) {
+    return {
+      meetingId: meeting._id.toHexString(),
+      groupId: meeting.groupId.toHexString(),
+      published: false,
+      reason: "cancelled",
+      publishedAt: null,
+      recipientCount: 0,
+      attendeeCreatedCount: 0,
+      emailSentCount: 0,
+    };
+  }
+
+  if (meeting.status === "published") {
+    return {
+      meetingId: meeting._id.toHexString(),
+      groupId: meeting.groupId.toHexString(),
+      published: false,
+      reason: "already_published",
+      publishedAt: null,
+      recipientCount: 0,
+      attendeeCreatedCount: 0,
+      emailSentCount: 0,
+    };
+  }
+
+  if (meeting.status !== "draft") {
+    return {
+      meetingId: meeting._id.toHexString(),
+      groupId: meeting.groupId.toHexString(),
+      published: false,
+      reason: "skipped",
+      publishedAt: null,
+      recipientCount: 0,
+      attendeeCreatedCount: 0,
+      emailSentCount: 0,
+      errorMessage: `Unsupported status '${meeting.status}'.`,
+    };
+  }
+
+  const publishAtComputed = computePublishScheduledFor(
+    meeting.publishHoursBefore,
+    meeting.occursAt,
+  );
+  if (publishAtComputed.getTime() > now.getTime()) {
+    return {
+      meetingId: meeting._id.toHexString(),
+      groupId: meeting.groupId.toHexString(),
+      published: false,
+      reason: "not_due",
+      publishedAt: null,
+      recipientCount: 0,
+      attendeeCreatedCount: 0,
+      emailSentCount: 0,
+    };
+  }
+
+  try {
+    const publishedMeeting = await publishGroupMeetingDocumentById(meeting._id);
+    if (!publishedMeeting) {
+      return {
+        meetingId: meeting._id.toHexString(),
+        groupId: meeting.groupId.toHexString(),
+        published: false,
+        reason: "error",
+        publishedAt: null,
+        recipientCount: 0,
+        attendeeCreatedCount: 0,
+        emailSentCount: 0,
+        errorMessage: "Failed to persist published status.",
+      };
+    }
+
+    const recipients = await listActivePublicationRecipientsByGroupId(
+      meeting.groupId,
+      {
+        limit: 500,
+      },
+    );
+
+    let attendeeCreatedCount = 0;
+    let emailSentCount = 0;
+
+    for (const recipient of recipients) {
+      const attendeeResult = await createMeetingAttendeeIfMissing({
+        meetingId: meeting._id,
+        memberId: recipient._id,
+        status: "invited",
+      });
+
+      if (attendeeResult.created) {
+        attendeeCreatedCount += 1;
+      }
+
+      const recipientEmail = await resolvePublicationRecipientEmail(recipient);
+      if (!recipientEmail) {
+        continue;
+      }
+
+      const email = buildGroupMeetingPublishEmail({
+        meetingName: meeting.name,
+        occursAt: meeting.occursAt,
+        publishMessage: meeting.publishEmailMessage,
+      });
+
+      await sendEmail({
+        to: recipientEmail,
+        subject: email.subject,
+        text: email.text,
+        html: email.html,
+      });
+      emailSentCount += 1;
+    }
+
+    return {
+      meetingId: publishedMeeting._id.toHexString(),
+      groupId: publishedMeeting.groupId.toHexString(),
+      published: true,
+      reason: "published",
+      publishedAt:
+        publishedMeeting.updatedAt?.toISOString() ?? now.toISOString(),
+      recipientCount: recipients.length,
+      attendeeCreatedCount,
+      emailSentCount,
+    };
+  } catch (error) {
+    return {
+      meetingId: meeting._id.toHexString(),
+      groupId: meeting.groupId.toHexString(),
+      published: false,
+      reason: "error",
+      publishedAt: null,
+      recipientCount: 0,
+      attendeeCreatedCount: 0,
+      emailSentCount: 0,
+      errorMessage:
+        error instanceof Error ? error.message : "Unknown publish error.",
+    };
+  }
+};
+
+export const publishDueMeetingsBatch = async (
+  input: PublishDueMeetingsBatchInput = {},
+): Promise<PublishDueMeetingsBatchResult> => {
+  const startedAt = new Date();
+  const now = input.now ?? new Date();
+
+  const candidates = await listDueDraftMeetingsForPublicationWindow({
+    now,
+    ...(typeof input.windowMinutes === "number"
+      ? { windowMinutes: input.windowMinutes }
+      : {}),
+    ...(typeof input.limit === "number" ? { limit: input.limit } : {}),
+  });
+
+  const results: PublishMeetingFromScheduleResult[] = [];
+  for (const candidate of candidates) {
+    const result = await publishMeetingFromSchedule({ candidate, now });
+    results.push(result);
+  }
+
+  const publishedCount = results.filter(
+    (row) => row.reason === "published",
+  ).length;
+  const errorCount = results.filter((row) => row.reason === "error").length;
+  const skippedCount = results.length - publishedCount - errorCount;
+
+  return {
+    startedAt: startedAt.toISOString(),
+    finishedAt: new Date().toISOString(),
+    candidateCount: candidates.length,
+    publishedCount,
+    skippedCount,
+    errorCount,
+    results,
+  };
+};
 
 const computeNextOccurrence = (input: {
   daysOfWeek: number[];

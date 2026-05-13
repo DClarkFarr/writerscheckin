@@ -311,6 +311,16 @@ export interface ListGroupMeetingsForFeedProps {
   limit?: number;
 }
 
+export interface ListDueDraftMeetingsByPublishWindowInput {
+  now?: Date;
+  windowMinutes?: number;
+  limit?: number;
+}
+
+export type DueDraftMeetingCandidateRow = GroupMeetingDocument & {
+  publishAtComputed: Date;
+};
+
 export type MemberMeetingAggregationBaseItem = GroupMeetingDocument & {
   membership: GroupMemberDocument;
 };
@@ -650,6 +660,65 @@ export const getNextUpcomingPublishedMeetingByGroupId = async (
       sort: { occursAt: 1, name: 1, _id: 1 },
     },
   );
+};
+
+export const listDueDraftMeetingsByPublishWindow = async (
+  input: ListDueDraftMeetingsByPublishWindowInput = {},
+): Promise<DueDraftMeetingCandidateRow[]> => {
+  const collection = getGroupMeetingsCollection();
+  const now = input.now ?? new Date();
+  const windowMinutes = input.windowMinutes ?? 20;
+  const limit = input.limit ?? 500;
+
+  if (!Number.isInteger(windowMinutes) || windowMinutes <= 0) {
+    throw new Error("windowMinutes must be a positive integer.");
+  }
+
+  const windowStart = new Date(now.getTime() - windowMinutes * 60 * 1000);
+
+  const rows = await collection
+    .aggregate<DueDraftMeetingCandidateRow>([
+      {
+        $match: {
+          status: "draft",
+          cancelledAt: null,
+          ...activeRecordFilter(),
+        },
+      },
+      {
+        $addFields: {
+          publishAtComputed: {
+            $dateSubtract: {
+              startDate: "$occursAt",
+              unit: "hour",
+              amount: "$publishHoursBefore",
+            },
+          },
+        },
+      },
+      {
+        $match: {
+          $expr: {
+            $and: [
+              { $gte: ["$publishAtComputed", windowStart] },
+              { $lte: ["$publishAtComputed", now] },
+            ],
+          },
+        },
+      },
+      {
+        $sort: {
+          publishAtComputed: 1,
+          _id: 1,
+        },
+      },
+      {
+        $limit: limit,
+      },
+    ])
+    .toArray();
+
+  return rows;
 };
 
 export const updateGroupMeetingById = async (

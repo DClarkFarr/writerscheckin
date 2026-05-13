@@ -1,4 +1,4 @@
-import { Collection, ObjectId, type Document } from "mongodb";
+import { Collection, MongoServerError, ObjectId, type Document } from "mongodb";
 import { COLLECTIONS, getCollection } from "./collections";
 import {
   AttendanceStatus,
@@ -36,6 +36,11 @@ export interface AttendanceLogContext {
   userId: string | ObjectId;
 }
 
+export interface CreateMeetingAttendeeIfMissingResult {
+  attendee: MeetingAttendeeDocument;
+  created: boolean;
+}
+
 export const getMeetingAttendeesCollection =
   (): Collection<MeetingAttendeeDocument> =>
     getCollection<MeetingAttendeeDocument>(COLLECTIONS.meetingAttendees);
@@ -63,6 +68,44 @@ export const createMeetingAttendee = async (
   );
 
   return { ...payload, _id: result.insertedId };
+};
+
+export const createMeetingAttendeeIfMissing = async (
+  input: CreateMeetingAttendeeInput,
+): Promise<CreateMeetingAttendeeIfMissingResult> => {
+  const existing = await getMeetingAttendeeByMember(
+    input.meetingId,
+    input.memberId,
+  );
+  if (existing) {
+    return {
+      attendee: existing,
+      created: false,
+    };
+  }
+
+  try {
+    const attendee = await createMeetingAttendee(input);
+    return {
+      attendee,
+      created: true,
+    };
+  } catch (error) {
+    if (error instanceof MongoServerError && error.code === 11000) {
+      const conflict = await getMeetingAttendeeByMember(
+        input.meetingId,
+        input.memberId,
+      );
+      if (conflict) {
+        return {
+          attendee: conflict,
+          created: false,
+        };
+      }
+    }
+
+    throw error;
+  }
 };
 
 export const getMeetingAttendeeById = async (

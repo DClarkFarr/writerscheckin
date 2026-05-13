@@ -116,6 +116,11 @@ export interface ListGroupMembersOptions {
   limit?: number;
 }
 
+export interface ListActivePublicationRecipientsOptions {
+  includeDeleted?: boolean;
+  limit?: number;
+}
+
 const assertOneOwnerIfRoleOwner = async (
   groupId: ObjectId,
   role: GroupMemberRole,
@@ -374,6 +379,26 @@ export const listGroupMembersByGroupId = async (
   }
 
   return collection.find(filters).sort({ createdAt: 1 }).limit(limit).toArray();
+};
+
+export const listActivePublicationRecipientsByGroupId = async (
+  groupId: string | ObjectId,
+  options: ListActivePublicationRecipientsOptions = {},
+): Promise<GroupMemberDocument[]> => {
+  const collection = getGroupMembersCollection();
+  const limit = options.limit ?? 500;
+
+  return collection
+    .find({
+      groupId: toObjectId(groupId, "groupId"),
+      status: {
+        $nin: ["cancelled", "declined", "removed"],
+      },
+      ...activeRecordFilter(options.includeDeleted),
+    })
+    .sort({ createdAt: 1 })
+    .limit(limit)
+    .toArray();
 };
 
 export interface ListGroupMembersByGroupIdPaginatedProps extends ListGroupMembersOptions {

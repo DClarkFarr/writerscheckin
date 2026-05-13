@@ -51,7 +51,7 @@ const initCronJobs = () => {
   const queueService = new QueueService();
 
   const publishScheduledMeetingsJob = new CronJob(
-    "*/1 * * * *", // every fifteen minutes
+    "*/1 * * * *", // every minute
     function () {
       console.info("Enqueuing PublishScheduledMeetings");
       queueService.add(async () => {
@@ -63,7 +63,9 @@ const initCronJobs = () => {
         }
       });
     },
-    "America/Denver", // MST
+    undefined,
+    false,
+    "America/Denver", // Mountain timezone execution
   );
 
   publishScheduledMeetingsJob.start();
