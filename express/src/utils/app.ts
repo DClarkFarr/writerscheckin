@@ -82,11 +82,14 @@ class App {
     );
   }
 
-  public listen(): void {
+  public async listen(): Promise<void> {
     const port = env.PORT;
 
-    this.api.listen(port, () => {
-      console.log(`Server is running on http://localhost:${port}`);
+    return new Promise((resolve) => {
+      this.api.listen(port, () => {
+        console.log(`Server is running on http://localhost:${port}`);
+        resolve();
+      });
     });
   }
 
