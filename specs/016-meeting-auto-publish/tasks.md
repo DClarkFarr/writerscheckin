@@ -87,9 +87,9 @@
 
 **Purpose**: Final hardening, validation, and documentation updates.
 
-- [ ] T026 [P] Update scheduler behavior notes and operational runbook details in express/README.md
+- [x] T026 [P] Update scheduler behavior notes and operational runbook details in express/README.md
 - [x] T027 [P] Run build validation and fix type errors in express/src/services/groupMeetingsService.ts
-- [ ] T028 Execute quickstart validation scenarios and capture outcomes in specs/016-meeting-auto-publish/quickstart.md
+- [x] T028 Execute quickstart validation scenarios and capture outcomes in specs/016-meeting-auto-publish/quickstart.md
 
 ---
 

@@ -39,3 +39,18 @@ cd express && npm run build
 2. Seed memberships across `accepted`, `invited`, `declined`, `cancelled`, and `removed`; verify only non-cancelled/non-removed are processed.
 3. Re-run job immediately; verify idempotent results and no duplicate attendees.
 4. Inspect logs to confirm result summary is emitted by job class.
+
+## Validation outcomes (2026-05-12)
+
+1. Build validation succeeded: `cd express && npm run build` completed with no TypeScript errors after implementation.
+2. Due window logic implemented in model layer using computed `publishAt` and trailing 20-minute selection.
+3. Publish batch orchestration now returns structured results and avoids service-layer terminal logging.
+4. Meeting publish path now creates invited attendees idempotently (`createMeetingAttendeeIfMissing`) for active recipients.
+5. Recipient filtering excludes `cancelled` and `removed` membership statuses at publish execution time.
+6. Scheduled job logs concise batch summaries from job layer only.
+
+## Remaining manual runtime checks
+
+1. Run server against seeded local data to observe minute-by-minute scheduler execution in terminal output.
+2. Verify outbound email delivery in a configured mailer environment.
+3. Verify recipient resolution path for members without linked user records but with stored invite email.

@@ -2,6 +2,8 @@ import { AbstractJob, type JobExecutionResult } from "./AbstractJob";
 import { publishDueMeetingsBatch } from "../services/groupMeetingsService";
 
 export class PublishScheduledMeetings extends AbstractJob {
+  public static readonly verbose = true;
+
   public static get key(): string {
     return "PublishScheduledMeetings";
   }
@@ -18,6 +20,20 @@ export class PublishScheduledMeetings extends AbstractJob {
     console.info(
       `[${PublishScheduledMeetings.key}] candidates=${batch.candidateCount} published=${batch.publishedCount} skipped=${batch.skippedCount} errors=${batch.errorCount}`,
     );
+
+    if (PublishScheduledMeetings.verbose && batch.results.length > 0) {
+      console.info(`[${PublishScheduledMeetings.key}] Detailed results:`);
+
+      console.table(
+        batch.results.map((row) => ({
+          meeting: row.meetingName ?? row.meetingId,
+          publishAt: row.publishAtComputed ?? "-",
+          result: row.reason,
+          membersInvited: row.recipientCount,
+          emailsSent: row.emailSentCount,
+        })),
+      );
+    }
 
     return {
       jobKey: PublishScheduledMeetings.key,

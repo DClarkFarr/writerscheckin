@@ -162,6 +162,10 @@ export type PublishMeetingFromScheduleReason =
 export interface PublishMeetingFromScheduleResult {
   meetingId: string;
   groupId: string;
+  groupName: string | null;
+  meetingName: string | null;
+  occursAt: string | null;
+  publishAtComputed: string | null;
   published: boolean;
   reason: PublishMeetingFromScheduleReason;
   publishedAt: string | null;
@@ -237,6 +241,10 @@ export const publishMeetingFromSchedule = async (
     return {
       meetingId: candidate.meetingId,
       groupId: candidate.groupId,
+      groupName: null,
+      meetingName: null,
+      occursAt: candidate.occursAt,
+      publishAtComputed: candidate.publishAtComputed,
       published: false,
       reason: "skipped",
       publishedAt: null,
@@ -247,10 +255,20 @@ export const publishMeetingFromSchedule = async (
     };
   }
 
+  const group = await getGroupById(meeting.groupId);
+  const publishAtComputed = computePublishScheduledFor(
+    meeting.publishHoursBefore,
+    meeting.occursAt,
+  );
+
   if (meeting.cancelledAt) {
     return {
       meetingId: meeting._id.toHexString(),
       groupId: meeting.groupId.toHexString(),
+      groupName: group?.name ?? null,
+      meetingName: meeting.name,
+      occursAt: meeting.occursAt.toISOString(),
+      publishAtComputed: publishAtComputed.toISOString(),
       published: false,
       reason: "cancelled",
       publishedAt: null,
@@ -264,6 +282,10 @@ export const publishMeetingFromSchedule = async (
     return {
       meetingId: meeting._id.toHexString(),
       groupId: meeting.groupId.toHexString(),
+      groupName: group?.name ?? null,
+      meetingName: meeting.name,
+      occursAt: meeting.occursAt.toISOString(),
+      publishAtComputed: publishAtComputed.toISOString(),
       published: false,
       reason: "already_published",
       publishedAt: null,
@@ -277,6 +299,10 @@ export const publishMeetingFromSchedule = async (
     return {
       meetingId: meeting._id.toHexString(),
       groupId: meeting.groupId.toHexString(),
+      groupName: group?.name ?? null,
+      meetingName: meeting.name,
+      occursAt: meeting.occursAt.toISOString(),
+      publishAtComputed: publishAtComputed.toISOString(),
       published: false,
       reason: "skipped",
       publishedAt: null,
@@ -287,14 +313,14 @@ export const publishMeetingFromSchedule = async (
     };
   }
 
-  const publishAtComputed = computePublishScheduledFor(
-    meeting.publishHoursBefore,
-    meeting.occursAt,
-  );
   if (publishAtComputed.getTime() > now.getTime()) {
     return {
       meetingId: meeting._id.toHexString(),
       groupId: meeting.groupId.toHexString(),
+      groupName: group?.name ?? null,
+      meetingName: meeting.name,
+      occursAt: meeting.occursAt.toISOString(),
+      publishAtComputed: publishAtComputed.toISOString(),
       published: false,
       reason: "not_due",
       publishedAt: null,
@@ -310,6 +336,10 @@ export const publishMeetingFromSchedule = async (
       return {
         meetingId: meeting._id.toHexString(),
         groupId: meeting.groupId.toHexString(),
+        groupName: group?.name ?? null,
+        meetingName: meeting.name,
+        occursAt: meeting.occursAt.toISOString(),
+        publishAtComputed: publishAtComputed.toISOString(),
         published: false,
         reason: "error",
         publishedAt: null,
@@ -364,6 +394,10 @@ export const publishMeetingFromSchedule = async (
     return {
       meetingId: publishedMeeting._id.toHexString(),
       groupId: publishedMeeting.groupId.toHexString(),
+      groupName: group?.name ?? null,
+      meetingName: publishedMeeting.name,
+      occursAt: publishedMeeting.occursAt.toISOString(),
+      publishAtComputed: publishAtComputed.toISOString(),
       published: true,
       reason: "published",
       publishedAt:
@@ -376,6 +410,10 @@ export const publishMeetingFromSchedule = async (
     return {
       meetingId: meeting._id.toHexString(),
       groupId: meeting.groupId.toHexString(),
+      groupName: group?.name ?? null,
+      meetingName: meeting.name,
+      occursAt: meeting.occursAt.toISOString(),
+      publishAtComputed: publishAtComputed.toISOString(),
       published: false,
       reason: "error",
       publishedAt: null,
