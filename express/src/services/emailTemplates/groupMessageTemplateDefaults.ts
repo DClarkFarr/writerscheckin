@@ -2,7 +2,7 @@ export const ATTENDANCE_EMAIL_MESSAGE_DEFAULT_TEMPLATE =
   "TODO: add template here";
 
 export const PUBLISH_EMAIL_MESSAGE_DEFAULT_TEMPLATE = `<p>Good morning my author friends!</p>
-<p>This is a reminder about our [meetingName] on [meetingDate] at [meetingTime] at [meetingAddress].</p>
+<p>This is a reminder about the next meeting of our group, [meetingName], on [meetingDate] at [meetingTime] at [meetingAddress].</p>
 <p>Please RSVP if you plan to attend AND if you have pages to read.
 (Even if you're not reading, we need an accurate headcount to know how many copies to bring)</p>
 [checkinButton]
