@@ -38,7 +38,7 @@ const startServer = async () => {
   /**
    * Setup cronjob
    */
-  console.log("initiating cronjobs");
+  console.info("Initiating cronjobs");
   initCronJobs();
 };
 
@@ -53,13 +53,13 @@ const initCronJobs = () => {
   const publishScheduledMeetingsJob = new CronJob(
     "*/1 * * * *", // every fifteen minutes
     function () {
-      console.info("Enqueuing scheduled meetings publisher");
+      console.info("Enqueuing PublishScheduledMeetings");
       queueService.add(async () => {
-        console.info("Running scheduled meetings publisher");
+        console.info("Running PublishScheduledMeetings");
         try {
           await PublishScheduledMeetings.execute();
         } catch (err) {
-          console.error("Error executing PublishScheduledMeetings job:", err);
+          console.error("Error executing PublishScheduledMeetings:", err);
         }
       });
     },
