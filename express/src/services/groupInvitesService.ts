@@ -14,6 +14,8 @@ import { getGroupById } from "../models/groups";
 import { getUserById, normalizeEmail, UserDocument } from "../models/users";
 import { AuthError } from "./authService";
 import { env } from "../utils/env";
+import { sendEmail } from "./emailService";
+import { buildGroupReinviteRequestEmail } from "./emailTemplates/groupInviteEmail";
 
 export const INVITE_LINK_ACCESS_STATES = [
   "active_member",
@@ -139,6 +141,17 @@ export interface RespondToMeetingInviteDecisionResult {
   updatedState: InviteLinkAccessState;
   messageKey: string;
   canProceedToMeeting: boolean;
+}
+
+export interface RequestMeetingInviteRejoinInput {
+  groupId: string;
+  meetingId: string;
+  userId: string;
+}
+
+export interface RequestMeetingInviteRejoinResult {
+  messageKey: "inviteLink.requestToJoinSent";
+  delivered: boolean;
 }
 
 interface InviteTokenPayload {
@@ -473,5 +486,85 @@ export const respondToMeetingInviteDecision = async (
     updatedState,
     messageKey: INVITE_LINK_MESSAGE_KEY_BY_STATE[updatedState],
     canProceedToMeeting: updatedState === "active_member",
+  };
+};
+
+export const requestMeetingInviteRejoin = async (
+  input: RequestMeetingInviteRejoinInput,
+): Promise<RequestMeetingInviteRejoinResult> => {
+  const meeting = await getGroupMeetingById(input.meetingId);
+  if (!meeting || meeting.groupId.toHexString() !== input.groupId) {
+    throw new Error("Meeting not found.");
+  }
+
+  const group = await getGroupById(input.groupId);
+  if (!group) {
+    throw new Error("Group not found.");
+  }
+
+  const requester = await getUserById(input.userId);
+  if (!requester?.email) {
+    throw new AuthError("Unauthorized", 401);
+  }
+
+  const membership = await getMembershipInviteByGroupAndUserId({
+    userId: input.userId,
+    groupId: input.groupId,
+  });
+
+  const currentState = resolveInviteLinkAccessState({
+    membershipStatus: membership?.status ?? null,
+    membershipExists: Boolean(membership),
+  });
+
+  if (currentState !== "declined_or_left" && currentState !== "removed") {
+    throw new Error(
+      "Request to join is only available after decline or removal.",
+    );
+  }
+
+  const ownerMembership = await getGroupOwnerByGroupId(group._id);
+  if (!ownerMembership) {
+    throw new Error("Unable to find the group owner.");
+  }
+
+  let adminEmail = ownerMembership.email ?? "";
+  let adminName = "Admin";
+
+  if (ownerMembership.userId) {
+    const ownerUser = await getUserById(ownerMembership.userId);
+    if (ownerUser?.email) {
+      adminEmail = ownerUser.email;
+    }
+
+    if (ownerUser) {
+      const fullName = `${ownerUser.firstName} ${ownerUser.lastName}`.trim();
+      if (fullName.length > 0) {
+        adminName = fullName;
+      }
+    }
+  }
+
+  if (!adminEmail.trim()) {
+    throw new Error("Unable to contact the group owner.");
+  }
+
+  const email = buildGroupReinviteRequestEmail({
+    adminName,
+    requesterEmail: requester.email,
+    groupId: group._id.toHexString(),
+    groupName: group.name,
+  });
+
+  await sendEmail({
+    to: adminEmail,
+    subject: email.subject,
+    text: email.text,
+    html: email.html,
+  });
+
+  return {
+    messageKey: "inviteLink.requestToJoinSent",
+    delivered: true,
   };
 };

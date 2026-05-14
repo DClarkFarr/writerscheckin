@@ -65,6 +65,7 @@ export const emailLinks = {
     `${BASE_URL}/join/${membershipId}?inviteToken=${encodeURIComponent(inviteToken)}`,
   meetingDetail: (groupId: string, meetingId: string) =>
     `${BASE_URL}/groups/${groupId}/meetings/${meetingId}/view`,
+  editGroup: (groupId: string) => `${BASE_URL}/groups/${groupId}/edit`,
 };
 
 export const buildBaseEmailTemplate = (

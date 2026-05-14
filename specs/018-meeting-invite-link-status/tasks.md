@@ -84,15 +84,15 @@
 
 ### Implementation for User Story 3
 
-- [ ] T026 [US3] Implement request-to-join service action gated to declined_or_left/removed states in express/src/services/groupInvitesService.ts
-- [ ] T027 [US3] Add join-request email template composition for requester/group/meeting context in express/src/services/emailTemplates/groupInviteEmail.ts
-- [ ] T028 [US3] Wire responsible-admin lookup and email dispatch into request-to-join flow in express/src/services/groupInvitesService.ts
-- [ ] T029 [US3] Add request-to-join endpoint for invite-link recovery in express/src/routers/groupInvitesRouter.ts
-- [ ] T030 [US3] Add request-to-join API client method in web/src/api/groupInvites.ts
-- [ ] T031 [US3] Extend request-to-join API types for success/failure outcomes in web/src/api/types/groupInvites.ts
-- [ ] T032 [US3] Create request-to-join mutation hook for meeting invite landing in web/src/queries/useRequestToJoinMutation.ts
-- [ ] T033 [US3] Wire Request to join action and loading/error states in InviteLinkStatusPanel in web/src/components/invite/InviteLinkStatusPanel.tsx
-- [ ] T034 [US3] Render declined/removed recovery guidance and failure fallback messaging in web/src/pages/group-meeting-view.tsx
+- [x] T026 [US3] Implement request-to-join service action gated to declined_or_left/removed states in express/src/services/groupInvitesService.ts
+- [x] T027 [US3] Add join-request email template composition for requester/group/meeting context in express/src/services/emailTemplates/groupInviteEmail.ts
+- [x] T028 [US3] Wire responsible-admin lookup and email dispatch into request-to-join flow in express/src/services/groupInvitesService.ts
+- [x] T029 [US3] Add request-to-join endpoint for invite-link recovery in express/src/routers/groupInvitesRouter.ts
+- [x] T030 [US3] Add request-to-join API client method in web/src/api/groupInvites.ts
+- [x] T031 [US3] Extend request-to-join API types for success/failure outcomes in web/src/api/types/groupInvites.ts
+- [x] T032 [US3] Create request-to-join mutation hook for meeting invite landing in web/src/queries/useRespondToJoinInviteMutation.ts
+- [x] T033 [US3] Wire Request to join action and loading/error states in InviteLinkStatusPanel in web/src/components/invite/InviteLinkStatusPanel.tsx
+- [x] T034 [US3] Render declined/removed recovery guidance and failure fallback messaging in web/src/pages/group-meeting-view.tsx
 
 **Checkpoint**: All user stories are independently functional.
 

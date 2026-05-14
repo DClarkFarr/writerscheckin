@@ -63,9 +63,10 @@ export function InviteLinkStatusPanel({
             onRequestToJoin && (
               <Button
                 type="button"
-                variant="outline"
+                variant="default"
                 onClick={onRequestToJoin}
                 disabled={isActionPending}
+                className="h-12 px-6 text-base font-semibold bg-blue-600 hover:bg-blue-700"
               >
                 {isActionPending ? "Working..." : "Request to join"}
               </Button>

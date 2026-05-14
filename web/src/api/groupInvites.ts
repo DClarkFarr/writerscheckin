@@ -2,6 +2,8 @@ import { apiClient } from "@/lib/apiClient";
 import { toApiError } from "./types";
 import type {
   JoinGroupInviteResponse,
+  RequestToJoinMeetingInviteInput,
+  RequestToJoinMeetingInviteResponse,
   RespondToMeetingInviteDecisionInput,
   RespondToMeetingInviteDecisionResponse,
   RespondToJoinGroupInviteInput,
@@ -64,6 +66,24 @@ export async function respondToMeetingInviteDecision(
       updatedState: data.updatedState,
       messageKey: data.messageKey,
       canProceedToMeeting: data.canProceedToMeeting,
+    };
+  } catch (err) {
+    throw await toApiError(err);
+  }
+}
+
+export async function requestToJoinMeetingInvite(
+  input: RequestToJoinMeetingInviteInput,
+): Promise<RequestToJoinMeetingInviteResponse> {
+  try {
+    const { data } = await apiClient.post<RequestToJoinMeetingInviteResponse>(
+      "/group-invites/meeting-links/request-to-join",
+      input,
+    );
+
+    return {
+      messageKey: data.messageKey,
+      delivered: data.delivered,
     };
   } catch (err) {
     throw await toApiError(err);

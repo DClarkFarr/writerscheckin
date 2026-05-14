@@ -11,6 +11,13 @@ export interface GroupInviteEmailContent {
   html: string;
 }
 
+export interface GroupReinviteRequestEmailInput {
+  adminName: string;
+  requesterEmail: string;
+  groupId: string;
+  groupName: string;
+}
+
 export const buildGroupInviteEmail = (
   membershipId: string,
   inviteToken: string,
@@ -46,6 +53,55 @@ export const buildGroupInviteEmail = (
       emailTypography.muted(
         "If you were not expecting this invite, you can safely ignore this email.",
       ),
+    ].join(""),
+  });
+
+  return {
+    subject,
+    text,
+    html,
+  };
+};
+
+export const buildGroupReinviteRequestEmail = ({
+  adminName,
+  requesterEmail,
+  groupId,
+  groupName,
+}: GroupReinviteRequestEmailInput): GroupInviteEmailContent => {
+  const safeAdminName = adminName.trim().length > 0 ? adminName : "Admin";
+  const safeRequesterEmail = requesterEmail.trim();
+  const safeGroupName = groupName.trim().length > 0 ? groupName : "this group";
+  const editGroupUrl = emailLinks.editGroup(groupId);
+
+  const subject = `${safeRequesterEmail} requested a new group invite`;
+
+  const text = [
+    `Hello ${safeAdminName},`,
+    "",
+    `The user with this email address: ${safeRequesterEmail} has requested to be invited to the group ${safeGroupName}.`,
+    `Group admin link: ${editGroupUrl}`,
+    "",
+    "Please issue them a new invite or reply with your reasoning to the contrary.",
+    "",
+    "Thanks,",
+    "",
+    "Team WritersCheck.In",
+  ].join("\n");
+
+  const html = buildBaseEmailTemplate({
+    previewText: `${safeRequesterEmail} requested an invite to ${safeGroupName}`,
+    heading: "New Group Invite Request",
+    bodyHtml: [
+      emailTypography.paragraph(`Hello ${escapeHtml(safeAdminName)},`),
+      emailTypography.paragraph(
+        `The user with this email address: <b>${escapeHtml(safeRequesterEmail)}</b> has requested to be invited to the group <a href=\"${escapeHtml(editGroupUrl)}\">${escapeHtml(safeGroupName)}</a>.`,
+      ),
+      emailTypography.paragraph(
+        "Please issue them a new invite or reply with your reasoning to the contrary.",
+      ),
+      emailTypography.paragraph("Thanks,"),
+      emailTypography.paragraph("Team WritersCheck.In"),
     ].join(""),
   });
 

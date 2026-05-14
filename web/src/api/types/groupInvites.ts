@@ -79,3 +79,13 @@ export interface RespondToMeetingInviteDecisionResponse {
   messageKey: InviteLinkMessageKey;
   canProceedToMeeting: boolean;
 }
+
+export interface RequestToJoinMeetingInviteInput {
+  groupId: string;
+  meetingId: string;
+}
+
+export interface RequestToJoinMeetingInviteResponse {
+  messageKey: "inviteLink.requestToJoinSent";
+  delivered: boolean;
+}

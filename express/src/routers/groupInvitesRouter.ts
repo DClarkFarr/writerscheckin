@@ -2,6 +2,7 @@ import express, { Request } from "express";
 import { handleAsync } from "../utils/asyncHandler";
 import {
   getJoinGroupInviteDetails,
+  requestMeetingInviteRejoin,
   respondToMeetingInviteDecision,
   respondToJoinGroupInvite,
 } from "../services/groupInvitesService";
@@ -53,6 +54,28 @@ groupInvitesRouter.post(
       meetingId,
       userId: sessionData.userId,
       decision,
+    });
+
+    res.status(200).json(data);
+  }),
+);
+
+groupInvitesRouter.post(
+  "/meeting-links/request-to-join",
+  handleAsync(async (req, res) => {
+    const groupId = getRouteParam(req.body?.groupId, "groupId");
+    const meetingId = getRouteParam(req.body?.meetingId, "meetingId");
+
+    const sessionData = getSession(req);
+    if (!sessionData.userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const data = await requestMeetingInviteRejoin({
+      groupId,
+      meetingId,
+      userId: sessionData.userId,
     });
 
     res.status(200).json(data);

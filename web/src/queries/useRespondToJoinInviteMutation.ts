@@ -1,10 +1,12 @@
 import {
+  requestToJoinMeetingInvite,
   respondToJoinGroupInvite,
   respondToMeetingInviteDecision,
 } from "@/api/groupInvites";
 import type {
   JoinGroupInviteAction,
   MeetingInviteDecision,
+  RequestToJoinMeetingInviteResponse,
   RespondToMeetingInviteDecisionResponse,
   RespondToJoinGroupInviteResponse,
 } from "@/api/types/groupInvites";
@@ -105,6 +107,37 @@ export const useRespondToMeetingInviteDecisionMutation = ({
     },
     onError: (error) => {
       alert.error(error.message || "Unable to respond to invite.");
+    },
+  });
+};
+
+interface UseRequestToJoinMeetingInviteMutationInput {
+  groupId: string;
+  meetingId: string;
+}
+
+export const useRequestToJoinMeetingInviteMutation = ({
+  groupId,
+  meetingId,
+}: UseRequestToJoinMeetingInviteMutationInput) => {
+  const queryClient = useQueryClient();
+
+  return useMutation<RequestToJoinMeetingInviteResponse, Error, void>({
+    mutationFn: async () => {
+      return requestToJoinMeetingInvite({
+        groupId,
+        meetingId,
+      });
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: useMeetingViewQuery.key(groupId, meetingId),
+      });
+
+      alert.success("Request to join sent to the group owner.");
+    },
+    onError: (error) => {
+      alert.error(error.message || "Unable to send request right now.");
     },
   });
 };

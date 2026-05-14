@@ -17,7 +17,10 @@ import type { UserMeetingCheckinState } from "@/api/types/groups";
 import { useMemo, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InviteLinkStatusPanel } from "@/components/invite/InviteLinkStatusPanel";
-import { useRespondToMeetingInviteDecisionMutation } from "@/queries/useRespondToJoinInviteMutation";
+import {
+  useRequestToJoinMeetingInviteMutation,
+  useRespondToMeetingInviteDecisionMutation,
+} from "@/queries/useRespondToJoinInviteMutation";
 
 export interface GroupMeetingViewPageProps {
   groupId: string;
@@ -66,6 +69,10 @@ export function GroupMeetingViewPage({
 
   const checkinMutation = useMeetingCheckinMutation({ meetingId, groupId });
   const inviteDecisionMutation = useRespondToMeetingInviteDecisionMutation({
+    groupId,
+    meetingId,
+  });
+  const requestToJoinMutation = useRequestToJoinMeetingInviteMutation({
     groupId,
     meetingId,
   });
@@ -155,6 +162,17 @@ export function GroupMeetingViewPage({
       }
     };
 
+    const handleRequestToJoin = async () => {
+      try {
+        await requestToJoinMutation.mutateAsync();
+        setInviteDecisionMessage(
+          "Request sent. The group owner has been notified by email.",
+        );
+      } catch {
+        setInviteDecisionMessage("Unable to send request to join right now.");
+      }
+    };
+
     return (
       <PageCard grow header={header}>
         <div className="flex flex-col gap-4">
@@ -171,7 +189,11 @@ export function GroupMeetingViewPage({
             context={inviteLinkContext}
             onAcceptInvite={handleAcceptInvite}
             onDeclineInvite={handleDeclineInvite}
-            isActionPending={inviteDecisionMutation.isPending}
+            onRequestToJoin={handleRequestToJoin}
+            isActionPending={
+              inviteDecisionMutation.isPending ||
+              requestToJoinMutation.isPending
+            }
           />
 
           {inviteDecisionMessage && (
@@ -185,6 +207,15 @@ export function GroupMeetingViewPage({
               <AlertDescription>
                 {inviteDecisionMutation.error.message ||
                   "Unable to update invite status right now."}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {requestToJoinMutation.error && (
+            <Alert variant="destructive">
+              <AlertDescription>
+                {requestToJoinMutation.error.message ||
+                  "Unable to send request to join right now."}
               </AlertDescription>
             </Alert>
           )}
