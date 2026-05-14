@@ -35,7 +35,7 @@ export const getMemberMeetingAttendanceState = (
   }
 
   if (attendanceStatus === "skipping") {
-    return "not_attending";
+    return "skipping";
   }
 
   return attendanceStatus;
@@ -83,7 +83,7 @@ export const getMemberMeetingDisplayTone = (
   const attendanceState = getMemberMeetingAttendanceState(meeting);
   const occursAt = new Date(meeting.occursAt);
   if (occursAt.getTime() > now.getTime()) {
-    return attendanceState === "not_attending" ? "red" : "blue";
+    return attendanceState === "skipping" ? "red" : "blue";
   }
 
   return "gray";

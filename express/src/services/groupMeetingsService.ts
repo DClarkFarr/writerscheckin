@@ -48,7 +48,7 @@ import { mapToInviteLinkGroupContext } from "./groupSummaryMapper";
 export type UserMeetingCheckinState =
   | "attending"
   | "reading"
-  | "not_attending"
+  | "skipping"
   | "none";
 export type MeetingDisplayTone = "blue" | "red" | "gray";
 
@@ -66,7 +66,7 @@ export interface MeetingParticipantRow {
     | "declined"
     | "cancelled"
     | "removed";
-  attendanceState: "attending" | "reading" | "not_attending" | "none";
+  attendanceState: "attending" | "reading" | "skipping" | "none";
   isCurrentUser: boolean;
 }
 
@@ -673,7 +673,7 @@ const buildMeetingParticipantRows = async (
     const memberIdHex = member._id.toHexString();
     const status = attendeeStatuses.get(memberIdHex) ?? "none";
 
-    const attendanceState: "attending" | "reading" | "not_attending" | "none" =
+    const attendanceState: "attending" | "reading" | "skipping" | "none" =
       status === "invited" ? "none" : (status as any);
 
     const isCurrentUser = member.userId

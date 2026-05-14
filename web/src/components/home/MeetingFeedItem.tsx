@@ -398,7 +398,7 @@ export const MeetingFeedItem = ({
                     <span>you are reading</span>
                   </Badge>
                 )}
-                {userCheckinState === "not_attending" && (
+                {userCheckinState === "skipping" && (
                   <Badge
                     variant="outline"
                     className="text-sm bg-red-100 border-red-300 text-red-700"

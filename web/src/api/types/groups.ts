@@ -186,7 +186,7 @@ export type MeetingPublicationStatus = "draft" | "published";
 export type UserMeetingCheckinState =
   | "attending"
   | "reading"
-  | "not_attending"
+  | "skipping"
   | "none";
 export type MeetingDisplayTone = "blue" | "red" | "gray";
 
@@ -274,7 +274,7 @@ export interface UpdateMeetingCheckinInput {
 
 export interface UpdateMeetingCheckinResponse {
   meetingId: string;
-  userCheckinState: "attending" | "reading" | "not_attending";
+  userCheckinState: "attending" | "reading" | "skipping";
   attendingCount: number;
   readingCount: number;
   appliedAt: string;

@@ -70,9 +70,7 @@ export const MeetingCheckinDrawer = ({
           </Button>
 
           <Button
-            variant={
-              attendanceState === "not_attending" ? "destructive" : "outline"
-            }
+            variant={attendanceState === "skipping" ? "destructive" : "outline"}
             className="w-full justify-start"
             onClick={() => onSubmit("not_attending")}
             disabled={isSubmitting || !canCheckin}

@@ -12,7 +12,10 @@ import {
 import { useMeetingViewQuery } from "@/queries/useMeetingViewQuery";
 import { useMeetingCheckinMutation } from "@/queries/useMeetingCheckinMutation";
 import { Button } from "@/components/ui/button";
-import { formatStaticDateTime } from "@/lib/dateFormat";
+import {
+  formatStaticDateTime,
+  formatStaticFullDateTime,
+} from "@/lib/dateFormat";
 import type { UserMeetingCheckinState } from "@/api/types/groups";
 import { useMemo, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -39,7 +42,7 @@ function getParticipantColors(checkinState: UserMeetingCheckinState) {
         borderColor: "border-blue-500",
         bgColor: "bg-blue-50",
       };
-    case "not_attending":
+    case "skipping":
       return {
         borderColor: "border-red-500",
         bgColor: "bg-red-50",
@@ -55,7 +58,7 @@ function getParticipantColors(checkinState: UserMeetingCheckinState) {
 const sortOrder: Record<UserMeetingCheckinState, number> = {
   reading: 0,
   attending: 1,
-  not_attending: 2,
+  skipping: 2,
   none: 3,
 };
 
@@ -235,7 +238,7 @@ export function GroupMeetingViewPage({
                 {meeting.name}
               </h1>
               <p className="text-sm text-muted-foreground">
-                {formatStaticDateTime(new Date(meeting.occursAt))}
+                {formatStaticFullDateTime(new Date(meeting.occursAt))}
               </p>
             </div>
             {meeting.canEdit && (
@@ -260,13 +263,9 @@ export function GroupMeetingViewPage({
             </div>
             <div>
               <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Time
+                Duration
               </p>
-              <p className="text-sm">
-                {meeting.startTime.hours.toString().padStart(2, "0")}:
-                {meeting.startTime.minutes.toString().padStart(2, "0")} (
-                {meeting.durationMinutes} minutes)
-              </p>
+              <p className="text-sm">{meeting.durationMinutes} minutes</p>
             </div>
             {meeting.description && (
               <div>
@@ -297,22 +296,10 @@ export function GroupMeetingViewPage({
           <div className="grid gap-2 md:grid-cols-3">
             <Button
               type="button"
-              variant={
-                meeting.userCheckinState === "attending" ? "default" : "outline"
-              }
-              disabled={!meeting.canCheckin || checkinMutation.isPending}
-              onClick={() =>
-                checkinMutation.mutate({
-                  state: "attending",
-                })
-              }
-            >
-              Attending
-            </Button>
-            <Button
-              type="button"
-              variant={
-                meeting.userCheckinState === "reading" ? "default" : "outline"
+              className={
+                meeting.userCheckinState === "reading"
+                  ? "bg-blue-700 text-white hover:bg-blue-700"
+                  : "bg-blue-700/10 hover:bg-blue-700/20 text-gray-800 hover:text-gray-900"
               }
               disabled={!meeting.canCheckin || checkinMutation.isPending}
               onClick={() =>
@@ -325,10 +312,27 @@ export function GroupMeetingViewPage({
             </Button>
             <Button
               type="button"
-              variant={
-                meeting.userCheckinState === "not_attending"
-                  ? "destructive"
-                  : "outline"
+              className={
+                meeting.userCheckinState === "attending"
+                  ? "bg-emerald-700 text-white hover:bg-emerald-700"
+                  : "bg-emerald-700/10 hover:bg-emerald-700/20 text-gray-800 hover:text-gray-900"
+              }
+              disabled={!meeting.canCheckin || checkinMutation.isPending}
+              onClick={() =>
+                checkinMutation.mutate({
+                  state: "attending",
+                })
+              }
+            >
+              Attending
+            </Button>
+
+            <Button
+              type="button"
+              className={
+                meeting.userCheckinState === "skipping"
+                  ? "bg-red-700 text-white hover:bg-red-700"
+                  : "bg-red-700/10 hover:bg-red-700/20 text-gray-800 hover:text-gray-900"
               }
               disabled={!meeting.canCheckin || checkinMutation.isPending}
               onClick={() =>
