@@ -36,6 +36,14 @@ import { sendEmail } from "./emailService";
 import { emailLinks } from "./emailTemplates/baseEmailTemplate";
 import { GROUP_MESSAGE_TEMPLATE_DEFAULTS } from "./emailTemplates/groupMessageTemplateDefaults";
 import { buildGroupMeetingPublishEmail } from "./emailTemplates/groupMeetingPublish";
+import {
+  InviteLinkAccessState,
+  InviteLinkAction,
+  INVITE_LINK_ACTIONS_BY_STATE,
+  INVITE_LINK_MESSAGE_KEY_BY_STATE,
+  resolveInviteLinkAccessState,
+} from "./groupInvitesService";
+import { mapToInviteLinkGroupContext } from "./groupSummaryMapper";
 
 export type UserMeetingCheckinState =
   | "attending"
@@ -66,6 +74,7 @@ export interface MeetingDetailResponse {
   meetingId: string;
   groupId: string;
   groupName: string;
+  groupDescription?: string;
   name: string;
   occursAt: string;
   address: string;
@@ -81,6 +90,24 @@ export interface MeetingDetailResponse {
   attendingCount: number;
   readingCount: number;
   participantRows: MeetingParticipantRow[];
+  inviteLinkContext?: NonActiveInviteLinkContextResponse | null;
+}
+
+export interface NonActiveInviteLinkContextResponse {
+  groupId: string;
+  groupName: string;
+  groupDescription: string;
+  meetingId: string;
+  meetingTitle: string;
+  accessState: InviteLinkAccessState;
+  messageKey: string;
+  availableActions: InviteLinkAction[];
+}
+
+export interface BuildNonActiveInviteLinkContextInput {
+  meeting: GroupMeetingDocument;
+  group: GroupDocument;
+  accessState: InviteLinkAccessState;
 }
 
 export interface EditableMeetingResponse {
@@ -683,7 +710,7 @@ export const buildMeetingDetailResponse = async (
   group: GroupDocument,
   currentUserId: string,
 ): Promise<MeetingDetailResponse> => {
-  // Authorization: user must be accepted member
+  // Resolve membership state once to support status-aware invite-link UX.
   const members = await listGroupMembersByGroupId(
     meeting.groupId.toHexString(),
     {
@@ -691,19 +718,58 @@ export const buildMeetingDetailResponse = async (
     },
   );
   const userObjectId = ensureObjectId(currentUserId, "userId");
-  const userMembership = members.find(
+  const userMembership = members.find((m) => m.userId?.equals(userObjectId));
+  const accessState = resolveInviteLinkAccessState({
+    membershipStatus: userMembership?.status ?? null,
+    membershipExists: Boolean(userMembership),
+  });
+
+  if (accessState !== "active_member") {
+    const inviteLinkContext = buildNonActiveInviteLinkContext({
+      meeting,
+      group,
+      accessState,
+    });
+
+    return {
+      meetingId: meeting._id.toHexString(),
+      groupId: meeting.groupId.toHexString(),
+      groupName: group.name,
+      groupDescription: group.description,
+      name: meeting.name,
+      occursAt: meeting.occursAt.toISOString(),
+      address: meeting.address,
+      description: meeting.description,
+      startTime: meeting.startTime,
+      durationMinutes: meeting.durationMinutes,
+      status: meeting.cancelledAt ? "cancelled" : meeting.status,
+      ...(meeting.cancelledAt
+        ? { cancelledAt: meeting.cancelledAt.toISOString() }
+        : {}),
+      userCheckinState: "none",
+      canCheckin: false,
+      canEdit: false,
+      canCancel: false,
+      attendingCount: 0,
+      readingCount: 0,
+      participantRows: [],
+      inviteLinkContext,
+    };
+  }
+
+  const acceptedMembership = members.find(
     (m) => m.userId?.equals(userObjectId) && m.status === "accepted",
   );
 
-  if (!userMembership) {
+  if (!acceptedMembership) {
     throw new AuthError("Forbidden", 403);
   }
 
   // If draft, only admins and owners can view
   if (
     meeting.status === "draft" &&
-    userMembership.role !== "admin" &&
-    userMembership.role !== "owner"
+    acceptedMembership.role !== "admin" &&
+    acceptedMembership.role !== "owner"
   ) {
     throw new AuthError("Forbidden", 403);
   }
@@ -711,8 +777,8 @@ export const buildMeetingDetailResponse = async (
   // If canceled, only admins and owners can view
   if (
     !!meeting.cancelledAt &&
-    userMembership.role !== "admin" &&
-    userMembership.role !== "owner"
+    acceptedMembership.role !== "admin" &&
+    acceptedMembership.role !== "owner"
   ) {
     throw new AuthError("Forbidden", 403);
   }
@@ -731,7 +797,7 @@ export const buildMeetingDetailResponse = async (
   for (const [memberId, status] of attendeeStatuses) {
     if (status === "attending") attendingCount++;
     if (status === "reading") readingCount++;
-    if (memberId === userMembership._id.toHexString()) {
+    if (memberId === acceptedMembership._id.toHexString()) {
       userCheckinState =
         status === "invited" ? "none" : (status as UserMeetingCheckinState);
     }
@@ -750,11 +816,13 @@ export const buildMeetingDetailResponse = async (
   const isUpcoming = meeting.occursAt > now;
   const canCheckin = isUpcoming && meeting.status === "published";
   const canEdit =
-    (userMembership.role === "owner" || userMembership.role === "admin") &&
+    (acceptedMembership.role === "owner" ||
+      acceptedMembership.role === "admin") &&
     !!meeting.cancelledAt === false;
   const canCancel =
     isUpcoming &&
-    (userMembership.role === "owner" || userMembership.role === "admin") &&
+    (acceptedMembership.role === "owner" ||
+      acceptedMembership.role === "admin") &&
     meeting.status === "published";
 
   return {
@@ -778,6 +846,30 @@ export const buildMeetingDetailResponse = async (
     attendingCount,
     readingCount,
     participantRows,
+    inviteLinkContext: null,
+  };
+};
+
+export const buildNonActiveInviteLinkContext = ({
+  meeting,
+  group,
+  accessState,
+}: BuildNonActiveInviteLinkContextInput): NonActiveInviteLinkContextResponse => {
+  const groupContext = mapToInviteLinkGroupContext({
+    groupId: group._id.toHexString(),
+    name: group.name,
+    description: group.description,
+  });
+
+  return {
+    groupId: groupContext.groupId,
+    groupName: groupContext.groupName,
+    groupDescription: groupContext.groupDescription,
+    meetingId: meeting._id.toHexString(),
+    meetingTitle: meeting.name,
+    accessState,
+    messageKey: INVITE_LINK_MESSAGE_KEY_BY_STATE[accessState],
+    availableActions: INVITE_LINK_ACTIONS_BY_STATE[accessState],
   };
 };
 

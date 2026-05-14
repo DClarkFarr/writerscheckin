@@ -1,3 +1,5 @@
+import type { InviteLinkAccessContext } from "./groupInvites";
+
 export interface GroupSummaryCounts {
   activeMembers: number;
   invitedMembers: number;
@@ -293,6 +295,7 @@ export interface MeetingDetailResponse {
   meetingId: string;
   groupId: string;
   groupName: string;
+  groupDescription?: string;
   name: string;
   occursAt: string;
   address: string;
@@ -308,6 +311,7 @@ export interface MeetingDetailResponse {
   attendingCount: number;
   readingCount: number;
   participantRows: MeetingParticipantRow[];
+  inviteLinkContext?: InviteLinkAccessContext | null;
 }
 
 export interface EditableMeetingResponse {

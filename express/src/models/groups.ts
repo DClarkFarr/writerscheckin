@@ -68,6 +68,25 @@ export interface UpdateGroupEmailTemplatesInput {
   attendanceEmailMessage?: string;
 }
 
+interface GroupMemberRecipientProjection {
+  _id: ObjectId;
+  userId?: ObjectId;
+  email?: string;
+}
+
+interface UserRecipientProjection {
+  _id: ObjectId;
+  email: string;
+}
+
+export interface GroupResponsibleAdminRecipient {
+  groupId: string;
+  groupName: string;
+  groupDescription: string;
+  recipientUserId: string | null;
+  recipientEmail: string | null;
+}
+
 export const getGroupsCollection = (): Collection<GroupDocument> =>
   getCollection<GroupDocument>(COLLECTIONS.groups);
 
@@ -268,6 +287,47 @@ export const updateGroupEmailTemplatesById = async (
   }
 
   return updateGroupById(id, patch);
+};
+
+export const getGroupResponsibleAdminRecipientById = async (
+  id: string | ObjectId,
+): Promise<GroupResponsibleAdminRecipient | null> => {
+  const group = await getGroupById(id);
+  if (!group) {
+    return null;
+  }
+
+  const groupMembersCollection = getCollection<GroupMemberRecipientProjection>(
+    COLLECTIONS.groupMembers,
+  );
+  const usersCollection = getCollection<UserRecipientProjection>(
+    COLLECTIONS.users,
+  );
+
+  const ownerMembership = await groupMembersCollection.findOne({
+    groupId: group._id,
+    role: "owner",
+    ...activeRecordFilter(),
+  });
+
+  let recipientEmail: string | null = ownerMembership?.email ?? null;
+  if (ownerMembership?.userId) {
+    const ownerUser = await usersCollection.findOne({
+      _id: ownerMembership.userId,
+    });
+
+    if (ownerUser?.email) {
+      recipientEmail = ownerUser.email;
+    }
+  }
+
+  return {
+    groupId: group._id.toHexString(),
+    groupName: group.name,
+    groupDescription: group.description,
+    recipientUserId: ownerMembership?.userId?.toHexString() ?? null,
+    recipientEmail,
+  };
 };
 
 export const softDeleteGroupById = async (

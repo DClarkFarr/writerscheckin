@@ -11,6 +11,82 @@ import { getUserById, normalizeEmail, UserDocument } from "../models/users";
 import { AuthError } from "./authService";
 import { env } from "../utils/env";
 
+export const INVITE_LINK_ACCESS_STATES = [
+  "active_member",
+  "pending_invite",
+  "not_invited",
+  "declined_or_left",
+  "removed",
+  "unknown_or_expired",
+] as const;
+
+export type InviteLinkAccessState = (typeof INVITE_LINK_ACCESS_STATES)[number];
+
+export const INVITE_LINK_ACTIONS = [
+  "accept_invite",
+  "decline_invite",
+  "request_to_join",
+  "none",
+] as const;
+
+export type InviteLinkAction = (typeof INVITE_LINK_ACTIONS)[number];
+
+export const INVITE_LINK_MESSAGE_KEY_BY_STATE: Record<
+  InviteLinkAccessState,
+  string
+> = {
+  active_member: "inviteLink.activeMember",
+  pending_invite: "inviteLink.pendingInvite",
+  not_invited: "inviteLink.notInvited",
+  declined_or_left: "inviteLink.declinedOrLeft",
+  removed: "inviteLink.removed",
+  unknown_or_expired: "inviteLink.unknownOrExpired",
+};
+
+export const INVITE_LINK_ACTIONS_BY_STATE: Record<
+  InviteLinkAccessState,
+  InviteLinkAction[]
+> = {
+  active_member: ["none"],
+  pending_invite: ["accept_invite", "decline_invite"],
+  not_invited: ["none"],
+  declined_or_left: ["request_to_join"],
+  removed: ["request_to_join"],
+  unknown_or_expired: ["none"],
+};
+
+export interface ResolveInviteLinkAccessStateInput {
+  membershipStatus?: string | null;
+  membershipExists: boolean;
+}
+
+export const resolveInviteLinkAccessState = ({
+  membershipStatus,
+  membershipExists,
+}: ResolveInviteLinkAccessStateInput): InviteLinkAccessState => {
+  if (!membershipExists) {
+    return "not_invited";
+  }
+
+  if (membershipStatus === "accepted") {
+    return "active_member";
+  }
+
+  if (membershipStatus === "invited") {
+    return "pending_invite";
+  }
+
+  if (membershipStatus === "declined" || membershipStatus === "cancelled") {
+    return "declined_or_left";
+  }
+
+  if (membershipStatus === "removed") {
+    return "removed";
+  }
+
+  return "unknown_or_expired";
+};
+
 export type JoinGroupInviteStatus =
   | "pending"
   | "accepted"

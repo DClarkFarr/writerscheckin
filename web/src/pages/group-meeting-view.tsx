@@ -16,6 +16,7 @@ import { formatStaticDateTime } from "@/lib/dateFormat";
 import type { UserMeetingCheckinState } from "@/api/types/groups";
 import { useMemo } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { InviteLinkStatusPanel } from "@/components/invite/InviteLinkStatusPanel";
 
 export interface GroupMeetingViewPageProps {
   groupId: string;
@@ -63,6 +64,7 @@ export function GroupMeetingViewPage({
     data: meeting,
     isLoading,
     error,
+    inviteLinkContext,
   } = useMeetingViewQuery({
     groupId,
     meetingId,
@@ -114,6 +116,25 @@ export function GroupMeetingViewPage({
           <p className="text-sm text-destructive">
             {error instanceof Error ? error.message : "Failed to load meeting."}
           </p>
+        </div>
+      </PageCard>
+    );
+  }
+
+  if (inviteLinkContext) {
+    return (
+      <PageCard grow header={header}>
+        <div className="flex flex-col gap-4">
+          <div className="space-y-1">
+            <h1 className="text-2xl font-semibold text-foreground">
+              {meeting.name}
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {formatStaticDateTime(new Date(meeting.occursAt))}
+            </p>
+          </div>
+
+          <InviteLinkStatusPanel context={inviteLinkContext} />
         </div>
       </PageCard>
     );
@@ -240,7 +261,7 @@ export function GroupMeetingViewPage({
               Check-in is unavailable for this meeting right now.
             </p>
           )}
-          {checkinMutation.error && (
+          {Boolean(checkinMutation.error) && (
             <Alert variant="destructive">
               <AlertDescription>
                 Unable to update your check-in status right now.

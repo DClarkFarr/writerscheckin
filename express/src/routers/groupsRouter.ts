@@ -473,6 +473,8 @@ const applyGroupRoutes = () => {
         throw new Error("Group not found.");
       }
 
+      // Keep 404 semantics for missing records while allowing the service
+      // layer to return status-aware invite-link payloads for non-members.
       const data = await buildMeetingDetailResponse(meeting, group, userId);
       res.status(200).json(data);
     }),

@@ -42,6 +42,18 @@ export interface GroupSummaryMapperInput {
   nextUpcomingMeeting?: { meetingId: string; startsAt: string } | null;
 }
 
+export interface InviteLinkGroupContextInput {
+  groupId: string;
+  name: string;
+  description: string;
+}
+
+export interface InviteLinkGroupContext {
+  groupId: string;
+  groupName: string;
+  groupDescription: string;
+}
+
 export const buildActionAvailability = (
   isActive: boolean,
   hasUpcomingMeeting: boolean,
@@ -78,5 +90,15 @@ export const mapToGroupSummaryItem = (
       input.isActive,
       Boolean(nextUpcomingMeeting),
     ),
+  };
+};
+
+export const mapToInviteLinkGroupContext = (
+  input: InviteLinkGroupContextInput,
+): InviteLinkGroupContext => {
+  return {
+    groupId: input.groupId,
+    groupName: input.name,
+    groupDescription: input.description,
   };
 };

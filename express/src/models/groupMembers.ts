@@ -310,12 +310,29 @@ export const getMembershipByGroup = async (
   userId: string | ObjectId,
   groupId: string | ObjectId,
 ): Promise<GroupMemberDocument | null> => {
+  return getMembershipInviteByGroupAndUserId({
+    userId,
+    groupId,
+  });
+};
+
+export interface GetMembershipInviteByGroupAndUserIdInput {
+  userId: string | ObjectId;
+  groupId: string | ObjectId;
+  includeDeleted?: boolean;
+}
+
+export const getMembershipInviteByGroupAndUserId = async ({
+  userId,
+  groupId,
+  includeDeleted,
+}: GetMembershipInviteByGroupAndUserIdInput): Promise<GroupMemberDocument | null> => {
   const collection = getGroupMembersCollection();
 
   return collection.findOne({
     userId: toObjectId(userId, "userId"),
     groupId: toObjectId(groupId, "groupId"),
-    ...activeRecordFilter(),
+    ...activeRecordFilter(includeDeleted),
   });
 };
 

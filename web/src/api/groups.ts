@@ -1,6 +1,12 @@
 import { apiClient } from "../lib/apiClient";
 import { toApiError } from "./types";
 import type {
+  InviteLinkAction,
+  InviteLinkAccessContext,
+  InviteLinkAccessState,
+  InviteLinkMessageKey,
+} from "./types/groupInvites";
+import type {
   CancelMeetingResponse,
   CreateUpcomingMeetingResponse,
   EditableMeetingResponse,
@@ -217,6 +223,25 @@ const normalizeMeetingParticipantRow = (
   isCurrentUser: row.isCurrentUser ?? false,
 });
 
+const normalizeInviteLinkAccessContext = (
+  context: InviteLinkAccessContext,
+): InviteLinkAccessContext => {
+  const availableActions = Array.isArray(context.availableActions)
+    ? context.availableActions
+    : [];
+
+  return {
+    groupId: context.groupId,
+    groupName: context.groupName,
+    groupDescription: context.groupDescription ?? "",
+    meetingId: context.meetingId,
+    meetingTitle: context.meetingTitle,
+    accessState: context.accessState as InviteLinkAccessState,
+    messageKey: context.messageKey as InviteLinkMessageKey,
+    availableActions: availableActions as InviteLinkAction[],
+  };
+};
+
 const normalizeMeetingDetailResponse = (
   data: MeetingDetailResponse,
 ): MeetingDetailResponse => ({
@@ -228,9 +253,13 @@ const normalizeMeetingDetailResponse = (
   userCheckinState: data.userCheckinState ?? "none",
   canCheckin: data.canCheckin ?? false,
   canEdit: data.canEdit ?? false,
+  groupDescription: data.groupDescription ?? "",
   attendingCount: data.attendingCount ?? 0,
   readingCount: data.readingCount ?? 0,
   canCancel: data.canCancel ?? false,
+  inviteLinkContext: data.inviteLinkContext
+    ? normalizeInviteLinkAccessContext(data.inviteLinkContext)
+    : null,
   participantRows: Array.isArray(data.participantRows)
     ? data.participantRows.map((row) => normalizeMeetingParticipantRow(row))
     : [],
