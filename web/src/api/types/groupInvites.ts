@@ -65,3 +65,17 @@ export interface RespondToJoinGroupInviteResponse {
   actedAt: string;
   redirectTo: string;
 }
+
+export type MeetingInviteDecision = "accept" | "decline";
+
+export interface RespondToMeetingInviteDecisionInput {
+  groupId: string;
+  meetingId: string;
+  decision: MeetingInviteDecision;
+}
+
+export interface RespondToMeetingInviteDecisionResponse {
+  updatedState: InviteLinkAccessState;
+  messageKey: InviteLinkMessageKey;
+  canProceedToMeeting: boolean;
+}

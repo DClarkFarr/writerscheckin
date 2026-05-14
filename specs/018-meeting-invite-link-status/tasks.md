@@ -63,14 +63,14 @@
 
 ### Implementation for User Story 2
 
-- [ ] T018 [US2] Implement pending-invite decision service (accept/decline) with precondition and idempotency handling in express/src/services/groupInvitesService.ts
-- [ ] T019 [US2] Add invite decision endpoint wiring for meeting-link flow in express/src/routers/groupInvitesRouter.ts
-- [ ] T020 [US2] Add invite decision request/response API method in web/src/api/groupInvites.ts
-- [ ] T021 [US2] Extend invite decision payload/result types for meeting-link usage in web/src/api/types/groupInvites.ts
-- [ ] T022 [US2] Add or adapt pending-invite decision mutation hook for meeting view in web/src/queries/useRespondToJoinInviteMutation.ts
-- [ ] T023 [US2] Wire Accept/Decline action handlers and loading/error states into InviteLinkStatusPanel in web/src/components/invite/InviteLinkStatusPanel.tsx
-- [ ] T024 [US2] Refresh meeting view query and render transitioned state after accept/decline in web/src/pages/group-meeting-view.tsx
-- [ ] T025 [US2] Add confirmation and failure messaging for accept/decline outcomes in web/src/pages/group-meeting-view.tsx
+- [x] T018 [US2] Implement pending-invite decision service (accept/decline) with precondition and idempotency handling in express/src/services/groupInvitesService.ts
+- [x] T019 [US2] Add invite decision endpoint wiring for meeting-link flow in express/src/routers/groupInvitesRouter.ts
+- [x] T020 [US2] Add invite decision request/response API method in web/src/api/groupInvites.ts
+- [x] T021 [US2] Extend invite decision payload/result types for meeting-link usage in web/src/api/types/groupInvites.ts
+- [x] T022 [US2] Add or adapt pending-invite decision mutation hook for meeting view in web/src/queries/useRespondToJoinInviteMutation.ts
+- [x] T023 [US2] Wire Accept/Decline action handlers and loading/error states into InviteLinkStatusPanel in web/src/components/invite/InviteLinkStatusPanel.tsx
+- [x] T024 [US2] Refresh meeting view query and render transitioned state after accept/decline in web/src/pages/group-meeting-view.tsx
+- [x] T025 [US2] Add confirmation and failure messaging for accept/decline outcomes in web/src/pages/group-meeting-view.tsx
 
 **Checkpoint**: User Stories 1 and 2 are independently functional.
 

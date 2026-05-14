@@ -2,6 +2,7 @@ import express, { Request } from "express";
 import { handleAsync } from "../utils/asyncHandler";
 import {
   getJoinGroupInviteDetails,
+  respondToMeetingInviteDecision,
   respondToJoinGroupInvite,
 } from "../services/groupInvitesService";
 import { type AuthSession } from "../services/authService";
@@ -26,6 +27,34 @@ groupInvitesRouter.get(
     const inviteToken = getRouteParam(req.query.inviteToken, "inviteToken");
 
     const data = await getJoinGroupInviteDetails(membershipId, inviteToken);
+    res.status(200).json(data);
+  }),
+);
+
+groupInvitesRouter.post(
+  "/meeting-links/respond",
+  handleAsync(async (req, res) => {
+    const groupId = getRouteParam(req.body?.groupId, "groupId");
+    const meetingId = getRouteParam(req.body?.meetingId, "meetingId");
+    const decision = getRouteParam(req.body?.decision, "decision");
+
+    if (decision !== "accept" && decision !== "decline") {
+      throw new Error("Invalid invite decision.");
+    }
+
+    const sessionData = getSession(req);
+    if (!sessionData.userId) {
+      res.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const data = await respondToMeetingInviteDecision({
+      groupId,
+      meetingId,
+      userId: sessionData.userId,
+      decision,
+    });
+
     res.status(200).json(data);
   }),
 );

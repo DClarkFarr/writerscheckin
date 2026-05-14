@@ -26,9 +26,10 @@ export function InviteLinkStatusPanel({
         <CardTitle className="text-xl">{context.groupName}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-sm text-muted-foreground">
-          {context.groupDescription}
-        </p>
+        <p
+          className="text-sm"
+          dangerouslySetInnerHTML={{ __html: context.groupDescription }}
+        />
         <div className="space-y-1">
           <p className="text-sm font-medium">{config.title}</p>
           <p className="text-sm text-muted-foreground">{config.description}</p>

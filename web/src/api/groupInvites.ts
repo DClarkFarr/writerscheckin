@@ -2,6 +2,8 @@ import { apiClient } from "@/lib/apiClient";
 import { toApiError } from "./types";
 import type {
   JoinGroupInviteResponse,
+  RespondToMeetingInviteDecisionInput,
+  RespondToMeetingInviteDecisionResponse,
   RespondToJoinGroupInviteInput,
   RespondToJoinGroupInviteResponse,
 } from "./types/groupInvites";
@@ -42,6 +44,26 @@ export async function respondToJoinGroupInvite(
       status: data.status,
       actedAt: data.actedAt,
       redirectTo: data.redirectTo ?? "",
+    };
+  } catch (err) {
+    throw await toApiError(err);
+  }
+}
+
+export async function respondToMeetingInviteDecision(
+  input: RespondToMeetingInviteDecisionInput,
+): Promise<RespondToMeetingInviteDecisionResponse> {
+  try {
+    const { data } =
+      await apiClient.post<RespondToMeetingInviteDecisionResponse>(
+        "/group-invites/meeting-links/respond",
+        input,
+      );
+
+    return {
+      updatedState: data.updatedState,
+      messageKey: data.messageKey,
+      canProceedToMeeting: data.canProceedToMeeting,
     };
   } catch (err) {
     throw await toApiError(err);

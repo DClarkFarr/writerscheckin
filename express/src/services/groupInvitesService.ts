@@ -1,11 +1,15 @@
 import crypto from "crypto";
 import {
   getGroupMemberById,
+  getMembershipInviteByGroupAndUserId,
   getGroupOwnerByGroupId,
   updateGroupMemberById,
   UpdateGroupMemberInput,
 } from "../models/groupMembers";
-import { getLatestUpcomingMeetingByGroupId } from "../models/groupMeetings";
+import {
+  getGroupMeetingById,
+  getLatestUpcomingMeetingByGroupId,
+} from "../models/groupMeetings";
 import { getGroupById } from "../models/groups";
 import { getUserById, normalizeEmail, UserDocument } from "../models/users";
 import { AuthError } from "./authService";
@@ -122,6 +126,19 @@ export interface RespondToJoinGroupInviteResult {
   status: "accepted" | "declined";
   actedAt: string;
   redirectTo: string;
+}
+
+export interface RespondToMeetingInviteDecisionInput {
+  groupId: string;
+  meetingId: string;
+  userId: string;
+  decision: "accept" | "decline";
+}
+
+export interface RespondToMeetingInviteDecisionResult {
+  updatedState: InviteLinkAccessState;
+  messageKey: string;
+  canProceedToMeeting: boolean;
 }
 
 interface InviteTokenPayload {
@@ -389,5 +406,72 @@ export const respondToJoinGroupInvite = async (
     status: nextStatus,
     actedAt: (updated.updatedAt ?? actedAt).toISOString(),
     redirectTo: nextStatus === "accepted" ? "/" : "",
+  };
+};
+
+export const respondToMeetingInviteDecision = async (
+  input: RespondToMeetingInviteDecisionInput,
+): Promise<RespondToMeetingInviteDecisionResult> => {
+  const meeting = await getGroupMeetingById(input.meetingId);
+  if (!meeting || meeting.groupId.toHexString() !== input.groupId) {
+    throw new Error("Meeting not found.");
+  }
+
+  const membership = await getMembershipInviteByGroupAndUserId({
+    userId: input.userId,
+    groupId: input.groupId,
+  });
+
+  const currentState = resolveInviteLinkAccessState({
+    membershipStatus: membership?.status ?? null,
+    membershipExists: Boolean(membership),
+  });
+
+  if (currentState !== "pending_invite") {
+    // Idempotent behavior for duplicate submissions.
+    if (currentState === "active_member" && input.decision === "accept") {
+      return {
+        updatedState: currentState,
+        messageKey: INVITE_LINK_MESSAGE_KEY_BY_STATE[currentState],
+        canProceedToMeeting: true,
+      };
+    }
+
+    if (currentState === "declined_or_left" && input.decision === "decline") {
+      return {
+        updatedState: currentState,
+        messageKey: INVITE_LINK_MESSAGE_KEY_BY_STATE[currentState],
+        canProceedToMeeting: false,
+      };
+    }
+
+    throw new Error("Invite is no longer pending.");
+  }
+
+  if (!membership) {
+    throw new Error("Invite is no longer pending.");
+  }
+
+  const nextStatus = input.decision === "accept" ? "accepted" : "declined";
+  const actedAt = new Date();
+  const updatePatch: UpdateGroupMemberInput = {
+    status: nextStatus,
+    ...(nextStatus === "accepted" ? { acceptedAt: actedAt } : {}),
+  };
+
+  const updated = await updateGroupMemberById(membership._id, updatePatch);
+  if (!updated) {
+    throw new Error("Unable to update invite status.");
+  }
+
+  const updatedState = resolveInviteLinkAccessState({
+    membershipStatus: updated.status,
+    membershipExists: true,
+  });
+
+  return {
+    updatedState,
+    messageKey: INVITE_LINK_MESSAGE_KEY_BY_STATE[updatedState],
+    canProceedToMeeting: updatedState === "active_member",
   };
 };

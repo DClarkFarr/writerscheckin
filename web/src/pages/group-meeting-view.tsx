@@ -14,9 +14,10 @@ import { useMeetingCheckinMutation } from "@/queries/useMeetingCheckinMutation";
 import { Button } from "@/components/ui/button";
 import { formatStaticDateTime } from "@/lib/dateFormat";
 import type { UserMeetingCheckinState } from "@/api/types/groups";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InviteLinkStatusPanel } from "@/components/invite/InviteLinkStatusPanel";
+import { useRespondToMeetingInviteDecisionMutation } from "@/queries/useRespondToJoinInviteMutation";
 
 export interface GroupMeetingViewPageProps {
   groupId: string;
@@ -59,7 +60,15 @@ export function GroupMeetingViewPage({
   groupId,
   meetingId,
 }: GroupMeetingViewPageProps) {
+  const [inviteDecisionMessage, setInviteDecisionMessage] = useState<
+    string | null
+  >(null);
+
   const checkinMutation = useMeetingCheckinMutation({ meetingId, groupId });
+  const inviteDecisionMutation = useRespondToMeetingInviteDecisionMutation({
+    groupId,
+    meetingId,
+  });
   const {
     data: meeting,
     isLoading,
@@ -122,6 +131,30 @@ export function GroupMeetingViewPage({
   }
 
   if (inviteLinkContext) {
+    const handleAcceptInvite = async () => {
+      try {
+        const result = await inviteDecisionMutation.mutateAsync("accept");
+        setInviteDecisionMessage(
+          result.canProceedToMeeting
+            ? "Invite accepted. You can now access this meeting."
+            : "Invite accepted.",
+        );
+      } catch {
+        setInviteDecisionMessage("Unable to accept invite right now.");
+      }
+    };
+
+    const handleDeclineInvite = async () => {
+      try {
+        await inviteDecisionMutation.mutateAsync("decline");
+        setInviteDecisionMessage(
+          "Invite declined. You can request to join again later.",
+        );
+      } catch {
+        setInviteDecisionMessage("Unable to decline invite right now.");
+      }
+    };
+
     return (
       <PageCard grow header={header}>
         <div className="flex flex-col gap-4">
@@ -134,7 +167,27 @@ export function GroupMeetingViewPage({
             </p>
           </div>
 
-          <InviteLinkStatusPanel context={inviteLinkContext} />
+          <InviteLinkStatusPanel
+            context={inviteLinkContext}
+            onAcceptInvite={handleAcceptInvite}
+            onDeclineInvite={handleDeclineInvite}
+            isActionPending={inviteDecisionMutation.isPending}
+          />
+
+          {inviteDecisionMessage && (
+            <Alert>
+              <AlertDescription>{inviteDecisionMessage}</AlertDescription>
+            </Alert>
+          )}
+
+          {inviteDecisionMutation.error && (
+            <Alert variant="destructive">
+              <AlertDescription>
+                {inviteDecisionMutation.error.message ||
+                  "Unable to update invite status right now."}
+              </AlertDescription>
+            </Alert>
+          )}
         </div>
       </PageCard>
     );
