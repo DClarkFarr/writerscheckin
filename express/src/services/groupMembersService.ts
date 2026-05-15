@@ -151,7 +151,11 @@ export const addGroupMember = async (
   if (nextStatus === "invited") {
     const membershipId = saved._id.toHexString();
     const inviteToken = createInviteToken(membershipId);
-    const inviteEmail = buildGroupInviteEmail(membershipId, inviteToken);
+    const inviteEmail = buildGroupInviteEmail(
+      membershipId,
+      inviteToken,
+      group.name,
+    );
 
     sendEmail({
       to: resolved.email,

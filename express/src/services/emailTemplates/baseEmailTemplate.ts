@@ -1,6 +1,7 @@
 export interface BaseEmailTemplateInput {
   previewText?: string;
   heading?: string;
+  headingHtml?: string;
   bodyHtml: string;
   footerHtml?: string;
   appTitle?: string;
@@ -12,7 +13,7 @@ const DEFAULT_LOGO_URL =
   "https://writerscheck.in/images/logo-white-transparent.png";
 
 // Fallback hex values are included for older email clients.
-const COLORS = {
+export const COLORS = {
   pageBackgroundHex: "#1f2f46",
   cardBackground: "#ffffff",
   cardBorder: "#dbe4f0",
@@ -74,12 +75,15 @@ export const buildBaseEmailTemplate = (
   const appTitle = input.appTitle?.trim() || DEFAULT_APP_TITLE;
   const logoUrl = input.logoUrl?.trim() || DEFAULT_LOGO_URL;
   const heading = input.heading?.trim();
+  const headingHtml = input.headingHtml?.trim();
   const previewText = input.previewText?.trim();
 
   const contentHtml = [
-    heading
-      ? `<h1 style=\"margin: 0 0 16px; color: ${COLORS.heading}; font-size: 24px; line-height: 1.35; font-weight: 700;\">${escapeHtml(heading)}</h1>`
-      : "",
+    headingHtml
+      ? `<h1 style=\"margin: 0 0 16px; color: ${COLORS.heading};\">${headingHtml}</h1>`
+      : heading
+        ? `<h1 style=\"margin: 0 0 16px; color: ${COLORS.heading}; font-size: 24px; line-height: 1.35; font-weight: 700;\">${escapeHtml(heading)}</h1>`
+        : "",
     input.bodyHtml,
     input.footerHtml ??
       `<p style=\"margin: 24px 0 0; color: ${COLORS.mutedText}; font-size: 13px; line-height: 1.6;\">This is an automated message from ${escapeHtml(appTitle)}.</p>`,

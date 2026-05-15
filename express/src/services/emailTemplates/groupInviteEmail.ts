@@ -3,6 +3,7 @@ import {
   emailLinks,
   emailTypography,
   escapeHtml,
+  COLORS,
 } from "./baseEmailTemplate";
 
 export interface GroupInviteEmailContent {
@@ -21,22 +22,26 @@ export interface GroupReinviteRequestEmailInput {
 export const buildGroupInviteEmail = (
   membershipId: string,
   inviteToken: string,
+  groupName: string,
 ): GroupInviteEmailContent => {
   const subject = "You've been invited to a writers group";
   const joinUrl = emailLinks.joinGroup(membershipId, inviteToken);
+  const safeGroupName = groupName.trim() || "a Writers Group";
 
   const text = [
-    "You've been invited to join a writers group on Writers CheckIn.",
+    `You've been invited to join ${safeGroupName} on Writers CheckIn.`,
     `Accept your invitation by clicking the following link: ${joinUrl}`,
     "Sign in or create an account to accept your invitation.",
   ].join("\n");
 
+  const headingHtml = `<span style="font-weight: 100; font-size: 24px; line-height: 1.35;">You've been invited to join a Writer's Group: <span style="font-weight: 700; color: ${COLORS.accentHex};">${escapeHtml(safeGroupName)}</span></span>`;
+
   const html = buildBaseEmailTemplate({
-    previewText: "You've been invited to join a writers group.",
-    heading: "Writers Group Invitation",
+    previewText: `Become a member: ${safeGroupName}.`,
+    headingHtml,
     bodyHtml: [
       emailTypography.paragraph(
-        "You've been invited to join a writers group on Writers CheckIn.",
+        `You're invited to join <b>${escapeHtml(safeGroupName)}</b> on Writers CheckIn.`,
       ),
       emailTypography.paragraph(
         `Accept your invitation by clicking the following link: `,
