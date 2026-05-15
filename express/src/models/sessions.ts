@@ -161,3 +161,17 @@ export const endSessionsByUserId = async (
 
   return result.deletedCount ?? 0;
 };
+
+export const endOtherSessionsByUserId = async (
+  userId: string | ObjectId,
+  currentToken: string,
+): Promise<number> => {
+  const collection = getSessionsCollection();
+  const resolvedUserId = ensureObjectId(userId, "userId");
+  const result = await collection.deleteMany({
+    userId: resolvedUserId,
+    token: { $ne: currentToken },
+  });
+
+  return result.deletedCount ?? 0;
+};

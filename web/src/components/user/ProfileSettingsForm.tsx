@@ -24,7 +24,7 @@ export function ProfileSettingsForm({
       ) : null}
 
       {successMessage ? (
-        <Alert>
+        <Alert variant="success">
           <AlertDescription>{successMessage}</AlertDescription>
         </Alert>
       ) : null}

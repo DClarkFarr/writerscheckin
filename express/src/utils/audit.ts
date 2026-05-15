@@ -4,6 +4,7 @@ export type AuditAction =
   | "logout"
   | "reset-request"
   | "reset-confirm"
+  | "password_changed"
   | "user_left_group";
 
 export interface AuditEvent {

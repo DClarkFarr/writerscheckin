@@ -2,6 +2,7 @@ import { ObjectId } from "mongodb";
 import {
   createSession as createSessionModel,
   CreateSessionInput,
+  endOtherSessionsByUserId as endOtherSessionsByUserIdModel,
   endSessionsByUserId as endSessionsByUserIdModel,
   SessionDocument,
 } from "../models/sessions";
@@ -31,3 +32,11 @@ export const endSessionsByUserId = async (
 export const invalidateSessionsForUser = async (
   userId: string | ObjectId,
 ): Promise<number> => endSessionsByUserId(userId);
+
+export const invalidateOtherSessionsForUser = async (
+  userId: string | ObjectId,
+  currentToken: string,
+): Promise<number> => {
+  await assertUserExists(userId);
+  return endOtherSessionsByUserIdModel(userId, currentToken);
+};

@@ -13,7 +13,8 @@ import {
 } from "./contracts/userProfile";
 import { parseProfileNameUpdates, updateUserById } from "./userService";
 import { hashPassword, verifyPassword } from "../utils/passwords";
-import { invalidateSessionsForUser } from "./sessionService";
+import { invalidateOtherSessionsForUser } from "./sessionService";
+import { recordAuditEvent } from "../utils/audit";
 
 const toAuthUser = (user: {
   _id: { toHexString(): string };
@@ -72,6 +73,8 @@ export const updateProfileForSessionUser = async (
 export const changePasswordForSessionUser = async (
   userId: string,
   input: ChangePasswordForSessionInput,
+  currentSessionToken: string,
+  ipAddress?: string,
 ): Promise<ChangePasswordForSessionResponse> => {
   assertEmailNotProvided(input.email);
 
@@ -117,10 +120,16 @@ export const changePasswordForSessionUser = async (
     throw new AuthError("Unauthorized", 401);
   }
 
-  await invalidateSessionsForUser(userId);
+  recordAuditEvent({
+    action: "password_changed",
+    userId: updatedUser._id.toHexString(),
+    email: updatedUser.email,
+    ...(ipAddress ? { ipAddress } : {}),
+  });
+
+  await invalidateOtherSessionsForUser(userId, currentSessionToken);
 
   return {
-    message:
-      "Password updated successfully. You will need to log in again with your new password.",
+    message: "Password updated successfully.",
   };
 };

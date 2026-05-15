@@ -81,15 +81,15 @@
 
 ### Implementation for User Story 3
 
-- [ ] T023 [US3] Implement session-authenticated PUT `/password` endpoint in express/src/routers/userRouter.ts
-- [ ] T024 [US3] Implement current-password verification and new-password rule validation in express/src/services/userProfileService.ts
-- [ ] T025 [US3] Add password hashing and passwordChangedAt update call in express/src/models/users.ts
-- [ ] T026 [US3] Add session invalidation on successful password change in express/src/services/userProfileService.ts
-- [ ] T027 [US3] Add password change audit logging in express/src/services/userProfileService.ts
-- [ ] T028 [US3] Add frontend `changeUserPassword` API call in web/src/api/users.ts
-- [ ] T029 [US3] Create password form hook with current/new/confirm validation in web/src/hooks/useChangePasswordForm.ts
-- [ ] T030 [US3] Create password form component and integrate success/error handling in web/src/components/user/ChangePasswordForm.tsx
-- [ ] T031 [US3] Integrate password form hook/component into settings page in web/src/pages/user-settings.tsx
+- [x] T023 [US3] Implement session-authenticated PUT `/password` endpoint in express/src/routers/userRouter.ts
+- [x] T024 [US3] Implement current-password verification and new-password rule validation in express/src/services/userProfileService.ts
+- [x] T025 [US3] Add password hashing and passwordChangedAt update call in express/src/models/users.ts
+- [x] T026 [US3] Add session invalidation on successful password change in express/src/services/userProfileService.ts
+- [x] T027 [US3] Add password change audit logging in express/src/services/userProfileService.ts
+- [x] T028 [US3] Add frontend `changeUserPassword` API call in web/src/api/users.ts
+- [x] T029 [US3] Create password form hook with current/new/confirm validation in web/src/hooks/useChangePasswordForm.ts
+- [x] T030 [US3] Create password form component and integrate success/error handling in web/src/components/user/ChangePasswordForm.tsx
+- [x] T031 [US3] Integrate password form hook/component into settings page in web/src/pages/user-settings.tsx
 
 **Checkpoint**: User Stories 1, 2, and 3 are independently functional.
 
@@ -103,10 +103,10 @@
 
 ### Implementation for User Story 4
 
-- [ ] T032 [US4] Render email as disabled non-submitting input in settings page in web/src/pages/user-settings.tsx
-- [ ] T033 [US4] Reject `email` field in profile update payload validation in express/src/services/userProfileService.ts
-- [ ] T034 [US4] Reject `email` field in password change payload validation in express/src/services/userProfileService.ts
-- [ ] T035 [US4] Ensure frontend API payload builders never include `email` for update endpoints in web/src/api/users.ts
+- [x] T032 [US4] Render email as disabled non-submitting input in settings page in web/src/pages/user-settings.tsx
+- [x] T033 [US4] Reject `email` field in profile update payload validation in express/src/services/userProfileService.ts
+- [x] T034 [US4] Reject `email` field in password change payload validation in express/src/services/userProfileService.ts
+- [x] T035 [US4] Ensure frontend API payload builders never include `email` for update endpoints in web/src/api/users.ts
 
 **Checkpoint**: All user stories are independently functional.
 
