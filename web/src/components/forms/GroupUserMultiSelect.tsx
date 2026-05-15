@@ -180,7 +180,14 @@ export function GroupUserMultiSelect({
             ) : (
               renderAvatar(option.label, option.avatarUrl)
             )}
-            <span className="text-sm text-foreground">{option.label}</span>
+            <div className="min-w-0">
+              <div className="text-sm text-foreground">{option.label}</div>
+              {!option.isInviteOption && option.email ? (
+                <div className="text-xs text-muted-foreground">
+                  {option.email}
+                </div>
+              ) : null}
+            </div>
           </div>
         )}
         styles={selectStyles}

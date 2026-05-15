@@ -48,12 +48,19 @@ export function GroupMemberListItem({
     <li className="flex items-center gap-2 text-sm">
       {renderAvatar(displayLabel ?? "?", member.avatarUrl)}
 
-      <span className="flex-1 min-w-0 truncate text-foreground">
-        {displayLabel}
-        {isInvite ? (
-          <span className="ml-1 text-xs text-muted-foreground">(invite)</span>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-foreground">
+          {displayLabel}
+          {isInvite ? (
+            <span className="ml-1 text-xs text-muted-foreground">(invite)</span>
+          ) : null}
+        </div>
+        {member.email && member.email !== displayLabel ? (
+          <div className="truncate text-xs text-muted-foreground">
+            {member.email}
+          </div>
         ) : null}
-      </span>
+      </div>
 
       <select
         value={member.role}
