@@ -16,9 +16,15 @@ import {
   formatStaticDateTime,
   formatStaticFullDateTime,
 } from "@/lib/dateFormat";
+import { formatCheckinWindowMessage } from "@/lib/checkinWindowMessage";
 import type { UserMeetingCheckinState } from "@/api/types/groups";
 import { useMemo, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { InviteLinkStatusPanel } from "@/components/invite/InviteLinkStatusPanel";
 import {
   useRequestToJoinMeetingInviteMutation,
@@ -227,6 +233,22 @@ export function GroupMeetingViewPage({
     );
   }
 
+  const checkinWindowMessage =
+    meeting.checkinPeriodMessage ??
+    (meeting.checkinClosesAt
+      ? formatCheckinWindowMessage({
+          checkinClosesAt: meeting.checkinClosesAt,
+        })
+      : "Check-in period end time unavailable.");
+  const isCheckinCutoffClosed = meeting.isCheckinClosedByCuttoff === true;
+  const disabledCheckinReason = isCheckinCutoffClosed
+    ? "Check-in is closed because the cutoff time has passed."
+    : "Check-in is unavailable for this meeting right now.";
+  const checkinErrorMessage =
+    checkinMutation.error instanceof Error
+      ? checkinMutation.error.message
+      : "Unable to update your check-in status right now.";
+
   return (
     <PageCard grow header={header}>
       <div className="flex flex-col gap-6">
@@ -291,7 +313,10 @@ export function GroupMeetingViewPage({
         {/* Check-In Actions */}
         <div className="space-y-3 border-t pt-4">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Check-In
+            My Check-In Status
+          </p>
+          <p className="text-sm text-muted-foreground">
+            {checkinWindowMessage}
           </p>
           <div className="grid gap-2 md:grid-cols-3">
             <Button
@@ -345,15 +370,27 @@ export function GroupMeetingViewPage({
             </Button>
           </div>
           {!meeting.canCheckin && (
-            <p className="text-sm text-muted-foreground">
-              Check-in is unavailable for this meeting right now.
-            </p>
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <p>{disabledCheckinReason}</p>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    type="button"
+                    className="underline underline-offset-2"
+                    aria-label="Why check-in is disabled"
+                  >
+                    Why?
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{disabledCheckinReason}</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
           )}
           {Boolean(checkinMutation.error) && (
             <Alert variant="destructive">
-              <AlertDescription>
-                Unable to update your check-in status right now.
-              </AlertDescription>
+              <AlertDescription>{checkinErrorMessage}</AlertDescription>
             </Alert>
           )}
         </div>

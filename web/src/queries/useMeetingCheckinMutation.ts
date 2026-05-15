@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateMeetingCheckin } from "@/api/groups";
+import { ApiError } from "@/api/types";
 import { myMeetingsQueryKey } from "./useMyMeetingsQuery";
 import { meetingViewQueryKey } from "./useMeetingViewQuery";
 import type {
@@ -26,6 +27,25 @@ interface OptimisticSnapshot {
   originalFeedItems: MemberMeetingFeedItem[] | undefined;
   feedItemBefore: MemberMeetingFeedItem | undefined;
 }
+
+const mapMeetingCheckinError = (error: unknown): Error => {
+  if (error instanceof ApiError) {
+    if (
+      error.status === 409 &&
+      /check-in period has ended/i.test(error.serverMessage)
+    ) {
+      return new Error("Check-in period has ended for this meeting.");
+    }
+
+    return new Error(error.serverMessage || "Unable to update check-in.");
+  }
+
+  if (error instanceof Error) {
+    return error;
+  }
+
+  return new Error("Unable to update check-in.");
+};
 
 const createOptimisticFeedItem = (
   item: MemberMeetingFeedItem,
@@ -77,7 +97,11 @@ export const useMeetingCheckinMutation = ({
 
   return useMutation({
     mutationFn: async (input: UpdateMeetingCheckinInput) => {
-      return updateMeetingCheckin(meetingId, input);
+      try {
+        return await updateMeetingCheckin(meetingId, input);
+      } catch (error) {
+        throw mapMeetingCheckinError(error);
+      }
     },
     onMutate: async (input: UpdateMeetingCheckinInput) => {
       // Cancel outgoing refetches to prevent race condition

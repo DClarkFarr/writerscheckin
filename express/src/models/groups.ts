@@ -27,6 +27,7 @@ export interface GroupDefinition extends BaseModelBlueprint {
   attendanceEmailMessage: string;
   publishHoursBefore: number;
   notifyAttendanceHoursBefore: number;
+  endCheckinHoursBefore: number;
   address: string;
   startTime: MeetingTimeOfDay;
   durationMinutes: number;
@@ -44,6 +45,7 @@ export interface CreateGroupInput {
   attendanceEmailMessage?: string;
   publishHoursBefore: number;
   notifyAttendanceHoursBefore: number;
+  endCheckinHoursBefore?: number;
   address?: string;
   startTime: MeetingTimeOfDay;
   durationMinutes: number;
@@ -57,6 +59,7 @@ export interface UpdateGroupInput {
   attendanceEmailMessage?: string;
   publishHoursBefore?: number;
   notifyAttendanceHoursBefore?: number;
+  endCheckinHoursBefore?: number;
   address?: string;
   startTime?: MeetingTimeOfDay;
   durationMinutes?: number;
@@ -113,6 +116,8 @@ const normalizeCreateInput = (input: CreateGroupInput): GroupDefinition => {
     input.notifyAttendanceHoursBefore,
     "notifyAttendanceHoursBefore",
   );
+  const endCheckinHoursBefore = input.endCheckinHoursBefore ?? 0;
+  assertNonNegativeInteger(endCheckinHoursBefore, "endCheckinHoursBefore");
 
   return {
     name,
@@ -121,6 +126,7 @@ const normalizeCreateInput = (input: CreateGroupInput): GroupDefinition => {
     attendanceEmailMessage: normalizeString(input.attendanceEmailMessage ?? ""),
     publishHoursBefore: input.publishHoursBefore,
     notifyAttendanceHoursBefore: input.notifyAttendanceHoursBefore,
+    endCheckinHoursBefore,
     address: normalizeString(input.address ?? ""),
     startTime: input.startTime,
     durationMinutes: input.durationMinutes,
@@ -175,6 +181,14 @@ const normalizeUpdateInput = (
     );
     normalized.notifyAttendanceHoursBefore =
       updates.notifyAttendanceHoursBefore;
+  }
+
+  if (typeof updates.endCheckinHoursBefore === "number") {
+    assertNonNegativeInteger(
+      updates.endCheckinHoursBefore,
+      "endCheckinHoursBefore",
+    );
+    normalized.endCheckinHoursBefore = updates.endCheckinHoursBefore;
   }
 
   if (updates.startTime) {

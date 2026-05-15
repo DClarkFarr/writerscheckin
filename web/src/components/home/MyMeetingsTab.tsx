@@ -128,6 +128,9 @@ export function MyMeetingsTab() {
         isOpen={isDrawerOpen}
         selectedMeeting={selectedMeetingForDrawer}
         isSubmitting={mutation.isPending}
+        errorMessage={
+          mutation.error instanceof Error ? mutation.error.message : null
+        }
         onClose={handleDrawerClose}
         onSubmit={async (state) => {
           await mutation.mutateAsync({ state });

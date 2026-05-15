@@ -41,6 +41,7 @@ export interface GroupMeetingDefinition extends BaseModelBlueprint {
   attendanceEmailMessage: string;
   publishHoursBefore: number;
   notifyAttendanceHoursBefore: number;
+  endCheckinHoursBefore: number;
   status: GroupMeetingStatus;
   cancelledAt: Date | null;
   deletedAt?: Date;
@@ -62,6 +63,7 @@ export interface CreateGroupMeetingInput {
   attendanceEmailMessage?: string;
   publishHoursBefore: number;
   notifyAttendanceHoursBefore: number;
+  endCheckinHoursBefore?: number;
   cancelledAt?: Date;
   status?: GroupMeetingStatus;
 }
@@ -78,6 +80,7 @@ export interface UpdateGroupMeetingInput {
   attendanceEmailMessage?: string;
   publishHoursBefore?: number;
   notifyAttendanceHoursBefore?: number;
+  endCheckinHoursBefore?: number;
   status?: GroupMeetingStatus;
 }
 
@@ -137,6 +140,8 @@ const normalizeCreateInput = (
     input.notifyAttendanceHoursBefore,
     "notifyAttendanceHoursBefore",
   );
+  const endCheckinHoursBefore = input.endCheckinHoursBefore ?? 0;
+  assertNonNegativeInteger(endCheckinHoursBefore, "endCheckinHoursBefore");
 
   return {
     groupId: toObjectId(input.groupId, "groupId"),
@@ -153,6 +158,7 @@ const normalizeCreateInput = (
     ),
     publishHoursBefore: input.publishHoursBefore,
     notifyAttendanceHoursBefore: input.notifyAttendanceHoursBefore,
+    endCheckinHoursBefore,
     cancelledAt: input.cancelledAt
       ? assertDate(input.cancelledAt, "cancelledAt")
       : null,
@@ -225,6 +231,14 @@ const normalizeUpdateInput = (
     );
     normalized.notifyAttendanceHoursBefore =
       updates.notifyAttendanceHoursBefore;
+  }
+
+  if (typeof updates.endCheckinHoursBefore === "number") {
+    assertNonNegativeInteger(
+      updates.endCheckinHoursBefore,
+      "endCheckinHoursBefore",
+    );
+    normalized.endCheckinHoursBefore = updates.endCheckinHoursBefore;
   }
 
   if (typeof updates.status === "string") {

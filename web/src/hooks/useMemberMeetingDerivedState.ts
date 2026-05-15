@@ -60,11 +60,43 @@ export const getMemberMeetingTimeState = (
   }
 };
 export const canCheckInToMemberMeeting = (
-  meeting: Pick<MemberMeetingFeedItem, "occursAt" | "status">,
+  meeting: Pick<
+    MemberMeetingFeedItem,
+    | "occursAt"
+    | "status"
+    | "checkinClosesAt"
+    | "endCheckinHoursBefore"
+    | "isCheckinClosedByCuttoff"
+  >,
   now: Date = new Date(),
 ): boolean => {
+  if (meeting.status !== "published") {
+    return false;
+  }
+
   const occursAt = new Date(meeting.occursAt);
-  return meeting.status === "published" && occursAt.getTime() > now.getTime();
+  if (Number.isNaN(occursAt.getTime()) || occursAt.getTime() <= now.getTime()) {
+    return false;
+  }
+
+  if (meeting.isCheckinClosedByCuttoff === true) {
+    return false;
+  }
+
+  const explicitClosesAt = meeting.checkinClosesAt
+    ? new Date(meeting.checkinClosesAt)
+    : null;
+  const checkinClosesAt =
+    explicitClosesAt && !Number.isNaN(explicitClosesAt.getTime())
+      ? explicitClosesAt
+      : (() => {
+          const computed = new Date(occursAt);
+          const endCheckinHoursBefore = meeting.endCheckinHoursBefore ?? 0;
+          computed.setHours(computed.getHours() - endCheckinHoursBefore);
+          return computed;
+        })();
+
+  return checkinClosesAt.getTime() > now.getTime();
 };
 
 export const showMemberMeetingAdminOnlyBadge = (

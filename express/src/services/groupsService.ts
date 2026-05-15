@@ -92,6 +92,7 @@ export interface GroupFormPayload {
   durationMinutes: number;
   recurrenceFrequency: "weekly" | "biweekly";
   recurrenceDaysOfWeek: number[];
+  endCheckinHoursBefore?: number;
   publicMessage?: string;
   attendanceMessage?: string;
   members: GroupFormMemberInput[];
@@ -122,6 +123,7 @@ export interface EditableGroupFormResult {
   address: string;
   startTime: string;
   durationMinutes: number;
+  endCheckinHoursBefore: number;
   recurrenceFrequency: "weekly" | "biweekly";
   recurrenceDaysOfWeek: number[];
   publicMessage: string;
@@ -260,6 +262,7 @@ export interface SaveGroupResult {
 
 const DEFAULT_PUBLISH_HOURS_BEFORE = 24;
 const DEFAULT_ATTENDANCE_HOURS_BEFORE = 2;
+export const DEFAULT_END_CHECKIN_HOURS_BEFORE = 0;
 
 type MemberCursorPayload = {
   rolePriority: number;
@@ -634,6 +637,11 @@ export const createManagedGroup = async (
   userId: string,
 ): Promise<SaveGroupResult> => {
   const ownerUserId = ensureObjectId(userId, "userId").toHexString();
+  const endCheckinHoursBefore =
+    typeof input.endCheckinHoursBefore === "number"
+      ? input.endCheckinHoursBefore
+      : DEFAULT_END_CHECKIN_HOURS_BEFORE;
+
   const group = await createGroup({
     name: input.name,
     ...(typeof input.description === "string"
@@ -647,6 +655,7 @@ export const createManagedGroup = async (
       : {}),
     publishHoursBefore: DEFAULT_PUBLISH_HOURS_BEFORE,
     notifyAttendanceHoursBefore: DEFAULT_ATTENDANCE_HOURS_BEFORE,
+    endCheckinHoursBefore,
     ...(typeof input.address === "string" ? { address: input.address } : {}),
     startTime: parseTimeString(input.startTime),
     durationMinutes: input.durationMinutes,
@@ -727,6 +736,7 @@ export const getManagedGroupForm = async (
     address: group.address,
     startTime: formatTimeString(group.startTime),
     durationMinutes: group.durationMinutes,
+    endCheckinHoursBefore: group.endCheckinHoursBefore ?? 0,
     recurrenceFrequency: group.recurrenceRule.frequency,
     recurrenceDaysOfWeek: group.recurrenceRule.daysOfWeek,
     ...toGroupTemplateAliases(resolvedTemplates),
@@ -897,6 +907,9 @@ export const updateManagedGroup = async (
       : {}),
     ...(typeof input.attendanceMessage === "string"
       ? { attendanceEmailMessage: input.attendanceMessage }
+      : {}),
+    ...(typeof input.endCheckinHoursBefore === "number"
+      ? { endCheckinHoursBefore: input.endCheckinHoursBefore }
       : {}),
     ...(typeof input.address === "string" ? { address: input.address } : {}),
     startTime: parseTimeString(input.startTime),

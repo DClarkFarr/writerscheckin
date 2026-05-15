@@ -105,6 +105,7 @@ function LoadedGroupEditForm({
     groupId,
     existingGroup: {
       ...existingGroup,
+      endCheckinHoursBefore: existingGroup.endCheckinHoursBefore,
       members,
     },
   });

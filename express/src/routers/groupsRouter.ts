@@ -1,6 +1,6 @@
 import express, { Request } from "express";
 import { handleAsync } from "../utils/asyncHandler";
-import { AuthSession } from "../services/authService";
+import { AuthError, AuthSession } from "../services/authService";
 import {
   createManagedGroup,
   listManagedGroupMeetingsPaginated,
@@ -128,6 +128,7 @@ const applyGroupRoutes = () => {
           durationMinutes: req.body?.durationMinutes,
           recurrenceFrequency: req.body?.recurrenceFrequency,
           recurrenceDaysOfWeek: req.body?.recurrenceDaysOfWeek,
+          endCheckinHoursBefore: req.body?.endCheckinHoursBefore,
           // Keep frontend aliases stable: publicMessage/attendanceMessage map
           // to backend publishEmailMessage/attendanceEmailMessage fields.
           publicMessage: req.body?.publicMessage,
@@ -258,11 +259,25 @@ const applyGroupRoutes = () => {
         throw new Error("Invalid check-in state.");
       }
 
-      const data = await updateMeetingCheckin({
-        meetingId,
-        userId,
-        state: stateRaw,
-      });
+      let data;
+      try {
+        data = await updateMeetingCheckin({
+          meetingId,
+          userId,
+          state: stateRaw,
+        });
+      } catch (error) {
+        if (
+          error instanceof AuthError &&
+          error.status === 409 &&
+          /check-in period has ended/i.test(error.message)
+        ) {
+          res.status(409).json({ message: "Check-in period has ended." });
+          return;
+        }
+
+        throw error;
+      }
 
       res.status(200).json(data);
     }),
@@ -318,6 +333,7 @@ const applyGroupRoutes = () => {
           durationMinutes: req.body?.durationMinutes,
           recurrenceFrequency: req.body?.recurrenceFrequency,
           recurrenceDaysOfWeek: req.body?.recurrenceDaysOfWeek,
+          endCheckinHoursBefore: req.body?.endCheckinHoursBefore,
           // Keep frontend aliases stable: publicMessage/attendanceMessage map
           // to backend publishEmailMessage/attendanceEmailMessage fields.
           publicMessage: req.body?.publicMessage,

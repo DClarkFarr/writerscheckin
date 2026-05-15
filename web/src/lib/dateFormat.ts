@@ -246,3 +246,34 @@ export function formatTimeUntil(value: DateValue): string {
 
   return arr.map((n) => `${n[0]} ${n[1]}${n[0] > 1 ? "s" : ""}`).join(" ");
 }
+
+export function isSameCalendarDay(left: DateValue, right: DateValue): boolean {
+  const leftDate = parseDateStrict(left);
+  const rightDate = parseDateStrict(right);
+
+  if (!leftDate || !rightDate) {
+    return false;
+  }
+
+  return leftDate.isSame(rightDate, "day");
+}
+
+export function formatCountdownHms(
+  target: DateValue,
+  now: DateValue = new Date(),
+): string {
+  const targetDate = parseDateStrict(target);
+  const nowDate = parseDateStrict(now);
+
+  if (!targetDate || !nowDate) {
+    return "0 hours 0 minutes 0 seconds";
+  }
+
+  const diffMs = Math.max(0, targetDate.diff(nowDate, "millisecond"));
+  const totalSeconds = Math.floor(diffMs / 1000);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${hours} hours ${minutes} minutes ${seconds} seconds`;
+}

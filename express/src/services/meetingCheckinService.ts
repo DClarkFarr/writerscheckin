@@ -35,11 +35,20 @@ export const updateMeetingCheckin = async (
   }
 
   const occursAt = meeting.occursAt ?? meeting.createdAt;
-  if (occursAt.getTime() < Date.now()) {
+  const nowMs = Date.now();
+  if (occursAt.getTime() < nowMs) {
     throw new AuthError(
       "Check-in can only be updated for upcoming meetings",
       409,
     );
+  }
+
+  const endCheckinHoursBefore = meeting.endCheckinHoursBefore ?? 0;
+  const checkinClosesAt = new Date(occursAt);
+  checkinClosesAt.setHours(checkinClosesAt.getHours() - endCheckinHoursBefore);
+
+  if (nowMs >= checkinClosesAt.getTime()) {
+    throw new AuthError("Check-in period has ended for this meeting", 409);
   }
 
   await setMeetingCheckinState({

@@ -28,6 +28,7 @@ import {
   formatDate,
   formatTimeUntil,
 } from "@/lib/dateFormat";
+import { formatCheckinWindowMessage } from "@/lib/checkinWindowMessage";
 import type {
   MeetingDisplayTone,
   MemberMeetingFeedItem,
@@ -166,6 +167,15 @@ export const MeetingFeedItem = ({
     derivedState.canEdit && isUpcomingMeeting && item.status === "draft";
   const canCancelFromMenu =
     derivedState.canEdit && isUpcomingMeeting && item.status === "published";
+  const checkinWindowMessage =
+    item.checkinPeriodMessage ??
+    (item.checkinClosesAt
+      ? formatCheckinWindowMessage({ checkinClosesAt: item.checkinClosesAt })
+      : null);
+  const isCheckinCutoffClosed = item.isCheckinClosedByCuttoff === true;
+  const disabledCheckinReason = isCheckinCutoffClosed
+    ? "Check-in is closed because the cutoff time has passed."
+    : "Check-in is unavailable right now.";
 
   const navigate = useNavigate();
   const publishMutation = usePublishMeetingMutation({
@@ -416,14 +426,32 @@ export const MeetingFeedItem = ({
             {!isCancelled &&
               derivedState.meetingTimeState === "upcoming" &&
               !derivedState.canCheckin && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className={`w-full mt-2 border-gray-500`}
-                  disabled
-                >
-                  Check-in starts {timeUntilCheckin}
-                </Button>
+                <div className="mt-2 space-y-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="block">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full border-gray-500"
+                          disabled
+                        >
+                          {isCheckinCutoffClosed
+                            ? "Check-in Closed"
+                            : `Check-in starts ${timeUntilCheckin}`}
+                        </Button>
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{disabledCheckinReason}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  {checkinWindowMessage && (
+                    <p className="text-xs text-muted-foreground">
+                      {checkinWindowMessage}
+                    </p>
+                  )}
+                </div>
               )}
             {!isCancelled && derivedState.canCheckin && (
               <Button

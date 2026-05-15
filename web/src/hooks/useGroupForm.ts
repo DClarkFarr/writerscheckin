@@ -23,6 +23,7 @@ type Fields = {
   address: string;
   startTime: string;
   durationMinutes: string;
+  endCheckinHoursBefore: string;
   recurrenceFrequency: "weekly" | "biweekly";
   publicMessage: string;
   attendanceMessage: string;
@@ -41,6 +42,7 @@ export type GroupFormInitialValues = Omit<
       | "address"
       | "startTime"
       | "durationMinutes"
+      | "endCheckinHoursBefore"
       | "recurrenceFrequency"
       | "recurrenceDaysOfWeek"
       | "publicMessage"
@@ -98,6 +100,7 @@ const DEFAULT_FIELDS: Fields = {
   address: "",
   startTime: "18:00",
   durationMinutes: "60",
+  endCheckinHoursBefore: "0",
   recurrenceFrequency: "weekly",
   publicMessage: "",
   attendanceMessage: "",
@@ -123,6 +126,16 @@ const validateField = (
       }
       return undefined;
     }
+    case "endCheckinHoursBefore": {
+      const cutoff = Number.parseInt(fields.endCheckinHoursBefore, 10);
+      if (Number.isNaN(cutoff)) {
+        return "Check-in cutoff is required.";
+      }
+      if (cutoff < 0) {
+        return "Check-in cutoff must be 0 or greater.";
+      }
+      return undefined;
+    }
     case "recurrenceDaysOfWeek":
       return recurrenceDaysOfWeek.length > 0
         ? undefined
@@ -140,6 +153,11 @@ const validateAll = (
   startTime: validateField("startTime", fields, recurrenceDaysOfWeek),
   durationMinutes: validateField(
     "durationMinutes",
+    fields,
+    recurrenceDaysOfWeek,
+  ),
+  endCheckinHoursBefore: validateField(
+    "endCheckinHoursBefore",
     fields,
     recurrenceDaysOfWeek,
   ),
@@ -175,6 +193,10 @@ export function useGroupForm(
       options.existingGroup?.durationMinutes !== undefined
         ? String(options.existingGroup.durationMinutes)
         : DEFAULT_FIELDS.durationMinutes,
+    endCheckinHoursBefore:
+      options.existingGroup?.endCheckinHoursBefore !== undefined
+        ? String(options.existingGroup.endCheckinHoursBefore)
+        : DEFAULT_FIELDS.endCheckinHoursBefore,
     recurrenceFrequency:
       options.existingGroup?.recurrenceFrequency ??
       DEFAULT_FIELDS.recurrenceFrequency,
@@ -323,6 +345,7 @@ export function useGroupForm(
       name: true,
       startTime: true,
       durationMinutes: true,
+      endCheckinHoursBefore: true,
       recurrenceDaysOfWeek: true,
     };
     const errors = validateAll(fields, recurrenceDaysOfWeek);
@@ -341,6 +364,7 @@ export function useGroupForm(
       address: fields.address.trim(),
       startTime: fields.startTime,
       durationMinutes: Number.parseInt(fields.durationMinutes, 10),
+      endCheckinHoursBefore: Number.parseInt(fields.endCheckinHoursBefore, 10),
       recurrenceFrequency: fields.recurrenceFrequency,
       recurrenceDaysOfWeek,
       publicMessage: fields.publicMessage.trim(),

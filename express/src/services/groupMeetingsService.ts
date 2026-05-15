@@ -70,7 +70,14 @@ export interface MeetingParticipantRow {
   isCurrentUser: boolean;
 }
 
-export interface MeetingDetailResponse {
+export interface CheckinWindowMetadata {
+  endCheckinHoursBefore?: number;
+  checkinClosesAt?: string;
+  isCheckinClosedByCuttoff?: boolean;
+  checkinPeriodMessage?: string;
+}
+
+export interface MeetingDetailResponse extends CheckinWindowMetadata {
   meetingId: string;
   groupId: string;
   groupName: string;
@@ -110,7 +117,7 @@ export interface BuildNonActiveInviteLinkContextInput {
   accessState: InviteLinkAccessState;
 }
 
-export interface EditableMeetingResponse {
+export interface EditableMeetingResponse extends CheckinWindowMetadata {
   meetingId: string;
   groupId: string;
   name: string;
@@ -603,6 +610,7 @@ export const createNextUpcomingMeetingFromGroupDefaults = async (
       GROUP_MESSAGE_TEMPLATE_DEFAULTS.attendanceEmailMessage,
     publishHoursBefore: group.publishHoursBefore,
     notifyAttendanceHoursBefore: group.notifyAttendanceHoursBefore,
+    endCheckinHoursBefore: group.endCheckinHoursBefore,
     status: "draft",
   });
 
@@ -660,6 +668,34 @@ const computePublishScheduledFor = (
   const result = new Date(occursAt);
   result.setHours(result.getHours() - publishHoursBefore);
   return result;
+};
+
+const computeCheckinClosesAt = (
+  occursAt: Date,
+  endCheckinHoursBefore: number,
+): Date => {
+  const result = new Date(occursAt);
+  result.setHours(result.getHours() - endCheckinHoursBefore);
+  return result;
+};
+
+const toCheckinWindowMetadata = (
+  occursAt: Date,
+  endCheckinHoursBeforeRaw: number | undefined,
+  now: Date = new Date(),
+): CheckinWindowMetadata => {
+  const endCheckinHoursBefore =
+    typeof endCheckinHoursBeforeRaw === "number" ? endCheckinHoursBeforeRaw : 0;
+  const checkinClosesAt = computeCheckinClosesAt(
+    occursAt,
+    endCheckinHoursBefore,
+  );
+
+  return {
+    endCheckinHoursBefore,
+    checkinClosesAt: checkinClosesAt.toISOString(),
+    isCheckinClosedByCuttoff: now >= checkinClosesAt,
+  };
 };
 
 const buildMeetingParticipantRows = async (
@@ -746,6 +782,10 @@ export const buildMeetingDetailResponse = async (
       ...(meeting.cancelledAt
         ? { cancelledAt: meeting.cancelledAt.toISOString() }
         : {}),
+      ...toCheckinWindowMetadata(
+        meeting.occursAt,
+        meeting.endCheckinHoursBefore,
+      ),
       userCheckinState: "none",
       canCheckin: false,
       canEdit: false,
@@ -813,8 +853,16 @@ export const buildMeetingDetailResponse = async (
 
   // Check if can check in (only for upcoming published meetings, not canceled)
   const now = new Date();
+  const checkinWindow = toCheckinWindowMetadata(
+    meeting.occursAt,
+    meeting.endCheckinHoursBefore,
+    now,
+  );
   const isUpcoming = meeting.occursAt > now;
-  const canCheckin = isUpcoming && meeting.status === "published";
+  const canCheckin =
+    isUpcoming &&
+    meeting.status === "published" &&
+    !checkinWindow.isCheckinClosedByCuttoff;
   const canEdit =
     (acceptedMembership.role === "owner" ||
       acceptedMembership.role === "admin") &&
@@ -839,6 +887,7 @@ export const buildMeetingDetailResponse = async (
     ...(meeting.cancelledAt && {
       cancelledAt: meeting.cancelledAt.toISOString(),
     }),
+    ...checkinWindow,
     userCheckinState,
     canCheckin,
     canEdit,
@@ -920,6 +969,7 @@ export const buildEditableMeetingResponse = async (
     attendanceEmailMessage: meeting.attendanceEmailMessage,
     publishHoursBefore: meeting.publishHoursBefore,
     notifyAttendanceHoursBefore: meeting.notifyAttendanceHoursBefore,
+    ...toCheckinWindowMetadata(meeting.occursAt, meeting.endCheckinHoursBefore),
     status: meeting.status,
     cancelledAt: meeting.cancelledAt?.toISOString() ?? null,
     publishScheduledFor: publishScheduledFor.toISOString(),
@@ -943,6 +993,7 @@ export const groupMeetingDocumentToResponse = (doc: GroupMeetingDocument) => {
     attendanceEmailMessage: doc.attendanceEmailMessage,
     publishHoursBefore: doc.publishHoursBefore,
     notifyAttendanceHoursBefore: doc.notifyAttendanceHoursBefore,
+    ...toCheckinWindowMetadata(doc.occursAt, doc.endCheckinHoursBefore),
     status: doc.status,
     cancelledAt: doc.cancelledAt?.toISOString() ?? null,
   };

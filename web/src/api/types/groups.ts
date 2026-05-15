@@ -92,6 +92,7 @@ export interface GroupFormDraft {
   durationMinutes: number;
   recurrenceFrequency: GroupRecurrenceFrequency;
   recurrenceDaysOfWeek: number[];
+  endCheckinHoursBefore: number;
   // HTML-compatible template source mapped to groups.publishEmailMessage.
   publicMessage: string;
   // HTML-compatible template source mapped to groups.attendanceEmailMessage.
@@ -106,6 +107,7 @@ export interface EditableGroupResponse extends GroupSummaryItem {
   durationMinutes: number;
   recurrenceFrequency: GroupRecurrenceFrequency;
   recurrenceDaysOfWeek: number[];
+  endCheckinHoursBefore: number;
   // Alias for groups.publishEmailMessage used by existing group form contract.
   publicMessage: string;
   // Alias for groups.attendanceEmailMessage used by existing group form contract.
@@ -170,6 +172,10 @@ export type GroupMeetingPublic = {
   durationMinutes: number;
   publishHoursBefore: number;
   notifyAttendanceHoursBefore: number;
+  endCheckinHoursBefore?: number;
+  checkinClosesAt?: string;
+  isCheckinClosedByCuttoff?: boolean;
+  checkinPeriodMessage?: string;
   status: MeetingPublicationStatus;
   cancelledAt?: string;
   createdAt: string;
@@ -224,6 +230,10 @@ export interface MemberMeetingFeedItem {
   attendanceEmailMessage: string;
   publishHoursBefore: number;
   notifyAttendanceHoursBefore: number;
+  endCheckinHoursBefore?: number;
+  checkinClosesAt?: string;
+  isCheckinClosedByCuttoff?: boolean;
+  checkinPeriodMessage?: string;
   status: MeetingPublicationStatus;
   membership: GroupMembershipResponse;
   attendance: MemberMeetingAttendance | null;
@@ -249,6 +259,10 @@ export interface MyMeetingFeedItem {
   readingCount: number;
   userCheckinState: UserMeetingCheckinState;
   canCheckin: boolean;
+  endCheckinHoursBefore?: number;
+  checkinClosesAt?: string;
+  isCheckinClosedByCuttoff?: boolean;
+  checkinPeriodMessage?: string;
   address: string;
   description: string;
   startTime: MeetingStartTime;
@@ -306,6 +320,10 @@ export interface MeetingDetailResponse {
   cancelledAt?: string;
   userCheckinState: UserMeetingCheckinState;
   canCheckin: boolean;
+  endCheckinHoursBefore?: number;
+  checkinClosesAt?: string;
+  isCheckinClosedByCuttoff?: boolean;
+  checkinPeriodMessage?: string;
   canEdit: boolean;
   canCancel: boolean;
   attendingCount: number;
@@ -329,6 +347,10 @@ export interface EditableMeetingResponse {
   attendanceEmailMessage: string;
   publishHoursBefore: number;
   notifyAttendanceHoursBefore: number;
+  endCheckinHoursBefore?: number;
+  checkinClosesAt?: string;
+  isCheckinClosedByCuttoff?: boolean;
+  checkinPeriodMessage?: string;
   status: MeetingPublicationStatus;
   cancelledAt?: string;
   publishScheduledFor: string | null;

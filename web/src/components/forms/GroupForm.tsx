@@ -176,6 +176,35 @@ export function GroupForm({
         </Field>
 
         <Field>
+          <FieldLabel htmlFor="endCheckinHoursBefore">
+            Check-in closes (hours before start)
+          </FieldLabel>
+          <Input
+            id="endCheckinHoursBefore"
+            name="endCheckinHoursBefore"
+            type="number"
+            min={0}
+            step={1}
+            value={fields.endCheckinHoursBefore}
+            onChange={handleFieldChange}
+            onBlur={handleFieldBlur}
+            size="lg"
+            aria-invalid={
+              touched.endCheckinHoursBefore &&
+              !!fieldErrors.endCheckinHoursBefore
+            }
+          />
+          <FieldDescription>
+            Set to 0 to keep check-in open until meeting start.
+          </FieldDescription>
+          <FieldError>
+            {touched.endCheckinHoursBefore
+              ? fieldErrors.endCheckinHoursBefore
+              : undefined}
+          </FieldError>
+        </Field>
+
+        <Field>
           <FieldLabel htmlFor="recurrenceFrequency">Recurrence</FieldLabel>
           <select
             id="recurrenceFrequency"
