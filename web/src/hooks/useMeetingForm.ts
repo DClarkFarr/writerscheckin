@@ -19,6 +19,7 @@ interface MeetingFormFields {
   attendanceEmailMessage: string;
   publishHoursBefore: string;
   notifyAttendanceHoursBefore: string;
+  endCheckinHoursBefore: string;
 }
 
 interface UseMeetingFormProps {
@@ -47,6 +48,7 @@ export function useMeetingForm({ groupId, meetingId }: UseMeetingFormProps) {
     attendanceEmailMessage: "",
     publishHoursBefore: "0",
     notifyAttendanceHoursBefore: "0",
+    endCheckinHoursBefore: "0",
   });
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -87,6 +89,7 @@ export function useMeetingForm({ groupId, meetingId }: UseMeetingFormProps) {
         publishHoursBefore: meeting.publishHoursBefore.toString(),
         notifyAttendanceHoursBefore:
           meeting.notifyAttendanceHoursBefore.toString(),
+        endCheckinHoursBefore: (meeting.endCheckinHoursBefore ?? 0).toString(),
       };
       latestFieldsRef.current = toSet;
       setFields(toSet);
@@ -114,6 +117,12 @@ export function useMeetingForm({ groupId, meetingId }: UseMeetingFormProps) {
       const num = parseInt(value, 10);
       if (Number.isNaN(num) || num < 15) {
         return "Duration must be at least 15 minutes";
+      }
+    }
+    if (name === "endCheckinHoursBefore") {
+      const num = parseInt(value, 10);
+      if (Number.isNaN(num) || num < 0) {
+        return "Check-in cutoff must be 0 or greater";
       }
     }
     return undefined;
@@ -194,6 +203,16 @@ export function useMeetingForm({ groupId, meetingId }: UseMeetingFormProps) {
       ) {
         payload.notifyAttendanceHoursBefore = parseInt(
           currentFields.notifyAttendanceHoursBefore,
+          10,
+        );
+      }
+
+      if (
+        parseInt(currentFields.endCheckinHoursBefore, 10) !==
+        (currentMeeting?.endCheckinHoursBefore ?? 0)
+      ) {
+        payload.endCheckinHoursBefore = parseInt(
+          currentFields.endCheckinHoursBefore,
           10,
         );
       }

@@ -370,6 +370,7 @@ export interface UpdateMeetingInput {
   attendanceEmailMessage?: string;
   publishHoursBefore?: number;
   notifyAttendanceHoursBefore?: number;
+  endCheckinHoursBefore?: number;
 }
 
 export interface UpdateMeetingResponse {

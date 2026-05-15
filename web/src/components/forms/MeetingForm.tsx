@@ -53,6 +53,7 @@ export interface MeetingFormProps {
     attendanceEmailMessage: string;
     publishHoursBefore: string;
     notifyAttendanceHoursBefore: string;
+    endCheckinHoursBefore: string;
   };
   onFieldChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -202,6 +203,27 @@ export function MeetingForm({
           {touched.occursAtTime && fieldErrors.occursAtTime && (
             <FieldError>{fieldErrors.occursAtTime}</FieldError>
           )}
+        </Field>
+
+        <Field>
+          <FieldLabel htmlFor="endCheckinHoursBefore">
+            Check-in closes (hours before start)
+          </FieldLabel>
+          <Input
+            id="endCheckinHoursBefore"
+            name="endCheckinHoursBefore"
+            type="number"
+            min="0"
+            value={fields.endCheckinHoursBefore}
+            onChange={onFieldChange}
+            onBlur={onFieldBlur}
+            disabled={formDisabled}
+            aria-invalid={!!fieldErrors.endCheckinHoursBefore}
+          />
+          {touched.endCheckinHoursBefore &&
+            fieldErrors.endCheckinHoursBefore && (
+              <FieldError>{fieldErrors.endCheckinHoursBefore}</FieldError>
+            )}
         </Field>
 
         <Field>

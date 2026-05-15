@@ -554,6 +554,8 @@ const applyGroupRoutes = () => {
       if (req.body?.notifyAttendanceHoursBefore !== undefined)
         updateInput.notifyAttendanceHoursBefore =
           req.body.notifyAttendanceHoursBefore;
+      if (req.body?.endCheckinHoursBefore !== undefined)
+        updateInput.endCheckinHoursBefore = req.body.endCheckinHoursBefore;
 
       // First verify authorization by calling the service (it will throw AuthError if not authorized)
       await buildEditableMeetingResponse(
