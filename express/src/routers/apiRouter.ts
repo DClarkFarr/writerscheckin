@@ -3,6 +3,7 @@ import { authRouter } from "./authRouter";
 import { groupsRouter } from "./groupsRouter";
 import { membersRouter } from "./membersRouter";
 import { groupInvitesRouter } from "./groupInvitesRouter";
+import { userRouter } from "./userRouter";
 import { applyNestedRouter } from "../utils/routes";
 
 // The 'mergeParams: true' option is crucial here.
@@ -16,3 +17,4 @@ applyNestedRouter(apiRouter, "/auth", authRouter);
 applyNestedRouter(apiRouter, "/groups", groupsRouter);
 applyNestedRouter(apiRouter, "/group-invites", groupInvitesRouter);
 applyNestedRouter(apiRouter, "/members", membersRouter);
+applyNestedRouter(apiRouter, "/user", userRouter);

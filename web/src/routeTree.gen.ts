@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from "./routes/__root"
 import { Route as PublicRouteImport } from "./routes/_public"
 import { Route as AuthRouteImport } from "./routes/_auth"
 import { Route as IndexRouteImport } from "./routes/index"
+import { Route as UserSettingsRouteImport } from "./routes/user/settings"
 import { Route as GroupsCreateRouteImport } from "./routes/groups/create"
 import { Route as AuthSignUpRouteImport } from "./routes/_auth/sign-up"
 import { Route as AuthResetPasswordRouteImport } from "./routes/_auth/reset-password"
@@ -33,6 +34,11 @@ const AuthRoute = AuthRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: "/",
   path: "/",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UserSettingsRoute = UserSettingsRouteImport.update({
+  id: "/user/settings",
+  path: "/user/settings",
   getParentRoute: () => rootRouteImport,
 } as any)
 const GroupsCreateRoute = GroupsCreateRouteImport.update({
@@ -89,6 +95,7 @@ export interface FileRoutesByFullPath {
   "/reset-password": typeof AuthResetPasswordRoute
   "/sign-up": typeof AuthSignUpRoute
   "/groups/create": typeof GroupsCreateRoute
+  "/user/settings": typeof UserSettingsRoute
   "/join/$membershipId": typeof PublicJoinMembershipIdRoute
   "/groups/$groupId/edit": typeof GroupsGroupIdEditRoute
   "/groups/$groupId/view": typeof GroupsGroupIdViewRoute
@@ -101,6 +108,7 @@ export interface FileRoutesByTo {
   "/reset-password": typeof AuthResetPasswordRoute
   "/sign-up": typeof AuthSignUpRoute
   "/groups/create": typeof GroupsCreateRoute
+  "/user/settings": typeof UserSettingsRoute
   "/join/$membershipId": typeof PublicJoinMembershipIdRoute
   "/groups/$groupId/edit": typeof GroupsGroupIdEditRoute
   "/groups/$groupId/view": typeof GroupsGroupIdViewRoute
@@ -116,6 +124,7 @@ export interface FileRoutesById {
   "/_auth/reset-password": typeof AuthResetPasswordRoute
   "/_auth/sign-up": typeof AuthSignUpRoute
   "/groups/create": typeof GroupsCreateRoute
+  "/user/settings": typeof UserSettingsRoute
   "/_public/join/$membershipId": typeof PublicJoinMembershipIdRoute
   "/groups/$groupId/edit": typeof GroupsGroupIdEditRoute
   "/groups/$groupId/view": typeof GroupsGroupIdViewRoute
@@ -130,6 +139,7 @@ export interface FileRouteTypes {
     | "/reset-password"
     | "/sign-up"
     | "/groups/create"
+    | "/user/settings"
     | "/join/$membershipId"
     | "/groups/$groupId/edit"
     | "/groups/$groupId/view"
@@ -142,6 +152,7 @@ export interface FileRouteTypes {
     | "/reset-password"
     | "/sign-up"
     | "/groups/create"
+    | "/user/settings"
     | "/join/$membershipId"
     | "/groups/$groupId/edit"
     | "/groups/$groupId/view"
@@ -156,6 +167,7 @@ export interface FileRouteTypes {
     | "/_auth/reset-password"
     | "/_auth/sign-up"
     | "/groups/create"
+    | "/user/settings"
     | "/_public/join/$membershipId"
     | "/groups/$groupId/edit"
     | "/groups/$groupId/view"
@@ -168,6 +180,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   PublicRoute: typeof PublicRouteWithChildren
   GroupsCreateRoute: typeof GroupsCreateRoute
+  UserSettingsRoute: typeof UserSettingsRoute
   GroupsGroupIdEditRoute: typeof GroupsGroupIdEditRoute
   GroupsGroupIdViewRoute: typeof GroupsGroupIdViewRoute
   GroupsGroupIdMeetingsMeetingIdEditRoute: typeof GroupsGroupIdMeetingsMeetingIdEditRoute
@@ -195,6 +208,13 @@ declare module "@tanstack/react-router" {
       path: "/"
       fullPath: "/"
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/user/settings": {
+      id: "/user/settings"
+      path: "/user/settings"
+      fullPath: "/user/settings"
+      preLoaderRoute: typeof UserSettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/groups/create": {
@@ -293,6 +313,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   PublicRoute: PublicRouteWithChildren,
   GroupsCreateRoute: GroupsCreateRoute,
+  UserSettingsRoute: UserSettingsRoute,
   GroupsGroupIdEditRoute: GroupsGroupIdEditRoute,
   GroupsGroupIdViewRoute: GroupsGroupIdViewRoute,
   GroupsGroupIdMeetingsMeetingIdEditRoute:

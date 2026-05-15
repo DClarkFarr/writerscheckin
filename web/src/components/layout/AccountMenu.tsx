@@ -2,6 +2,7 @@ import type { AuthUser } from "@/api/types";
 import { useLogoutMenuAction } from "@/hooks/useLogoutMenuAction";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useNavigate } from "@tanstack/react-router";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,6 +21,7 @@ export interface AccountMenuProps {
 export function AccountMenu({ user }: AccountMenuProps) {
   const identity = buildAccountMenuIdentity(user);
   const { handleLogout, isPending, errorMessage } = useLogoutMenuAction();
+  const navigate = useNavigate();
 
   return (
     <DropdownMenu>
@@ -63,6 +65,16 @@ export function AccountMenu({ user }: AccountMenuProps) {
             ) : null}
           </div>
         </DropdownMenuGroup>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem
+          onSelect={() => {
+            navigate({ to: "/user/settings" });
+          }}
+        >
+          Profile Settings
+        </DropdownMenuItem>
 
         <DropdownMenuSeparator />
 

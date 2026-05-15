@@ -51,7 +51,7 @@ const initCronJobs = () => {
   const queueService = new QueueService();
 
   const publishScheduledMeetingsJob = new CronJob(
-    "*/1 * * * *", // every minute
+    "*/5 * * * *", // every 5 minutes
     function () {
       console.info("Enqueuing PublishScheduledMeetings");
       queueService.add(async () => {

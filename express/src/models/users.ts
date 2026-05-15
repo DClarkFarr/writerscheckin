@@ -120,6 +120,15 @@ export const updateUserById = async (
   return result;
 };
 
+export const updateUserPasswordById = async (
+  id: string | ObjectId,
+  passwordHash: string,
+): Promise<UserDocument | null> =>
+  updateUserById(id, {
+    passwordHash,
+    passwordChangedAt: new Date(),
+  });
+
 export const deleteUserById = async (
   id: string | ObjectId,
 ): Promise<boolean> => {

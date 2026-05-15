@@ -27,3 +27,7 @@ export const endSessionsByUserId = async (
   await assertUserExists(userId);
   return endSessionsByUserIdModel(userId);
 };
+
+export const invalidateSessionsForUser = async (
+  userId: string | ObjectId,
+): Promise<number> => endSessionsByUserId(userId);

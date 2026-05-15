@@ -111,6 +111,9 @@ const isCodeMatch = (expectedHash: string, providedCode: string): boolean => {
   return crypto.timingSafeEqual(expected, provided);
 };
 
+export const validateAuthPasswordRules = (value: unknown): string =>
+  validatePassword(value);
+
 export interface SignupInput {
   firstName: string;
   lastName: string;
@@ -127,7 +130,7 @@ export const signup = async (
 
   const lastName = validateName(input.lastName, "lastName");
   const email = validateEmail(input.email);
-  const password = validatePassword(input.password);
+  const password = validateAuthPasswordRules(input.password);
   const ipAddress = input.ipAddress ?? "unknown";
 
   await assertAuthAttemptAllowed(email, ipAddress, "signup");
@@ -171,7 +174,7 @@ export const login = async (
   sessionData: AuthSession,
 ): Promise<AuthUserResponse> => {
   const email = validateEmail(input.email);
-  const password = validatePassword(input.password);
+  const password = validateAuthPasswordRules(input.password);
   const ipAddress = input.ipAddress ?? "unknown";
 
   await assertAuthAttemptAllowed(email, ipAddress, "login");
@@ -268,7 +271,7 @@ export const confirmPasswordReset = async (
 ): Promise<void> => {
   const email = validateEmail(input.email);
   const code = validateResetCode(input.code);
-  const password = validatePassword(input.password);
+  const password = validateAuthPasswordRules(input.password);
   const ipAddress = input.ipAddress ?? "unknown";
 
   await assertAuthAttemptAllowed(email, ipAddress, "reset");

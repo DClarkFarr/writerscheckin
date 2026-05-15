@@ -8,6 +8,63 @@ import {
   updateUserById as updateUserByIdModel,
 } from "../models/users";
 import { ensureObjectId } from "../models/types";
+import { ValidationError } from "./authService";
+
+export const normalizeUserName = (value: string): string =>
+  value.trim().replace(/\s+/g, " ");
+
+const validateUserName = (
+  value: unknown,
+  field: "firstName" | "lastName",
+): string => {
+  if (typeof value !== "string") {
+    throw new ValidationError(field, `${field} is required`);
+  }
+
+  const normalized = normalizeUserName(value);
+  if (!normalized) {
+    throw new ValidationError(field, `${field} is required`);
+  }
+
+  if (normalized.length > 80) {
+    throw new ValidationError(field, `${field} is too long`);
+  }
+
+  return normalized;
+};
+
+export interface ProfileNameUpdatesInput {
+  firstName?: unknown;
+  lastName?: unknown;
+}
+
+export interface ProfileNameUpdates {
+  firstName?: string;
+  lastName?: string;
+}
+
+export const parseProfileNameUpdates = (
+  input: ProfileNameUpdatesInput,
+): ProfileNameUpdates => {
+  const updates: ProfileNameUpdates = {};
+
+  if (input.firstName !== undefined) {
+    updates.firstName = validateUserName(input.firstName, "firstName");
+  }
+
+  if (input.lastName !== undefined) {
+    updates.lastName = validateUserName(input.lastName, "lastName");
+  }
+
+  if (!updates.firstName && !updates.lastName) {
+    throw new ValidationError(
+      "firstName",
+      "At least one name field is required",
+    );
+  }
+
+  return updates;
+};
 
 const assertEmailAvailable = async (
   email: string,
