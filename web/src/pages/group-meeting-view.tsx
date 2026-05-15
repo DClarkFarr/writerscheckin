@@ -13,12 +13,14 @@ import { useMeetingViewQuery } from "@/queries/useMeetingViewQuery";
 import { useMeetingCheckinMutation } from "@/queries/useMeetingCheckinMutation";
 import { Button } from "@/components/ui/button";
 import {
+  parseDateStrict,
   formatStaticDateTime,
   formatStaticFullDateTime,
+  isSameCalendarDay,
 } from "@/lib/dateFormat";
 import { formatCheckinWindowMessage } from "@/lib/checkinWindowMessage";
 import type { UserMeetingCheckinState } from "@/api/types/groups";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
   Tooltip,
@@ -72,6 +74,7 @@ export function GroupMeetingViewPage({
   groupId,
   meetingId,
 }: GroupMeetingViewPageProps) {
+  const [currentTime, setCurrentTime] = useState(() => new Date());
   const [inviteDecisionMessage, setInviteDecisionMessage] = useState<
     string | null
   >(null);
@@ -106,6 +109,37 @@ export function GroupMeetingViewPage({
       return sortOrder[stateA] - sortOrder[stateB];
     });
   }, [participantRows]);
+
+  useEffect(() => {
+    if (
+      !meeting?.checkinClosesAt ||
+      !isSameCalendarDay(meeting.occursAt, new Date())
+    ) {
+      return;
+    }
+
+    const closesAt = parseDateStrict(meeting.checkinClosesAt);
+    if (!closesAt) {
+      return;
+    }
+
+    (() => setCurrentTime(new Date()))();
+
+    if (!closesAt.isAfter(new Date())) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      const now = new Date();
+      setCurrentTime(now);
+
+      if (!closesAt.isAfter(now)) {
+        window.clearInterval(timer);
+      }
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [meeting?.checkinClosesAt, meeting?.occursAt]);
 
   const header = (
     <Breadcrumb variant="light">
@@ -233,17 +267,20 @@ export function GroupMeetingViewPage({
     );
   }
 
-  const checkinWindowMessage =
-    meeting.checkinPeriodMessage ??
-    (meeting.checkinClosesAt
-      ? formatCheckinWindowMessage({
-          checkinClosesAt: meeting.checkinClosesAt,
-        })
-      : "Check-in period end time unavailable.");
+  const checkinWindowMessage = meeting.checkinClosesAt
+    ? formatCheckinWindowMessage({
+        checkinClosesAt: meeting.checkinClosesAt,
+        now: currentTime,
+      })
+    : (meeting.checkinPeriodMessage ?? "Check-in period end time unavailable.");
+  const isMeetingDayToday = isSameCalendarDay(meeting.occursAt, currentTime);
+  const canCheckinNow = meeting.canCheckin && isMeetingDayToday;
   const isCheckinCutoffClosed = meeting.isCheckinClosedByCuttoff === true;
-  const disabledCheckinReason = isCheckinCutoffClosed
-    ? "Check-in is closed because the cutoff time has passed."
-    : "Check-in is unavailable for this meeting right now.";
+  const disabledCheckinReason = !isMeetingDayToday
+    ? "Check-in opens on the day of the meeting."
+    : isCheckinCutoffClosed
+      ? "Check-in is closed because the cutoff time has passed."
+      : "Check-in is unavailable for this meeting right now.";
   const checkinErrorMessage =
     checkinMutation.error instanceof Error
       ? checkinMutation.error.message
@@ -326,7 +363,7 @@ export function GroupMeetingViewPage({
                   ? "bg-blue-700 text-white hover:bg-blue-700"
                   : "bg-blue-700/10 hover:bg-blue-700/20 text-gray-800 hover:text-gray-900"
               }
-              disabled={!meeting.canCheckin || checkinMutation.isPending}
+              disabled={!canCheckinNow || checkinMutation.isPending}
               onClick={() =>
                 checkinMutation.mutate({
                   state: "reading",
@@ -342,7 +379,7 @@ export function GroupMeetingViewPage({
                   ? "bg-emerald-700 text-white hover:bg-emerald-700"
                   : "bg-emerald-700/10 hover:bg-emerald-700/20 text-gray-800 hover:text-gray-900"
               }
-              disabled={!meeting.canCheckin || checkinMutation.isPending}
+              disabled={!canCheckinNow || checkinMutation.isPending}
               onClick={() =>
                 checkinMutation.mutate({
                   state: "attending",
@@ -359,7 +396,7 @@ export function GroupMeetingViewPage({
                   ? "bg-red-700 text-white hover:bg-red-700"
                   : "bg-red-700/10 hover:bg-red-700/20 text-gray-800 hover:text-gray-900"
               }
-              disabled={!meeting.canCheckin || checkinMutation.isPending}
+              disabled={!canCheckinNow || checkinMutation.isPending}
               onClick={() =>
                 checkinMutation.mutate({
                   state: "not_attending",
@@ -369,7 +406,7 @@ export function GroupMeetingViewPage({
               Not Attending
             </Button>
           </div>
-          {!meeting.canCheckin && (
+          {!canCheckinNow && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <p>{disabledCheckinReason}</p>
               <Tooltip>

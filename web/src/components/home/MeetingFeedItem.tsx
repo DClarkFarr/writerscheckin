@@ -26,6 +26,8 @@ import {
   formatBookendMonthDay,
   formatBookendYear,
   formatDate,
+  isSameCalendarDay,
+  parseDateStrict,
   formatTimeUntil,
 } from "@/lib/dateFormat";
 import { formatCheckinWindowMessage } from "@/lib/checkinWindowMessage";
@@ -41,7 +43,7 @@ import { usePublishMeetingMutation } from "@/queries/usePublishMeetingMutation";
 import { useCancelMeetingMutation } from "@/queries/useCancelMeetingMutation";
 import { myMeetingsQueryKey } from "@/queries/useMyMeetingsQuery";
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import IconEyeLock from "~icons/mdi/eye-lock";
 import IconClockTimeThree from "~icons/mdi/clock-time-three";
 import IconDotsVertical from "~icons/mdi/dots-vertical";
@@ -142,6 +144,7 @@ export const MeetingFeedItem = ({
   item,
   onCheckInClick,
 }: MeetingFeedItemProps) => {
+  const [currentTime, setCurrentTime] = useState(() => new Date());
   const queryClient = useQueryClient();
 
   const isCancelled = !!item.cancelledAt;
@@ -167,15 +170,20 @@ export const MeetingFeedItem = ({
     derivedState.canEdit && isUpcomingMeeting && item.status === "draft";
   const canCancelFromMenu =
     derivedState.canEdit && isUpcomingMeeting && item.status === "published";
-  const checkinWindowMessage =
-    item.checkinPeriodMessage ??
-    (item.checkinClosesAt
-      ? formatCheckinWindowMessage({ checkinClosesAt: item.checkinClosesAt })
-      : null);
+  const checkinWindowMessage = item.checkinClosesAt
+    ? formatCheckinWindowMessage({
+        checkinClosesAt: item.checkinClosesAt,
+        now: currentTime,
+      })
+    : item.checkinPeriodMessage;
+  const isMeetingDayToday = isSameCalendarDay(item.occursAt, currentTime);
+  const canCheckinNow = derivedState.canCheckin && isMeetingDayToday;
   const isCheckinCutoffClosed = item.isCheckinClosedByCuttoff === true;
-  const disabledCheckinReason = isCheckinCutoffClosed
-    ? "Check-in is closed because the cutoff time has passed."
-    : "Check-in is unavailable right now.";
+  const disabledCheckinReason = !isMeetingDayToday
+    ? "Check-in opens on the day of the meeting."
+    : isCheckinCutoffClosed
+      ? "Check-in is closed because the cutoff time has passed."
+      : "Check-in is unavailable right now.";
 
   const navigate = useNavigate();
   const publishMutation = usePublishMeetingMutation({
@@ -187,6 +195,44 @@ export const MeetingFeedItem = ({
     meetingId: item.meetingId,
   });
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+
+  useEffect(() => {
+    if (
+      !item.checkinClosesAt ||
+      isCancelled ||
+      derivedState.meetingTimeState !== "upcoming" ||
+      !isMeetingDayToday
+    ) {
+      return;
+    }
+
+    const closesAt = parseDateStrict(item.checkinClosesAt);
+    if (!closesAt) {
+      return;
+    }
+
+    (() => setCurrentTime(new Date()))();
+
+    if (!closesAt.isAfter(new Date())) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      const now = new Date();
+      setCurrentTime(now);
+
+      if (!closesAt.isAfter(now)) {
+        window.clearInterval(timer);
+      }
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [
+    derivedState.meetingTimeState,
+    isCancelled,
+    isMeetingDayToday,
+    item.checkinClosesAt,
+  ]);
 
   const handlePublishMeeting = async () => {
     await publishMutation.mutateAsync();
@@ -425,7 +471,7 @@ export const MeetingFeedItem = ({
             {/* Check-In Button */}
             {!isCancelled &&
               derivedState.meetingTimeState === "upcoming" &&
-              !derivedState.canCheckin && (
+              !canCheckinNow && (
                 <div className="mt-2 space-y-2">
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -453,14 +499,21 @@ export const MeetingFeedItem = ({
                   )}
                 </div>
               )}
-            {!isCancelled && derivedState.canCheckin && (
-              <Button
-                size="sm"
-                className={`w-full mt-2 ${buttonColorClass}`}
-                onClick={() => onCheckInClick?.(item)}
-              >
-                {userCheckinState === "none" ? "Check In" : "Update Check-In"}
-              </Button>
+            {!isCancelled && canCheckinNow && (
+              <div className="mt-2 space-y-2">
+                <Button
+                  size="sm"
+                  className={`w-full ${buttonColorClass}`}
+                  onClick={() => onCheckInClick?.(item)}
+                >
+                  {userCheckinState === "none" ? "Check In" : "Update Check-In"}
+                </Button>
+                {checkinWindowMessage && (
+                  <p className="text-xs text-muted-foreground">
+                    {checkinWindowMessage}
+                  </p>
+                )}
+              </div>
             )}
 
             {isCancelled && (
