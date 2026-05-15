@@ -25,11 +25,16 @@ export const formatCheckinWindowMessage = ({
     return "Check-in period end time unavailable.";
   }
 
+  const dateText = formatDate(closesAt, DISPLAY_DATE_FORMAT);
+  const timeText = formatDate(closesAt, DISPLAY_TIME_FORMAT);
+
+  if (!closesAt.isAfter(current)) {
+    return `RSVP period has closed at ${dateText} ${timeText}`;
+  }
+
   if (isSameCalendarDay(closesAt, current)) {
     return `Check-in period ends in ${formatCountdownHms(closesAt, current)}`;
   }
 
-  const dateText = formatDate(closesAt, DISPLAY_DATE_FORMAT);
-  const timeText = formatDate(closesAt, DISPLAY_TIME_FORMAT);
   return `Check-in period ends ${dateText} at ${timeText}`;
 };

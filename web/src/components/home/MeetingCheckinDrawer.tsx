@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
 import {
   Drawer,
   DrawerContent,
@@ -16,6 +17,7 @@ import {
   canCheckInToMemberMeeting,
   getMemberMeetingAttendanceState,
 } from "@/hooks/useMemberMeetingDerivedState";
+import { parseDateStrict } from "@/lib/dateFormat";
 import { formatCheckinWindowMessage } from "@/lib/checkinWindowMessage";
 
 interface MeetingCheckinDrawerProps {
@@ -35,6 +37,36 @@ export const MeetingCheckinDrawer = ({
   onClose,
   onSubmit,
 }: MeetingCheckinDrawerProps) => {
+  const [currentTime, setCurrentTime] = useState(() => new Date());
+
+  useEffect(() => {
+    if (!isOpen || !selectedMeeting?.checkinClosesAt) {
+      return;
+    }
+
+    const closesAt = parseDateStrict(selectedMeeting.checkinClosesAt);
+    if (!closesAt) {
+      return;
+    }
+
+    setCurrentTime(new Date());
+
+    if (!closesAt.isAfter(new Date())) {
+      return;
+    }
+
+    const timer = window.setInterval(() => {
+      const now = new Date();
+      setCurrentTime(now);
+
+      if (!closesAt.isAfter(now)) {
+        window.clearInterval(timer);
+      }
+    }, 1000);
+
+    return () => window.clearInterval(timer);
+  }, [isOpen, selectedMeeting?.checkinClosesAt]);
+
   if (!selectedMeeting) {
     return null;
   }
@@ -44,13 +76,13 @@ export const MeetingCheckinDrawer = ({
   const meetingTitle = selectedMeeting.name.trim() || "Untitled meeting";
   const isCheckinCutoffClosed =
     selectedMeeting.isCheckinClosedByCuttoff === true;
-  const checkinWindowMessage =
-    selectedMeeting.checkinPeriodMessage ??
-    (selectedMeeting.checkinClosesAt
-      ? formatCheckinWindowMessage({
-          checkinClosesAt: selectedMeeting.checkinClosesAt,
-        })
-      : "Check-in period end time unavailable.");
+  const checkinWindowMessage = selectedMeeting.checkinClosesAt
+    ? formatCheckinWindowMessage({
+        checkinClosesAt: selectedMeeting.checkinClosesAt,
+        now: currentTime,
+      })
+    : (selectedMeeting.checkinPeriodMessage ??
+      "Check-in period end time unavailable.");
   const helperText = canCheckin
     ? "How are you planning to attend this meeting?"
     : isCheckinCutoffClosed
