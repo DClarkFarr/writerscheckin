@@ -263,6 +263,13 @@ export const listDueDraftMeetingsForPublicationWindow = async (
   return rows.map(dueDraftMeetingRowToCandidate);
 };
 
+interface PublishMeetingAndNotifyResult {
+  publishedMeeting: GroupMeetingDocument;
+  recipientCount: number;
+  attendeeCreatedCount: number;
+  emailSentCount: number;
+}
+
 const resolvePublicationRecipientEmail = async (
   member: GroupMemberDocument,
 ): Promise<string | null> => {
@@ -274,6 +281,106 @@ const resolvePublicationRecipientEmail = async (
   }
 
   return member.email ?? null;
+};
+
+const publishMeetingAndNotify = async (input: {
+  meeting: GroupMeetingDocument;
+  now: Date;
+}): Promise<PublishMeetingAndNotifyResult> => {
+  const { meeting, now } = input;
+  const publishedMeeting = await publishGroupMeetingDocumentById(meeting._id);
+  if (!publishedMeeting) {
+    throw new Error("Failed to persist published status.");
+  }
+
+  const recipients = await listActivePublicationRecipientsByGroupId(
+    meeting.groupId,
+    {
+      limit: 500,
+    },
+  );
+
+  let attendeeCreatedCount = 0;
+  let emailSentCount = 0;
+
+  for (const recipient of recipients) {
+    const attendeeResult = await createMeetingAttendeeIfMissing({
+      meetingId: meeting._id,
+      memberId: recipient._id,
+      status: "invited",
+    });
+
+    if (attendeeResult.created) {
+      attendeeCreatedCount += 1;
+    }
+
+    const recipientEmail = await resolvePublicationRecipientEmail(recipient);
+    if (!recipientEmail) {
+      continue;
+    }
+
+    const email = buildGroupMeetingPublishEmail({
+      meetingName: meeting.name,
+      occursAt: meeting.occursAt,
+      meetingAddress: meeting.address,
+      meetingUrl: emailLinks.meetingDetail(
+        meeting.groupId.toHexString(),
+        meeting._id.toHexString(),
+      ),
+      publishMessage: meeting.publishEmailMessage,
+      sentAt: now,
+    });
+
+    await sendEmail({
+      to: recipientEmail,
+      subject: email.subject,
+      text: email.text,
+      html: email.html,
+    });
+    emailSentCount += 1;
+  }
+
+  return {
+    publishedMeeting,
+    recipientCount: recipients.length,
+    attendeeCreatedCount,
+    emailSentCount,
+  };
+};
+
+export const publishMeetingNowById = async (
+  meetingId: string,
+): Promise<PublishMeetingResult> => {
+  const now = new Date();
+  const meeting = await getGroupMeetingById(meetingId);
+  if (!meeting) {
+    throw new Error("Meeting not found.");
+  }
+
+  if (meeting.cancelledAt) {
+    throw new ValidationError(
+      "status",
+      "Cancelled meetings cannot be published.",
+    );
+  }
+
+  if (meeting.status !== "draft") {
+    throw new ValidationError(
+      "status",
+      "Only draft meetings can be published.",
+    );
+  }
+
+  const publication = await publishMeetingAndNotify({ meeting, now });
+
+  return {
+    meetingId: publication.publishedMeeting._id.toHexString(),
+    status: "published",
+    publishedAt:
+      publication.publishedMeeting.updatedAt?.toISOString() ??
+      now.toISOString(),
+    attendanceEnabled: true,
+  };
 };
 
 export const publishMeetingFromSchedule = async (
@@ -377,86 +484,23 @@ export const publishMeetingFromSchedule = async (
   }
 
   try {
-    const publishedMeeting = await publishGroupMeetingDocumentById(meeting._id);
-    if (!publishedMeeting) {
-      return {
-        meetingId: meeting._id.toHexString(),
-        groupId: meeting.groupId.toHexString(),
-        groupName: group?.name ?? null,
-        meetingName: meeting.name,
-        occursAt: meeting.occursAt.toISOString(),
-        publishAtComputed: publishAtComputed.toISOString(),
-        published: false,
-        reason: "error",
-        publishedAt: null,
-        recipientCount: 0,
-        attendeeCreatedCount: 0,
-        emailSentCount: 0,
-        errorMessage: "Failed to persist published status.",
-      };
-    }
-
-    const recipients = await listActivePublicationRecipientsByGroupId(
-      meeting.groupId,
-      {
-        limit: 500,
-      },
-    );
-
-    let attendeeCreatedCount = 0;
-    let emailSentCount = 0;
-
-    for (const recipient of recipients) {
-      const attendeeResult = await createMeetingAttendeeIfMissing({
-        meetingId: meeting._id,
-        memberId: recipient._id,
-        status: "invited",
-      });
-
-      if (attendeeResult.created) {
-        attendeeCreatedCount += 1;
-      }
-
-      const recipientEmail = await resolvePublicationRecipientEmail(recipient);
-      if (!recipientEmail) {
-        continue;
-      }
-
-      const email = buildGroupMeetingPublishEmail({
-        meetingName: meeting.name,
-        occursAt: meeting.occursAt,
-        meetingAddress: meeting.address,
-        meetingUrl: emailLinks.meetingDetail(
-          meeting.groupId.toHexString(),
-          meeting._id.toHexString(),
-        ),
-        publishMessage: meeting.publishEmailMessage,
-        sentAt: now,
-      });
-
-      await sendEmail({
-        to: recipientEmail,
-        subject: email.subject,
-        text: email.text,
-        html: email.html,
-      });
-      emailSentCount += 1;
-    }
+    const publication = await publishMeetingAndNotify({ meeting, now });
 
     return {
-      meetingId: publishedMeeting._id.toHexString(),
-      groupId: publishedMeeting.groupId.toHexString(),
+      meetingId: publication.publishedMeeting._id.toHexString(),
+      groupId: publication.publishedMeeting.groupId.toHexString(),
       groupName: group?.name ?? null,
-      meetingName: publishedMeeting.name,
-      occursAt: publishedMeeting.occursAt.toISOString(),
+      meetingName: publication.publishedMeeting.name,
+      occursAt: publication.publishedMeeting.occursAt.toISOString(),
       publishAtComputed: publishAtComputed.toISOString(),
       published: true,
       reason: "published",
       publishedAt:
-        publishedMeeting.updatedAt?.toISOString() ?? now.toISOString(),
-      recipientCount: recipients.length,
-      attendeeCreatedCount,
-      emailSentCount,
+        publication.publishedMeeting.updatedAt?.toISOString() ??
+        now.toISOString(),
+      recipientCount: publication.recipientCount,
+      attendeeCreatedCount: publication.attendeeCreatedCount,
+      emailSentCount: publication.emailSentCount,
     };
   } catch (error) {
     return {

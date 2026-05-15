@@ -21,6 +21,7 @@ import {
   createUpcomingMeetingFromDefaults,
   buildMeetingDetailResponse,
   buildEditableMeetingResponse,
+  publishMeetingNowById,
   type MeetingAutosaveResult,
   type PublishMeetingResult,
   type CancelMeetingResult,
@@ -33,7 +34,6 @@ import { decodeCursor, encodeCursor } from "../utils/pagination";
 import {
   getGroupMeetingById,
   updateGroupMeetingById,
-  publishGroupMeetingById,
   cancelGroupMeetingById,
   UpdateGroupMeetingInput,
 } from "../models/groupMeetings";
@@ -610,22 +610,8 @@ const applyGroupRoutes = () => {
         userId,
       );
 
-      // Check if draft
-      if (meeting.status !== "draft") {
-        throw new Error("Only draft meetings can be published.");
-      }
-
-      const published = await publishGroupMeetingById(meetingId);
-      if (!published) {
-        throw new Error("Failed to publish meeting.");
-      }
-
-      const result: PublishMeetingResult = {
-        meetingId: published._id.toHexString(),
-        status: "published",
-        publishedAt: (published.updatedAt || new Date()).toISOString(),
-        attendanceEnabled: true,
-      };
+      const result: PublishMeetingResult =
+        await publishMeetingNowById(meetingId);
 
       res.status(200).json(result);
     }),
