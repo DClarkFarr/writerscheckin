@@ -4,7 +4,7 @@ import { useSaveMeetingMutation } from "@/queries/useSaveMeetingMutation";
 import { usePublishMeetingMutation } from "@/queries/usePublishMeetingMutation";
 import { useCancelMeetingMutation } from "@/queries/useCancelMeetingMutation";
 import type { UpdateMeetingInput } from "@/api/types/groups";
-import { parseDateTimeFields } from "@/lib/dateFormat";
+import { formatLocalDateField, parseDateTimeFields } from "@/lib/dateFormat";
 
 const AUTOSAVE_DELAY = 1500; // 1.5 seconds
 
@@ -73,8 +73,7 @@ export function useMeetingForm({ groupId, meetingId }: UseMeetingFormProps) {
     const syncFieldState = () => {
       if (!meeting || fields.name) return;
 
-      const occursAtDate = new Date(meeting.occursAt);
-      const dateStr = occursAtDate.toISOString().split("T")[0];
+      const dateStr = formatLocalDateField(meeting.occursAt);
       const timeStr = `${meeting.startTime.hours.toString().padStart(2, "0")}:${meeting.startTime.minutes.toString().padStart(2, "0")}`;
 
       const toSet = {
