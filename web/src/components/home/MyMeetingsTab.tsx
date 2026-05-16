@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMyMeetingsQuery } from "@/queries/useMyMeetingsQuery";
 import { useMeetingCheckinMutation } from "@/queries/useMeetingCheckinMutation";
 import { MeetingCheckinDrawer } from "./MeetingCheckinDrawer";
 import { MeetingFeedItem } from "./MeetingFeedItem";
 import type { MemberMeetingFeedItem } from "@/api/types/groups";
+import { useSubscribeSocketToGroups } from "@/hooks/useSubscribeSocketToGroups";
 
 export function MyMeetingsTab() {
   const {
@@ -16,6 +17,16 @@ export function MyMeetingsTab() {
     hasNextPage,
     isFetchingNextPage,
   } = useMyMeetingsQuery();
+
+  const uniqueGroupIds = useMemo(() => {
+    const groupIdSet = new Set<string>();
+    items.forEach((item) => {
+      groupIdSet.add(item.groupId);
+    });
+    return Array.from(groupIdSet);
+  }, [items]);
+
+  useSubscribeSocketToGroups(uniqueGroupIds);
 
   const [selectedMeetingForDrawer, setSelectedMeetingForDrawer] =
     useState<MemberMeetingFeedItem | null>(null);

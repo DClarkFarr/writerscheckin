@@ -5,6 +5,7 @@ import { useMeQuery } from "@/queries/useMeQuery";
 import { useAuthStore } from "@/store/authStore";
 import { isPublicPath } from "@/lib/authPaths";
 import { Topbar } from "./Topbar";
+import { useRegisterSocket } from "@/hooks/useRegisterSocket";
 
 export function RootLayout() {
   const { setUser, clearUser } = useAuthStore();
@@ -12,6 +13,8 @@ export function RootLayout() {
   const navigate = useNavigate();
 
   const { data, isSuccess, error } = useMeQuery();
+
+  useRegisterSocket();
 
   useEffect(() => {
     if (isSuccess && data) {

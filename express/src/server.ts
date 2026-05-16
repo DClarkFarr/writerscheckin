@@ -27,6 +27,7 @@ const startServer = async () => {
   await ensureModelIndexes();
 
   app.setupSessions();
+  app.setupSocket();
 
   app.api.use("/api", apiRouter);
   app.api.use("/uploads", uploadRouter);

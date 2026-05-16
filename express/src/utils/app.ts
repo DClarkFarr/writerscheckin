@@ -8,14 +8,19 @@ import { configureEnv, env } from "./env";
 import { connectToMongo } from "./mongo";
 import { setDb } from "./db";
 import { MongoSessionStore } from "./sessionStore";
+import { createServer } from "http";
+import { Server } from "socket.io";
 
 class App {
   private static instance: App | null = null;
   public readonly api: Application;
   public db: Db | null = null;
+  public server: ReturnType<typeof createServer>;
+  public io: Server | null = null;
 
   private constructor() {
     this.api = express();
+    this.server = createServer(this.api);
   }
 
   public static getInstance(): App {
@@ -86,7 +91,7 @@ class App {
     const port = env.PORT;
 
     return new Promise((resolve) => {
-      this.api.listen(port, () => {
+      this.server.listen(port, () => {
         console.log(`Server is running on http://localhost:${port}`);
         resolve();
       });
@@ -192,6 +197,36 @@ class App {
     }
 
     return "";
+  }
+
+  public setupSocket(): void {
+    this.io = new Server(this.server, {
+      cors: {
+        origin: this.getCorsAllowedOrigins(),
+        methods: ["GET", "POST"],
+        credentials: true,
+      },
+    });
+
+    this.io.on("connection", (socket) => {
+      const userId = socket.handshake.auth.userId;
+
+      // console.log("New client connected:", socket.id, "for userId:", userId);
+
+      socket.on("subscribe", ({ groupId }) => {
+        // console.log(`Socket ${socket.id} subscribing to group ${groupId}`);
+        socket.join(groupId);
+      });
+
+      socket.on("unsubscribe", ({ groupId }) => {
+        // console.log(`Socket ${socket.id} unsubscribing from group ${groupId}`);
+        socket.leave(groupId);
+      });
+
+      socket.on("disconnect", () => {
+        // console.log("Client disconnected:", socket.id);
+      });
+    });
   }
 }
 

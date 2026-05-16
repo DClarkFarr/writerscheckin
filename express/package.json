@@ -32,7 +32,8 @@
     "nodemailer": "^8.0.6",
     "officeparser": "^6.0.7",
     "p-queue": "^9.2.0",
-    "p-queue-cjs": "^7.3.4"
+    "p-queue-cjs": "^7.3.4",
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",

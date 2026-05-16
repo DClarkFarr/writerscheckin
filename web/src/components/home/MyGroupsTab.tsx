@@ -19,6 +19,7 @@ import { GroupAdminActionsMenu } from "../group/GroupAdminActionsDropdown";
 import { formatDate } from "@/lib/dateFormat";
 import { useGroupInvites } from "@/hooks/useGroupInvites";
 import { GroupInviteList } from "./GroupInviteList";
+import { useSubscribeSocketToGroups } from "@/hooks/useSubscribeSocketToGroups";
 
 export function MyGroupsTab() {
   const navigate = useNavigate();
@@ -40,6 +41,16 @@ export function MyGroupsTab() {
     useGroupInvites();
 
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  const uniqueGroupIds = useMemo(() => {
+    const groupIdSet = new Set<string>();
+    groups.forEach((group) => {
+      groupIdSet.add(group.groupId);
+    });
+    return Array.from(groupIdSet);
+  }, [groups]);
+
+  useSubscribeSocketToGroups(uniqueGroupIds);
 
   useEffect(() => {
     if (!hasNextPage || isFetchingNextPage) {
