@@ -7,9 +7,16 @@ import type {
 import dayjs from "dayjs";
 
 type MeetingTimeState = "upcoming" | "past" | "ongoing";
+export type MemberMeetingCheckinWindowState =
+  | "pre-open"
+  | "open"
+  | "closed"
+  | "unavailable";
+
 export interface MemberMeetingDerivedState {
   attendanceState: UserMeetingCheckinState;
   canCheckin: boolean;
+  checkinWindowState: MemberMeetingCheckinWindowState;
   showAdminOnlyBadge: boolean;
   displayTone: MeetingDisplayTone;
   meetingTimeState: MeetingTimeState;
@@ -63,6 +70,7 @@ export const canCheckInToMemberMeeting = (
   meeting: Pick<
     MemberMeetingFeedItem,
     | "occursAt"
+    | "publishHoursBefore"
     | "status"
     | "checkinClosesAt"
     | "endCheckinHoursBefore"
@@ -70,17 +78,41 @@ export const canCheckInToMemberMeeting = (
   >,
   now: Date = new Date(),
 ): boolean => {
+  return getMemberMeetingCheckinWindowState(meeting, now) === "open";
+};
+
+export const getMemberMeetingCheckinWindowState = (
+  meeting: Pick<
+    MemberMeetingFeedItem,
+    | "occursAt"
+    | "publishHoursBefore"
+    | "status"
+    | "checkinClosesAt"
+    | "endCheckinHoursBefore"
+    | "isCheckinClosedByCuttoff"
+  >,
+  now: Date = new Date(),
+): MemberMeetingCheckinWindowState => {
   if (meeting.status !== "published") {
-    return false;
+    return "unavailable";
   }
 
   const occursAt = new Date(meeting.occursAt);
   if (Number.isNaN(occursAt.getTime()) || occursAt.getTime() <= now.getTime()) {
-    return false;
+    return "unavailable";
+  }
+
+  const checkinOpensAt = new Date(occursAt);
+  checkinOpensAt.setHours(
+    checkinOpensAt.getHours() - (meeting.publishHoursBefore ?? 0),
+  );
+
+  if (now.getTime() < checkinOpensAt.getTime()) {
+    return "pre-open";
   }
 
   if (meeting.isCheckinClosedByCuttoff === true) {
-    return false;
+    return "closed";
   }
 
   const explicitClosesAt = meeting.checkinClosesAt
@@ -96,7 +128,11 @@ export const canCheckInToMemberMeeting = (
           return computed;
         })();
 
-  return checkinClosesAt.getTime() > now.getTime();
+  if (checkinClosesAt.getTime() <= now.getTime()) {
+    return "closed";
+  }
+
+  return "open";
 };
 
 export const showMemberMeetingAdminOnlyBadge = (
@@ -125,9 +161,12 @@ export const getMemberMeetingDerivedState = (
   meeting: MemberMeetingFeedItem,
   now: Date = new Date(),
 ): MemberMeetingDerivedState => {
+  const checkinWindowState = getMemberMeetingCheckinWindowState(meeting, now);
+
   return {
     attendanceState: getMemberMeetingAttendanceState(meeting),
-    canCheckin: canCheckInToMemberMeeting(meeting, now),
+    canCheckin: checkinWindowState === "open",
+    checkinWindowState,
     showAdminOnlyBadge: showMemberMeetingAdminOnlyBadge(meeting),
     displayTone: getMemberMeetingDisplayTone(meeting, now),
     meetingTimeState: getMemberMeetingTimeState(meeting, now),

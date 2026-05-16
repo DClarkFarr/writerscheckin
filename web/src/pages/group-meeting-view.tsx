@@ -16,9 +16,12 @@ import {
   parseDateStrict,
   formatStaticDateTime,
   formatStaticFullDateTime,
-  isSameCalendarDay,
 } from "@/lib/dateFormat";
-import { formatCheckinWindowMessage } from "@/lib/checkinWindowMessage";
+import {
+  formatCheckinWindowMessage,
+  getCheckinDisabledReason,
+  resolveCheckinWindowUiState,
+} from "@/lib/checkinWindowMessage";
 import type { UserMeetingCheckinState } from "@/api/types/groups";
 import { useEffect, useMemo, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -107,10 +110,19 @@ export function GroupMeetingViewPage({
   }, [participantRows]);
 
   useEffect(() => {
-    if (
-      !meeting?.checkinClosesAt ||
-      !isSameCalendarDay(meeting.occursAt, new Date())
-    ) {
+    if (!meeting?.checkinClosesAt) {
+      return;
+    }
+
+    const occursAt = parseDateStrict(meeting.occursAt);
+    const now = new Date();
+    const checkinWindowState = resolveCheckinWindowUiState({
+      canCheckin: meeting.canCheckin,
+      isCheckinClosedByCuttoff: meeting.isCheckinClosedByCuttoff,
+      isUpcomingMeeting: occursAt ? occursAt.isAfter(now) : false,
+    });
+
+    if (checkinWindowState !== "open") {
       return;
     }
 
@@ -135,7 +147,12 @@ export function GroupMeetingViewPage({
     }, 1000);
 
     return () => window.clearInterval(timer);
-  }, [meeting?.checkinClosesAt, meeting?.occursAt]);
+  }, [
+    meeting?.canCheckin,
+    meeting?.checkinClosesAt,
+    meeting?.isCheckinClosedByCuttoff,
+    meeting?.occursAt,
+  ]);
 
   const header = (
     <Breadcrumb variant="light">
@@ -269,14 +286,14 @@ export function GroupMeetingViewPage({
         now: currentTime,
       })
     : (meeting.checkinPeriodMessage ?? "Check-in period end time unavailable.");
-  const isMeetingDayToday = isSameCalendarDay(meeting.occursAt, currentTime);
-  const canCheckinNow = meeting.canCheckin && isMeetingDayToday;
-  const isCheckinCutoffClosed = meeting.isCheckinClosedByCuttoff === true;
-  const disabledCheckinReason = !isMeetingDayToday
-    ? "Check-in opens on the day of the meeting."
-    : isCheckinCutoffClosed
-      ? "Check-in is closed because the cutoff time has passed."
-      : "Check-in is unavailable for this meeting right now.";
+  const occursAt = parseDateStrict(meeting.occursAt);
+  const checkinWindowState = resolveCheckinWindowUiState({
+    canCheckin: meeting.canCheckin,
+    isCheckinClosedByCuttoff: meeting.isCheckinClosedByCuttoff,
+    isUpcomingMeeting: occursAt ? occursAt.isAfter(currentTime) : false,
+  });
+  const canCheckinNow = checkinWindowState === "open";
+  const disabledCheckinReason = getCheckinDisabledReason(checkinWindowState);
   const checkinErrorMessage =
     checkinMutation.error instanceof Error
       ? checkinMutation.error.message

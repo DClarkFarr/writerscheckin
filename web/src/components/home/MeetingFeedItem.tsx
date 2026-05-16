@@ -26,11 +26,13 @@ import {
   formatBookendMonthDay,
   formatBookendYear,
   formatDate,
-  isSameCalendarDay,
   parseDateStrict,
-  formatTimeUntil,
 } from "@/lib/dateFormat";
-import { formatCheckinWindowMessage } from "@/lib/checkinWindowMessage";
+import {
+  formatCheckinWindowMessage,
+  getCheckinDisabledReason,
+  getCheckinPrimaryButtonLabel,
+} from "@/lib/checkinWindowMessage";
 import type {
   MeetingDisplayTone,
   MemberMeetingFeedItem,
@@ -122,14 +124,6 @@ const getGroupStartTime = (occursAt: string): string => {
   return formatDate(occursAt, "h:mm a");
 };
 
-const getTimeUntilCheckin = (
-  isUpcoming: boolean,
-  checkinAt: string,
-): string => {
-  if (!isUpcoming) return "";
-  return formatTimeUntil(checkinAt);
-};
-
 const getMeetingTitle = (name: string): string => {
   const trimmed = name.trim();
   return trimmed.length > 0 ? trimmed : "Untitled meeting";
@@ -155,10 +149,6 @@ export const MeetingFeedItem = ({
   const borderColorClass = getBookendAndBorderColor(displayTone, isCancelled);
   const bookendColorClass = getBookendColor(displayTone, isCancelled);
   const buttonColorClass = getButtonColors(displayTone);
-  const timeUntilCheckin = getTimeUntilCheckin(
-    derivedState.meetingTimeState === "upcoming",
-    derivedState.toBePublishedAt,
-  );
   const groupStartTime = getGroupStartTime(item.occursAt);
 
   const meetingTitle = getMeetingTitle(item.name);
@@ -176,14 +166,9 @@ export const MeetingFeedItem = ({
         now: currentTime,
       })
     : item.checkinPeriodMessage;
-  const isMeetingDayToday = isSameCalendarDay(item.occursAt, currentTime);
-  const canCheckinNow = derivedState.canCheckin && isMeetingDayToday;
-  const isCheckinCutoffClosed = item.isCheckinClosedByCuttoff === true;
-  const disabledCheckinReason = !isMeetingDayToday
-    ? "Check-in opens on the day of the meeting."
-    : isCheckinCutoffClosed
-      ? "Check-in is closed because the cutoff time has passed."
-      : "Check-in is unavailable right now.";
+  const canCheckinNow = derivedState.canCheckin;
+  const checkinWindowState = derivedState.checkinWindowState;
+  const disabledCheckinReason = getCheckinDisabledReason(checkinWindowState);
 
   const navigate = useNavigate();
   const publishMutation = usePublishMeetingMutation({
@@ -201,7 +186,7 @@ export const MeetingFeedItem = ({
       !item.checkinClosesAt ||
       isCancelled ||
       derivedState.meetingTimeState !== "upcoming" ||
-      !isMeetingDayToday
+      checkinWindowState !== "open"
     ) {
       return;
     }
@@ -228,9 +213,9 @@ export const MeetingFeedItem = ({
 
     return () => window.clearInterval(timer);
   }, [
+    checkinWindowState,
     derivedState.meetingTimeState,
     isCancelled,
-    isMeetingDayToday,
     item.checkinClosesAt,
   ]);
 
@@ -482,9 +467,7 @@ export const MeetingFeedItem = ({
                           className="w-full border-gray-500"
                           disabled
                         >
-                          {isCheckinCutoffClosed
-                            ? "Check-in Closed"
-                            : `Check-in starts ${timeUntilCheckin}`}
+                          {getCheckinPrimaryButtonLabel(checkinWindowState)}
                         </Button>
                       </span>
                     </TooltipTrigger>

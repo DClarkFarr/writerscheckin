@@ -3,7 +3,6 @@ import {
   DISPLAY_TIME_FORMAT,
   formatCountdownHms,
   formatDate,
-  isSameCalendarDay,
   parseDateStrict,
 } from "@/lib/dateFormat";
 
@@ -13,6 +12,56 @@ export interface CheckinWindowMessageInput {
   checkinClosesAt: DateValue;
   now?: DateValue;
 }
+
+export type CheckinWindowUiState =
+  | "pre-open"
+  | "open"
+  | "closed"
+  | "unavailable";
+
+export const resolveCheckinWindowUiState = (input: {
+  canCheckin: boolean;
+  isCheckinClosedByCuttoff?: boolean;
+  isUpcomingMeeting: boolean;
+}): CheckinWindowUiState => {
+  if (input.canCheckin) {
+    return "open";
+  }
+
+  if (input.isCheckinClosedByCuttoff) {
+    return "closed";
+  }
+
+  if (input.isUpcomingMeeting) {
+    return "pre-open";
+  }
+
+  return "unavailable";
+};
+
+export const getCheckinDisabledReason = (
+  state: CheckinWindowUiState,
+): string => {
+  if (state === "pre-open") {
+    return "Check-in starts soon.";
+  }
+
+  if (state === "closed") {
+    return "Check-in is closed because the cutoff time has passed.";
+  }
+
+  return "Check-in is unavailable right now.";
+};
+
+export const getCheckinPrimaryButtonLabel = (
+  state: CheckinWindowUiState,
+): string => {
+  if (state === "closed") {
+    return "Check-in Closed";
+  }
+
+  return "Check-in starts soon";
+};
 
 export const formatCheckinWindowMessage = ({
   checkinClosesAt,
@@ -32,9 +81,5 @@ export const formatCheckinWindowMessage = ({
     return `RSVP period has closed at ${dateText} ${timeText}`;
   }
 
-  if (isSameCalendarDay(closesAt, current)) {
-    return `Check-in period ends in ${formatCountdownHms(closesAt, current)}`;
-  }
-
-  return `Check-in period ends ${dateText} at ${timeText}`;
+  return `Check-in period ends in ${formatCountdownHms(closesAt, current)}`;
 };

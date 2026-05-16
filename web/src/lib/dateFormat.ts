@@ -266,7 +266,7 @@ export function formatCountdownHms(
   const nowDate = parseDateStrict(now);
 
   if (!targetDate || !nowDate) {
-    return "0 hours 0 minutes 0 seconds";
+    return "0hr 0min 0sec";
   }
 
   const diffMs = Math.max(0, targetDate.diff(nowDate, "millisecond"));
@@ -275,5 +275,5 @@ export function formatCountdownHms(
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
 
-  return `${hours} hours ${minutes} minutes ${seconds} seconds`;
+  return `${hours}hr ${minutes}min ${seconds}sec`;
 }
