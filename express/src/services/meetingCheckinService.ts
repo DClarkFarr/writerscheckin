@@ -15,6 +15,7 @@ export interface UpdateMeetingCheckinInput {
 
 export interface UpdateMeetingCheckinResult {
   meetingId: string;
+  groupId: string;
   userCheckinState: "attending" | "reading" | "skipping";
   attendingCount: number;
   readingCount: number;
@@ -65,6 +66,7 @@ export const updateMeetingCheckin = async (
 
   return {
     meetingId: meeting._id.toHexString(),
+    groupId: meeting.groupId.toHexString(),
     userCheckinState:
       input.state === "not_attending" ? "skipping" : input.state,
     attendingCount: aggregate.attendingCount,

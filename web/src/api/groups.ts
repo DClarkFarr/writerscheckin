@@ -45,7 +45,7 @@ import type {
 const normalizeHtmlTemplate = (value: string | null | undefined): string =>
   typeof value === "string" ? value : "";
 
-const normalizeGroupSummaryItem = (
+export const normalizeGroupSummaryItem = (
   item: GroupSummaryItem,
 ): GroupSummaryItem => ({
   ...item,

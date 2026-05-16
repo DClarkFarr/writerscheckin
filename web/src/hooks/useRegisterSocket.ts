@@ -19,7 +19,6 @@ export const useRegisterSocket = () => {
 
       (() => setSocket(s))();
 
-      console.log("setting user id", s.auth);
       s.on("connect", () => {
         console.log("Connected to Socket.IO server");
       });

@@ -1,10 +1,17 @@
 import { useMemo } from "react";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, type InfiniteData } from "@tanstack/react-query";
 import { ApiError } from "@/api/types";
 import { getMyMeetings } from "@/api/groups";
 import type { BaseQueryOptions } from "@/types/query.types";
-import type { MemberMeetingFeedItem } from "@/api/types/groups";
+import type {
+  ListMemberMeetingsResponse,
+  MemberMeetingFeedItem,
+} from "@/api/types/groups";
 
+export type MyMeetingsQueryResponse = InfiniteData<
+  ListMemberMeetingsResponse,
+  unknown
+>;
 const mapErrorMessage = (error: unknown): string => {
   if (error instanceof ApiError) {
     return error.serverMessage ?? "Unable to load your meetings.";

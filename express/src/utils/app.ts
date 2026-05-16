@@ -212,7 +212,6 @@ class App {
       const userId = socket.handshake.auth.userId;
 
       // console.log("New client connected:", socket.id, "for userId:", userId);
-
       socket.on("subscribe", ({ groupId }) => {
         // console.log(`Socket ${socket.id} subscribing to group ${groupId}`);
         socket.join(groupId);

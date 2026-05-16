@@ -9,6 +9,8 @@ import type {
   ListMyGroupsResponse,
 } from "@/api/types/groups";
 
+export type MyGroupsQueryResponse = InfiniteData<ListMyGroupsResponse, unknown>;
+
 const mapErrorMessage = (error: unknown): string => {
   if (error instanceof ApiError) {
     return error.serverMessage ?? "Unable to load your groups.";
@@ -74,7 +76,5 @@ export const useMyGroupsQuery = (
     refetch,
   };
 };
-
-export type MyGroupsQueryResponse = InfiniteData<ListMyGroupsResponse, unknown>;
 
 useMyGroupsQuery.key = myGroupQueryKey;

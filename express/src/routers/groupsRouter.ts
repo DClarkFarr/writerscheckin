@@ -41,6 +41,7 @@ import {
   UpdateGroupMeetingInput,
 } from "../models/groupMeetings";
 import { getGroupById } from "../models/groups";
+import { socketGroupEmitGroupSummaryItem } from "../services/socketEventsService";
 
 export const groupsRouter = express.Router({ mergeParams: true });
 
@@ -282,6 +283,8 @@ const applyGroupRoutes = () => {
         throw error;
       }
 
+      socketGroupEmitGroupSummaryItem(data.groupId);
+
       res.status(200).json(data);
     }),
   );
@@ -305,6 +308,8 @@ const applyGroupRoutes = () => {
         userId,
         action: actionRaw,
       });
+
+      socketGroupEmitGroupSummaryItem(data.groupId);
 
       res.status(200).json(data);
     }),
@@ -392,6 +397,8 @@ const applyGroupRoutes = () => {
         userId,
       );
 
+      socketGroupEmitGroupSummaryItem(groupId);
+
       res.status(200).json(data);
     }),
   );
@@ -403,6 +410,8 @@ const applyGroupRoutes = () => {
       const groupId = getRouteParam(req.params.id, "id");
 
       await leaveGroup(groupId, userId);
+
+      socketGroupEmitGroupSummaryItem(groupId);
 
       res.status(200).json({
         success: true,
@@ -434,6 +443,8 @@ const applyGroupRoutes = () => {
 
       await removeGroupMember({ groupId, memberId });
 
+      socketGroupEmitGroupSummaryItem(groupId);
+
       res.status(200).json({
         success: true,
         message: "Member removed",
@@ -458,6 +469,8 @@ const applyGroupRoutes = () => {
         invitedBy: userId,
       });
 
+      socketGroupEmitGroupSummaryItem(groupId);
+
       res.status(201).json({
         success: true,
         _id: created._id.toHexString(),
@@ -481,6 +494,8 @@ const applyGroupRoutes = () => {
       const role = req.body?.role;
 
       const updated = await updateGroupMemberRole({ groupId, memberId, role });
+
+      socketGroupEmitGroupSummaryItem(groupId);
 
       res.status(200).json({
         success: true,
@@ -662,6 +677,8 @@ const applyGroupRoutes = () => {
       const result: PublishMeetingResult =
         await publishMeetingNowById(meetingId);
 
+      socketGroupEmitGroupSummaryItem(groupId);
+
       res.status(200).json(result);
     }),
   );
@@ -696,6 +713,8 @@ const applyGroupRoutes = () => {
         status: "cancelled",
         cancelledAt: (cancelled.cancelledAt || new Date()).toISOString(),
       };
+
+      socketGroupEmitGroupSummaryItem(groupId);
 
       res.status(200).json(result);
     }),

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import IconPencil from "~icons/mdi/pencil";
 import { PageCard } from "@/components/layout/PageCard";
@@ -20,6 +20,12 @@ import { GroupAdminActionsMenu } from "@/components/group/GroupAdminActionsDropd
 import { useGroupMeetingsQuery } from "@/queries/useGroupMeetingsQuery";
 import { useGroupMembersQuery } from "@/queries/useGroupMembersQuery";
 import { useGroupQuery } from "@/queries/useGroupQuery";
+import {
+  useSubscribeSocketToGroups,
+  type SubscribeSocketToGroupsCallbacks,
+} from "@/hooks/useSubscribeSocketToGroups";
+
+const MAP_DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 export function GroupViewPage() {
   const { groupId } = useParams({ from: "/groups/$groupId/view" });
@@ -35,7 +41,9 @@ export function GroupViewPage() {
     fetchNextPage: loadMoreMembers,
     hasNextPage: hasMoreMembers,
     isFetchingNextPage: isFetchingMoreMembers,
+    refetch: refetchMembers,
   } = useGroupMembersQuery({ groupId, limit: 20 });
+
   const {
     meetings,
     isLoading: isMeetingsLoading,
@@ -44,7 +52,26 @@ export function GroupViewPage() {
     fetchNextPage: loadMoreMeetings,
     hasNextPage: hasMoreMeetings,
     isFetchingNextPage: isFetchingMoreMeetings,
+    // refetch: refetchMeetings,
   } = useGroupMeetingsQuery({ groupId, limit: 20 });
+
+  const uniqueGroupIds = useMemo(() => {
+    return [groupId];
+  }, [groupId]);
+
+  const callbacks = useMemo<SubscribeSocketToGroupsCallbacks>(() => {
+    console.log("computing callbacks");
+    return {
+      onChangeGroup: (updatedGroup) => {
+        if (updatedGroup.groupId === groupId) {
+          console.log("Group updated via socket:", updatedGroup);
+          refetchMembers();
+        }
+      },
+    };
+  }, [groupId, refetchMembers]);
+
+  useSubscribeSocketToGroups(uniqueGroupIds, callbacks);
 
   const header = (
     <Breadcrumb variant="light">
@@ -141,6 +168,15 @@ export function GroupViewPage() {
           <span className="font-medium capitalize">
             {group.recurrenceFrequency}
           </span>
+          {group.recurrenceDaysOfWeek && (
+            <span className="font-medium">
+              {" "}
+              on{" "}
+              {group.recurrenceDaysOfWeek
+                .map((d) => MAP_DAYS_OF_WEEK[d])
+                .join(", ")}
+            </span>
+          )}
         </p>
         <p>
           <span className="text-muted-foreground">Start time:</span>{" "}
