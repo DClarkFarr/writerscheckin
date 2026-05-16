@@ -35,7 +35,7 @@ export type MeetingAttendeeSocketPayloadDocument = ReturnType<
 export interface MeetingSocketPayload {
   groupMeeting: GroupMeetingSocketPayloadDocument;
   groupMember: GroupMemberSocketPayloadDocument;
-  meetingAttendee: MeetingAttendeeSocketPayloadDocument;
+  meetingAttendee: MeetingAttendeeSocketPayloadDocument | null;
 }
 
 const getGroupRoomSockets = async (groupId: ObjectId) => {
@@ -71,7 +71,7 @@ const mapGroupMemberToSocketPayload = (input: {
 const mapMeetingSocketPayload = (input: {
   groupMeeting: GroupMeetingSocketPayloadDocument;
   groupMember: GroupMemberSocketPayloadDocument;
-  meetingAttendee: MeetingAttendeeSocketPayloadDocument;
+  meetingAttendee: MeetingAttendeeSocketPayloadDocument | null;
 }): MeetingSocketPayload => {
   return {
     groupMeeting: input.groupMeeting,
@@ -153,15 +153,14 @@ export const socketGroupEmitMeetingItem = async (
       meeting._id,
       userMembership._id,
     );
-    if (!attendee) {
-      continue;
-    }
 
     const groupMember = mapGroupMemberToSocketPayload({
       groupId: id,
       membership: userMembership,
     });
-    const meetingAttendee = meetingAttendeeDocumentToResponse(attendee);
+    const meetingAttendee = attendee
+      ? meetingAttendeeDocumentToResponse(attendee)
+      : null;
 
     const payload = mapMeetingSocketPayload({
       groupMeeting,
@@ -169,6 +168,15 @@ export const socketGroupEmitMeetingItem = async (
       meetingAttendee,
     });
 
+    console.log(
+      "socket emitting meeting update for meeting",
+      meeting.name,
+      "room",
+      id,
+      "socketid",
+      socketId,
+      payload,
+    );
     emitToGroupSocket(id, socketId, "meeting", payload);
   }
 };
