@@ -11,6 +11,7 @@ export interface GroupSummaryItem {
   name: string;
   address?: string;
   recurrence: string;
+  recurrenceDaysOfWeek: number[];
   createdAt: string;
   isActive: boolean;
   userRole: string;
@@ -33,6 +34,7 @@ export interface GroupSummaryMapperInput {
   name: string;
   address?: string;
   recurrence: string;
+  recurrenceDaysOfWeek: number[];
   createdAt: string;
   isActive: boolean;
   userRole: string;
@@ -77,6 +79,7 @@ export const mapToGroupSummaryItem = (
     name: input.name,
     ...(input.address ? { address: input.address } : {}),
     recurrence: input.recurrence,
+    recurrenceDaysOfWeek: input.recurrenceDaysOfWeek,
     createdAt: input.createdAt,
     isActive: input.isActive,
     userRole: input.userRole,

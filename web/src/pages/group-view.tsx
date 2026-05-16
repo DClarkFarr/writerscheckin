@@ -64,7 +64,6 @@ export function GroupViewPage() {
     return {
       onChangeGroup: (updatedGroup) => {
         if (updatedGroup.groupId === groupId) {
-          console.log("Group updated via socket:", updatedGroup);
           refetchMembers();
         }
       },

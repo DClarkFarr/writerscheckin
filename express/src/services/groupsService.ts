@@ -574,6 +574,7 @@ export const populateGroupsasSummaryItems = async (
         name: group.name,
         address: group.address,
         recurrence: group.recurrenceRule.frequency,
+        recurrenceDaysOfWeek: group.recurrenceRule.daysOfWeek,
         createdAt: group.createdAt.toISOString(),
         isActive: !group.deletedAt,
         userRole,

@@ -53,6 +53,9 @@ export const normalizeGroupSummaryItem = (
   membershipCreatedAt: item.membershipCreatedAt,
   address: item.address ?? "",
   recurrence: item.recurrence ?? "weekly",
+  recurrenceDaysOfWeek: Array.isArray(item.recurrenceDaysOfWeek)
+    ? item.recurrenceDaysOfWeek
+    : [],
   createdAt: item.createdAt ?? new Date(0).toISOString(),
   counts: {
     activeMembers: item.counts?.activeMembers ?? 0,

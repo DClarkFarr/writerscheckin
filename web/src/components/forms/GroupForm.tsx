@@ -134,76 +134,81 @@ export function GroupForm({
         </Field>
       </FieldGroup>
 
-      <FieldGroup className="md:flex-row gap-4">
-        <Field>
-          <FieldLabel htmlFor="startTime">Start time</FieldLabel>
-          <Input
-            id="startTime"
-            name="startTime"
-            type="time"
-            step={900}
-            value={fields.startTime}
-            onChange={handleFieldChange}
-            onBlur={handleFieldBlur}
-            size="lg"
-            aria-invalid={touched.startTime && !!fieldErrors.startTime}
-          />
-          <FieldError>
-            {touched.startTime ? fieldErrors.startTime : undefined}
-          </FieldError>
-        </Field>
+      <FieldGroup>
+        <FieldGroup className="md:flex-row gap-4">
+          <Field>
+            <FieldLabel htmlFor="startTime">Start time</FieldLabel>
+            <Input
+              id="startTime"
+              name="startTime"
+              type="time"
+              step={900}
+              value={fields.startTime}
+              onChange={handleFieldChange}
+              onBlur={handleFieldBlur}
+              size="lg"
+              aria-invalid={touched.startTime && !!fieldErrors.startTime}
+            />
+            <FieldError>
+              {touched.startTime ? fieldErrors.startTime : undefined}
+            </FieldError>
+          </Field>
 
-        <Field>
-          <FieldLabel htmlFor="durationMinutes">Duration (minutes)</FieldLabel>
-          <Input
-            id="durationMinutes"
-            name="durationMinutes"
-            type="number"
-            min={60}
-            max={240}
-            step={15}
-            value={fields.durationMinutes}
-            onChange={handleFieldChange}
-            onBlur={handleFieldBlur}
-            size="lg"
-            aria-invalid={
-              touched.durationMinutes && !!fieldErrors.durationMinutes
-            }
-          />
-          <FieldError>
-            {touched.durationMinutes ? fieldErrors.durationMinutes : undefined}
-          </FieldError>
-        </Field>
+          <Field>
+            <FieldLabel htmlFor="durationMinutes">
+              Duration (minutes)
+            </FieldLabel>
+            <Input
+              id="durationMinutes"
+              name="durationMinutes"
+              type="number"
+              min={60}
+              max={240}
+              step={15}
+              value={fields.durationMinutes}
+              onChange={handleFieldChange}
+              onBlur={handleFieldBlur}
+              size="lg"
+              aria-invalid={
+                touched.durationMinutes && !!fieldErrors.durationMinutes
+              }
+            />
+            <FieldError>
+              {touched.durationMinutes
+                ? fieldErrors.durationMinutes
+                : undefined}
+            </FieldError>
+          </Field>
 
-        <Field>
-          <FieldLabel htmlFor="endCheckinHoursBefore">
-            Check-in closes (hours before start)
-          </FieldLabel>
-          <Input
-            id="endCheckinHoursBefore"
-            name="endCheckinHoursBefore"
-            type="number"
-            min={0}
-            step={1}
-            value={fields.endCheckinHoursBefore}
-            onChange={handleFieldChange}
-            onBlur={handleFieldBlur}
-            size="lg"
-            aria-invalid={
-              touched.endCheckinHoursBefore &&
-              !!fieldErrors.endCheckinHoursBefore
-            }
-          />
-          <FieldDescription>
-            Set to 0 to keep check-in open until meeting start.
-          </FieldDescription>
-          <FieldError>
-            {touched.endCheckinHoursBefore
-              ? fieldErrors.endCheckinHoursBefore
-              : undefined}
-          </FieldError>
-        </Field>
-
+          <Field>
+            <FieldLabel htmlFor="endCheckinHoursBefore">
+              Check-in closes (hours before start)
+            </FieldLabel>
+            <Input
+              id="endCheckinHoursBefore"
+              name="endCheckinHoursBefore"
+              type="number"
+              min={0}
+              step={1}
+              value={fields.endCheckinHoursBefore}
+              onChange={handleFieldChange}
+              onBlur={handleFieldBlur}
+              size="lg"
+              aria-invalid={
+                touched.endCheckinHoursBefore &&
+                !!fieldErrors.endCheckinHoursBefore
+              }
+            />
+            <FieldDescription>
+              Set to 0 to keep check-in open until meeting start.
+            </FieldDescription>
+            <FieldError>
+              {touched.endCheckinHoursBefore
+                ? fieldErrors.endCheckinHoursBefore
+                : undefined}
+            </FieldError>
+          </Field>
+        </FieldGroup>
         <Field>
           <FieldLabel htmlFor="recurrenceFrequency">Recurrence</FieldLabel>
           <select

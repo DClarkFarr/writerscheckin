@@ -25,6 +25,7 @@ export interface GroupSummaryItem {
   name: string;
   address?: string;
   recurrence: string;
+  recurrenceDaysOfWeek: number[];
   createdAt: string;
   isActive: boolean;
   userRole: GroupUserRole;

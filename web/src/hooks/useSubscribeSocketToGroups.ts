@@ -1,5 +1,10 @@
 import { normalizeGroupSummaryItem } from "@/api/groups";
-import type { GroupSummaryItem } from "@/api/types/groups";
+import type {
+  EditableGroupResponse,
+  GroupRecurrenceFrequency,
+  GroupSummaryItem,
+} from "@/api/types/groups";
+import { groupQueryKey } from "@/queries/useGroupQuery";
 import {
   myGroupQueryKey,
   type MyGroupsQueryResponse,
@@ -44,45 +49,11 @@ export const useSubscribeSocketToGroups = (
       socket.on("group", (data: GroupSummaryItem) => {
         const normalizedGroup = normalizeGroupSummaryItem(data);
 
-        const myGroupsAllKey = myGroupQueryKey().slice(0, 1);
+        console.log("got data", normalizedGroup, "from", data);
 
-        const queries = queryClient
-          .getQueriesData<MyGroupsQueryResponse>({
-            predicate: (query) => {
-              return query.queryKey[0] === myGroupsAllKey[0];
-            },
-          })
-          .filter(([_, queryData]) => {
-            return !!queryData;
-          })
-          .map(([queryKey, qd]) => {
-            const queryData = qd as MyGroupsQueryResponse;
+        applyMyGroupsQuery(queryClient, normalizedGroup);
 
-            let hasChangedGroup = false;
-            const toSet = {
-              ...queryData,
-              pages: queryData.pages.map((page) => {
-                return {
-                  ...page,
-                  items: page.items.map((item) => {
-                    if (item.groupId === normalizedGroup.groupId) {
-                      hasChangedGroup = true;
-                      return normalizedGroup;
-                    }
-                    return item;
-                  }),
-                };
-              }),
-            };
-            return [queryKey, hasChangedGroup ? toSet : queryData];
-          });
-
-        queries.forEach(([queryKey, data]) => {
-          queryClient.setQueryData(
-            queryKey as ReturnType<typeof myGroupQueryKey>,
-            data,
-          );
-        });
+        applyGroupQuery(queryClient, normalizedGroup);
 
         onChangeGroup?.(normalizedGroup);
       });
@@ -96,4 +67,68 @@ export const useSubscribeSocketToGroups = (
   }, [socket]);
 };
 
-/// MyMeetingsQueryResponse
+const applyGroupQuery = (
+  queryClient: ReturnType<typeof useQueryClient>,
+  normalizedGroup: GroupSummaryItem,
+) => {
+  queryClient.setQueryData<EditableGroupResponse>(
+    groupQueryKey(normalizedGroup.groupId),
+    (oldData) => {
+      if (!oldData) {
+        return oldData;
+      }
+
+      return {
+        ...oldData,
+        recurrenceFrequency:
+          normalizedGroup.recurrence as GroupRecurrenceFrequency,
+        ...normalizedGroup,
+      };
+    },
+  );
+};
+
+const applyMyGroupsQuery = (
+  queryClient: ReturnType<typeof useQueryClient>,
+  normalizedGroup: GroupSummaryItem,
+) => {
+  const myGroupsAllKey = myGroupQueryKey().slice(0, 1);
+
+  const queries = queryClient
+    .getQueriesData<MyGroupsQueryResponse>({
+      predicate: (query) => {
+        return query.queryKey[0] === myGroupsAllKey[0];
+      },
+    })
+    .filter(([_, queryData]) => {
+      return !!queryData;
+    })
+    .map(([queryKey, qd]) => {
+      const queryData = qd as MyGroupsQueryResponse;
+
+      let hasChangedGroup = false;
+      const toSet = {
+        ...queryData,
+        pages: queryData.pages.map((page) => {
+          return {
+            ...page,
+            items: page.items.map((item) => {
+              if (item.groupId === normalizedGroup.groupId) {
+                hasChangedGroup = true;
+                return normalizedGroup;
+              }
+              return item;
+            }),
+          };
+        }),
+      };
+      return [queryKey, hasChangedGroup ? toSet : queryData];
+    });
+
+  queries.forEach(([queryKey, data]) => {
+    queryClient.setQueryData(
+      queryKey as ReturnType<typeof myGroupQueryKey>,
+      data,
+    );
+  });
+};
