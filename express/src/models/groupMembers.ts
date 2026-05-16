@@ -21,6 +21,61 @@ import {
 } from "./types";
 import { DecodedCursor, normalizePageSize } from "../utils/pagination";
 
+export const GROUP_MEMBER_NOTIFICATION_TYPES = [
+  "newMeetingPublication",
+  "newMeetingCheckin",
+  "meetingAttendance",
+  "meetingAttendanceUpdates",
+] as const;
+
+export type GroupMemberNotificationType =
+  (typeof GROUP_MEMBER_NOTIFICATION_TYPES)[number];
+
+export type GroupMemberUnsubscribedNotifications = Partial<
+  Record<GroupMemberNotificationType, boolean>
+>;
+
+const assertNotificationType = (value: string): GroupMemberNotificationType => {
+  if (
+    !GROUP_MEMBER_NOTIFICATION_TYPES.includes(
+      value as GroupMemberNotificationType,
+    )
+  ) {
+    throw new Error(`Invalid notification type: ${value}`);
+  }
+
+  return value as GroupMemberNotificationType;
+};
+
+export const isGroupMemberNotificationType = (
+  value: string,
+): value is GroupMemberNotificationType => {
+  return GROUP_MEMBER_NOTIFICATION_TYPES.includes(
+    value as GroupMemberNotificationType,
+  );
+};
+
+const normalizeUnsubscribedNotifications = (
+  input: GroupMemberUnsubscribedNotifications | undefined,
+): GroupMemberUnsubscribedNotifications | undefined => {
+  if (input === undefined) {
+    return undefined;
+  }
+
+  const output: GroupMemberUnsubscribedNotifications = {};
+  for (const [rawKey, value] of Object.entries(input)) {
+    const key = assertNotificationType(rawKey);
+    if (typeof value !== "boolean") {
+      throw new Error(
+        `Invalid unsubscribedNotifications.${key} value; expected boolean.`,
+      );
+    }
+    output[key] = value;
+  }
+
+  return output;
+};
+
 export interface GroupMemberDefinition extends BaseModelBlueprint {
   groupId: ObjectId;
   userId?: ObjectId;
@@ -30,6 +85,7 @@ export interface GroupMemberDefinition extends BaseModelBlueprint {
   invitedAt: Date;
   acceptedAt?: Date;
   status: GroupMemberInviteStatus;
+  unsubscribedNotifications?: GroupMemberUnsubscribedNotifications;
   deletedAt?: Date;
 }
 
@@ -97,6 +153,7 @@ export interface SaveGroupMemberInput {
   invitedAt?: Date;
   acceptedAt?: Date;
   status: GroupMemberInviteStatus;
+  unsubscribedNotifications?: GroupMemberUnsubscribedNotifications;
 }
 
 export interface UpdateGroupMemberInput {
@@ -107,6 +164,11 @@ export interface UpdateGroupMemberInput {
   invitedAt?: Date;
   acceptedAt?: Date | null;
   status?: GroupMemberInviteStatus | undefined;
+  unsubscribedNotifications?: GroupMemberUnsubscribedNotifications;
+  updateUnsubscribedNotification?: {
+    notificationType: GroupMemberNotificationType;
+    unsubscribed: boolean;
+  };
 }
 
 export interface ListGroupMembersOptions {
@@ -239,6 +301,9 @@ export const saveGroupMember = async (
   const status = assertInviteStatus(input.status);
   const invitedAt = input.invitedAt ?? new Date();
   const acceptedAt = input.acceptedAt;
+  const unsubscribedNotifications = normalizeUnsubscribedNotifications(
+    input.unsubscribedNotifications,
+  );
   assertMemberIdentifier(userId, email);
   const existing = await collection.findOne(
     buildMemberFilter(groupId, userId, email),
@@ -259,6 +324,9 @@ export const saveGroupMember = async (
         invitedAt,
         ...(acceptedAt ? { acceptedAt } : {}),
         status,
+        ...(unsubscribedNotifications !== undefined
+          ? { unsubscribedNotifications }
+          : {}),
         ...touchTimestamps(),
       },
       $setOnInsert: {
@@ -558,16 +626,34 @@ export const updateGroupMemberById = async (
     updatePayload.status = nextStatus;
   }
 
+  if (updates.unsubscribedNotifications !== undefined) {
+    const normalizedNotifications = normalizeUnsubscribedNotifications(
+      updates.unsubscribedNotifications,
+    );
+    if (normalizedNotifications !== undefined) {
+      updatePayload.unsubscribedNotifications = normalizedNotifications;
+    }
+  }
+
+  const setPayload: Record<string, unknown> = {
+    ...updatePayload,
+    ...touchTimestamps(),
+  };
+  if (updates.updateUnsubscribedNotification) {
+    const key = assertNotificationType(
+      updates.updateUnsubscribedNotification.notificationType,
+    );
+    setPayload[`unsubscribedNotifications.${key}`] =
+      updates.updateUnsubscribedNotification.unsubscribed;
+  }
+
   const result = await collection.findOneAndUpdate(
     {
       _id: groupMemberId,
       ...activeRecordFilter(),
     },
     {
-      $set: {
-        ...updatePayload,
-        ...touchTimestamps(),
-      },
+      $set: setPayload,
     },
     { returnDocument: "after" },
   );

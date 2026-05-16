@@ -108,6 +108,11 @@ export function GroupViewPage() {
 
         {group.userRole === "member" ? (
           <div className="flex items-center gap-1">
+            <Button type="button" size="sm" variant="outline" asChild>
+              <Link to="/groups/$groupId/notifications" params={{ groupId }}>
+                Edit group notification settings
+              </Link>
+            </Button>
             <GroupMemberActionsDropdown group={group} />
           </div>
         ) : (

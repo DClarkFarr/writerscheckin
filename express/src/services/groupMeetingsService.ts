@@ -36,6 +36,7 @@ import { sendEmail } from "./emailService";
 import { emailLinks } from "./emailTemplates/baseEmailTemplate";
 import { GROUP_MESSAGE_TEMPLATE_DEFAULTS } from "./emailTemplates/groupMessageTemplateDefaults";
 import { buildGroupMeetingPublishEmail } from "./emailTemplates/groupMeetingPublish";
+import { isGroupMemberUnsubscribedFromNotification } from "./groupMembersService";
 import {
   InviteLinkAccessState,
   InviteLinkAction,
@@ -263,6 +264,17 @@ export const listDueDraftMeetingsForPublicationWindow = async (
   return rows.map(dueDraftMeetingRowToCandidate);
 };
 
+export const isMemberUnsubscribed = (
+  member: Pick<GroupMemberDocument, "unsubscribedNotifications">,
+  notificationType:
+    | "newMeetingPublication"
+    | "newMeetingCheckin"
+    | "meetingAttendance"
+    | "meetingAttendanceUpdates",
+): boolean => {
+  return isGroupMemberUnsubscribedFromNotification(member, notificationType);
+};
+
 interface PublishMeetingAndNotifyResult {
   publishedMeeting: GroupMeetingDocument;
   recipientCount: number;
@@ -316,6 +328,10 @@ const publishMeetingAndNotify = async (input: {
 
     const recipientEmail = await resolvePublicationRecipientEmail(recipient);
     if (!recipientEmail) {
+      continue;
+    }
+
+    if (isMemberUnsubscribed(recipient, "newMeetingPublication")) {
       continue;
     }
 

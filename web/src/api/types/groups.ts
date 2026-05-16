@@ -131,6 +131,31 @@ export interface GroupMembershipResponse {
   acceptedAt: string | null;
 }
 
+export type GroupNotificationType =
+  | "newMeetingPublication"
+  | "newMeetingCheckin"
+  | "meetingAttendance"
+  | "meetingAttendanceUpdates";
+
+// Per-notification unsubscribe states for the authenticated member in a group.
+// true means unsubscribed, false means subscribed.
+export type GroupMemberUnsubscribedNotifications = Partial<
+  Record<GroupNotificationType, boolean>
+>;
+
+export interface GroupMemberNotificationSettingsResponse {
+  groupId: string;
+  membershipId: string;
+  unsubscribedNotifications: GroupMemberUnsubscribedNotifications;
+  updatedAt: string;
+}
+
+export interface UpdateGroupMemberNotificationSettingsInput {
+  notificationType: GroupNotificationType;
+  // true means unsubscribe from this notification type.
+  unsubscribed: boolean;
+}
+
 export type GroupInviteAction = "accept" | "decline";
 
 export interface RespondToGroupInviteInput {

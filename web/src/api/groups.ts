@@ -16,6 +16,7 @@ import type {
   GroupMeetingPublic,
   GroupMembershipResponse,
   GroupMembersResponse,
+  GroupMemberNotificationSettingsResponse,
   GroupMemberRole,
   GroupMemberStatus,
   GroupSummaryItem,
@@ -38,6 +39,7 @@ import type {
   UpdateMeetingResponse,
   UpdateGroupStateInput,
   UpdateGroupStateResponse,
+  UpdateGroupMemberNotificationSettingsInput,
 } from "./types/groups";
 
 const normalizeHtmlTemplate = (value: string | null | undefined): string =>
@@ -482,6 +484,46 @@ export async function getGroupById(
       `/groups/${groupId}`,
     );
     return normalizeEditableGroupResponse(data);
+  } catch (err) {
+    throw await toApiError(err);
+  }
+}
+
+export async function getMyGroupNotificationSettings(
+  groupId: string,
+): Promise<GroupMemberNotificationSettingsResponse> {
+  try {
+    const { data } =
+      await apiClient.get<GroupMemberNotificationSettingsResponse>(
+        `/groups/${groupId}/notifications/me`,
+      );
+
+    return {
+      ...data,
+      unsubscribedNotifications: data.unsubscribedNotifications ?? {},
+      updatedAt: data.updatedAt ?? new Date(0).toISOString(),
+    };
+  } catch (err) {
+    throw await toApiError(err);
+  }
+}
+
+export async function updateMyGroupNotificationSettings(
+  groupId: string,
+  input: UpdateGroupMemberNotificationSettingsInput,
+): Promise<GroupMemberNotificationSettingsResponse> {
+  try {
+    const { data } =
+      await apiClient.patch<GroupMemberNotificationSettingsResponse>(
+        `/groups/${groupId}/notifications/me`,
+        input,
+      );
+
+    return {
+      ...data,
+      unsubscribedNotifications: data.unsubscribedNotifications ?? {},
+      updatedAt: data.updatedAt ?? new Date(0).toISOString(),
+    };
   } catch (err) {
     throw await toApiError(err);
   }

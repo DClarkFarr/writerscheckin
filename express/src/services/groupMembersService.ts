@@ -2,6 +2,7 @@ import { ObjectId } from "mongodb";
 import {
   getGroupMemberById,
   getGroupMemberByIdForUser,
+  getMembershipByGroup,
   getUserGroupMembership,
   getEmailGroupMembership,
   listGroupMembersByEmail,
@@ -9,6 +10,8 @@ import {
   saveGroupMember,
   softDeleteGroupMemberById,
   updateGroupMemberById,
+  type GroupMemberNotificationType,
+  type GroupMemberUnsubscribedNotifications,
   type GroupMemberDocument,
 } from "../models/groupMembers";
 import {
@@ -57,6 +60,25 @@ export interface RespondToGroupInviteResult {
   status: "accepted" | "declined";
   actedAt: string;
   redirectTo: string | null;
+}
+
+export interface GroupMemberNotificationSettingsResponse {
+  groupId: string;
+  membershipId: string;
+  unsubscribedNotifications: GroupMemberUnsubscribedNotifications;
+  updatedAt: string;
+}
+
+export interface UpdateGroupMemberNotificationSettingsInput {
+  groupId: string;
+  userId: string;
+  notificationType: GroupMemberNotificationType;
+  unsubscribed: boolean;
+}
+
+export interface GetGroupMemberNotificationSettingsInput {
+  groupId: string;
+  userId: string;
 }
 
 const isObjectIdLike = (value: string): boolean => ObjectId.isValid(value);
@@ -289,4 +311,59 @@ export const groupMemberDocumentToResponse = (doc: GroupMemberDocument) => {
     invitedAt: doc.invitedAt?.toISOString() ?? null,
     acceptedAt: doc.acceptedAt?.toISOString() ?? null,
   };
+};
+
+export const groupMemberNotificationSettingsToResponse = (
+  doc: GroupMemberDocument,
+): GroupMemberNotificationSettingsResponse => {
+  return {
+    groupId: doc.groupId.toHexString(),
+    membershipId: doc._id.toHexString(),
+    unsubscribedNotifications: doc.unsubscribedNotifications ?? {},
+    updatedAt: (doc.updatedAt ?? doc.createdAt).toISOString(),
+  };
+};
+
+export const getGroupMemberNotificationSettings = async ({
+  groupId,
+  userId,
+}: GetGroupMemberNotificationSettingsInput): Promise<GroupMemberNotificationSettingsResponse> => {
+  const membership = await getMembershipByGroup(userId, groupId);
+  if (!membership || membership.status !== "accepted") {
+    throw new Error("Group member not found.");
+  }
+
+  return groupMemberNotificationSettingsToResponse(membership);
+};
+
+export const isGroupMemberUnsubscribedFromNotification = (
+  membership: Pick<GroupMemberDocument, "unsubscribedNotifications">,
+  notificationType: GroupMemberNotificationType,
+): boolean => {
+  return Boolean(membership.unsubscribedNotifications?.[notificationType]);
+};
+
+export const updateGroupMemberNotificationSettings = async ({
+  groupId,
+  userId,
+  notificationType,
+  unsubscribed,
+}: UpdateGroupMemberNotificationSettingsInput): Promise<GroupMemberNotificationSettingsResponse> => {
+  const membership = await getMembershipByGroup(userId, groupId);
+  if (!membership || membership.status !== "accepted") {
+    throw new Error("Group member not found.");
+  }
+
+  const updated = await updateGroupMemberById(membership._id, {
+    updateUnsubscribedNotification: {
+      notificationType,
+      unsubscribed,
+    },
+  });
+
+  if (!updated) {
+    throw new Error("Unable to update group member notification settings.");
+  }
+
+  return groupMemberNotificationSettingsToResponse(updated);
 };

@@ -13,10 +13,13 @@ import {
 } from "../services/groupsService";
 import {
   addGroupMember,
+  getGroupMemberNotificationSettings,
+  updateGroupMemberNotificationSettings,
   updateGroupMemberRole,
   removeGroupMember,
   respondToGroupInvite,
 } from "../services/groupMembersService";
+import { isGroupMemberNotificationType } from "../models/groupMembers";
 import {
   createUpcomingMeetingFromDefaults,
   buildMeetingDetailResponse,
@@ -313,6 +316,52 @@ const applyGroupRoutes = () => {
       const userId = getAuthenticatedUserId(req);
       const groupId = getRouteParam(req.params.groupId, "groupId");
       const data = await getManagedGroupForm(groupId, userId);
+
+      res.status(200).json(data);
+    }),
+  );
+
+  groupsRouter.get(
+    "/:groupId/notifications/me",
+    handleAsync(async (req, res) => {
+      const userId = getAuthenticatedUserId(req);
+      const groupId = getRouteParam(req.params.groupId, "groupId");
+      const data = await getGroupMemberNotificationSettings({
+        groupId,
+        userId,
+      });
+
+      res.status(200).json(data);
+    }),
+  );
+
+  groupsRouter.patch(
+    "/:groupId/notifications/me",
+    handleAsync(async (req, res) => {
+      const userId = getAuthenticatedUserId(req);
+      const groupId = getRouteParam(req.params.groupId, "groupId");
+
+      const notificationType = req.body?.notificationType;
+      const unsubscribed = req.body?.unsubscribed;
+
+      if (typeof notificationType !== "string") {
+        throw new Error("notificationType is required.");
+      }
+
+      if (!isGroupMemberNotificationType(notificationType)) {
+        throw new Error("Invalid notificationType.");
+      }
+
+      if (typeof unsubscribed !== "boolean") {
+        throw new Error("unsubscribed must be a boolean.");
+      }
+
+      const data = await updateGroupMemberNotificationSettings({
+        groupId,
+        userId,
+        notificationType,
+        unsubscribed,
+      });
 
       res.status(200).json(data);
     }),
