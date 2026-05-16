@@ -3,8 +3,10 @@ import type {
   EditableGroupResponse,
   GroupRecurrenceFrequency,
   GroupSummaryItem,
+  MeetingSocketPayload,
 } from "@/api/types/groups";
 import { groupQueryKey } from "@/queries/useGroupQuery";
+import { applyMeetingSocketPayloadToMyMeetingsCache } from "@/queries/useMyMeetingsQuery";
 import {
   myGroupQueryKey,
   type MyGroupsQueryResponse,
@@ -57,14 +59,22 @@ export const useSubscribeSocketToGroups = (
 
         onChangeGroup?.(normalizedGroup);
       });
+
+      socket.on("meeting", (payload: MeetingSocketPayload) => {
+        applyMeetingSocketPayloadToMyMeetingsCache({
+          queryClient,
+          payload,
+        });
+      });
     }
 
     return () => {
       if (socket) {
         socket.off("group");
+        socket.off("meeting");
       }
     };
-  }, [socket]);
+  }, [onChangeGroup, queryClient, socket]);
 };
 
 const applyGroupQuery = (

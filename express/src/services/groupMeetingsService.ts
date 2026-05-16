@@ -1059,6 +1059,16 @@ export const groupMeetingDocumentToResponse = (doc: GroupMeetingDocument) => {
   };
 };
 
+export type GroupMeetingSocketPayloadDocument = ReturnType<
+  typeof groupMeetingDocumentToResponse
+>;
+
+export const mapGroupMeetingDocumentToSocketPayload = (
+  doc: GroupMeetingDocument,
+): GroupMeetingSocketPayloadDocument => {
+  return groupMeetingDocumentToResponse(doc);
+};
+
 export type MemberMeetingCounts = {
   attending: number;
   reading: number;

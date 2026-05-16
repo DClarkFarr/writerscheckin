@@ -267,6 +267,39 @@ export interface MemberMeetingFeedItem {
   cancelledAt?: string | null;
 }
 
+export interface GroupMeetingSocketPayloadDocument {
+  meetingId: string;
+  groupId: string;
+  name: string;
+  occursAt: string;
+  description: string;
+  address: string;
+  startTime: MeetingStartTime;
+  durationMinutes: number;
+  publishEmailMessage: string;
+  attendanceEmailMessage: string;
+  publishHoursBefore: number;
+  notifyAttendanceHoursBefore: number;
+  endCheckinHoursBefore?: number;
+  checkinClosesAt?: string;
+  isCheckinClosedByCuttoff?: boolean;
+  checkinPeriodMessage?: string;
+  status: MeetingPublicationStatus;
+  cancelledAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GroupMemberSocketPayloadDocument extends GroupMembershipResponse {
+  groupId: string;
+}
+
+export interface MeetingSocketPayload {
+  groupMeeting: GroupMeetingSocketPayloadDocument;
+  groupMember: GroupMemberSocketPayloadDocument;
+  meetingAttendee: MemberMeetingAttendance;
+}
+
 export interface ListMemberMeetingsResponse {
   rows: MemberMeetingFeedItem[];
   nextCursor: string | null;

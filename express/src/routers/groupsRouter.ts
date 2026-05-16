@@ -41,7 +41,10 @@ import {
   UpdateGroupMeetingInput,
 } from "../models/groupMeetings";
 import { getGroupById } from "../models/groups";
-import { socketGroupEmitGroupSummaryItem } from "../services/socketEventsService";
+import {
+  socketGroupEmitGroupSummaryItem,
+  socketGroupEmitMeetingItem,
+} from "../services/socketEventsService";
 
 export const groupsRouter = express.Router({ mergeParams: true });
 
@@ -284,6 +287,7 @@ const applyGroupRoutes = () => {
       }
 
       socketGroupEmitGroupSummaryItem(data.groupId);
+      socketGroupEmitMeetingItem(data.groupId, data.meetingId);
 
       res.status(200).json(data);
     }),
@@ -650,6 +654,8 @@ const applyGroupRoutes = () => {
         updatedFields,
       };
 
+      socketGroupEmitMeetingItem(groupId, meetingId);
+
       res.status(200).json(result);
     }),
   );
@@ -678,6 +684,7 @@ const applyGroupRoutes = () => {
         await publishMeetingNowById(meetingId);
 
       socketGroupEmitGroupSummaryItem(groupId);
+      socketGroupEmitMeetingItem(groupId, meetingId);
 
       res.status(200).json(result);
     }),
@@ -715,6 +722,7 @@ const applyGroupRoutes = () => {
       };
 
       socketGroupEmitGroupSummaryItem(groupId);
+      socketGroupEmitMeetingItem(groupId, meetingId);
 
       res.status(200).json(result);
     }),
