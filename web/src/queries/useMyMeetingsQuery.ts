@@ -46,12 +46,17 @@ const isMeetingSocketPayload = (
 
   const payload = value as Partial<MeetingSocketPayload>;
 
+  const hasValidAttendee =
+    payload.meetingAttendee === null ||
+    (typeof payload.meetingAttendee === "object" &&
+      !!payload.meetingAttendee?.meetingId &&
+      !!payload.meetingAttendee?.memberId);
+
   return Boolean(
     payload.groupMeeting?.meetingId &&
     payload.groupMeeting?.groupId &&
     payload.groupMember?.membershipId &&
-    payload.meetingAttendee?.meetingId &&
-    payload.meetingAttendee?.memberId,
+    hasValidAttendee,
   );
 };
 

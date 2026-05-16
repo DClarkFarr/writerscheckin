@@ -297,7 +297,7 @@ export interface GroupMemberSocketPayloadDocument extends GroupMembershipRespons
 export interface MeetingSocketPayload {
   groupMeeting: GroupMeetingSocketPayloadDocument;
   groupMember: GroupMemberSocketPayloadDocument;
-  meetingAttendee: MemberMeetingAttendance;
+  meetingAttendee: MemberMeetingAttendance | null;
 }
 
 export interface ListMemberMeetingsResponse {

@@ -168,15 +168,6 @@ export const socketGroupEmitMeetingItem = async (
       meetingAttendee,
     });
 
-    console.log(
-      "socket emitting meeting update for meeting",
-      meeting.name,
-      "room",
-      id,
-      "socketid",
-      socketId,
-      payload,
-    );
     emitToGroupSocket(id, socketId, "meeting", payload);
   }
 };
