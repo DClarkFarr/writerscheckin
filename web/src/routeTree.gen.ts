@@ -18,6 +18,7 @@ import { Route as AuthSignUpRouteImport } from "./routes/_auth/sign-up"
 import { Route as AuthResetPasswordRouteImport } from "./routes/_auth/reset-password"
 import { Route as AuthLoginRouteImport } from "./routes/_auth/login"
 import { Route as GroupsGroupIdViewRouteImport } from "./routes/groups/$groupId/view"
+import { Route as GroupsGroupIdNotificationsRouteImport } from "./routes/groups/$groupId/notifications"
 import { Route as GroupsGroupIdEditRouteImport } from "./routes/groups/$groupId/edit"
 import { Route as PublicJoinMembershipIdRouteImport } from "./routes/_public/join.$membershipId"
 import { Route as GroupsGroupIdMeetingsMeetingIdViewRouteImport } from "./routes/groups/$groupId/meetings/$meetingId/view"
@@ -66,6 +67,12 @@ const GroupsGroupIdViewRoute = GroupsGroupIdViewRouteImport.update({
   path: "/groups/$groupId/view",
   getParentRoute: () => rootRouteImport,
 } as any)
+const GroupsGroupIdNotificationsRoute =
+  GroupsGroupIdNotificationsRouteImport.update({
+    id: "/groups/$groupId/notifications",
+    path: "/groups/$groupId/notifications",
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const GroupsGroupIdEditRoute = GroupsGroupIdEditRouteImport.update({
   id: "/groups/$groupId/edit",
   path: "/groups/$groupId/edit",
@@ -98,6 +105,7 @@ export interface FileRoutesByFullPath {
   "/user/settings": typeof UserSettingsRoute
   "/join/$membershipId": typeof PublicJoinMembershipIdRoute
   "/groups/$groupId/edit": typeof GroupsGroupIdEditRoute
+  "/groups/$groupId/notifications": typeof GroupsGroupIdNotificationsRoute
   "/groups/$groupId/view": typeof GroupsGroupIdViewRoute
   "/groups/$groupId/meetings/$meetingId/edit": typeof GroupsGroupIdMeetingsMeetingIdEditRoute
   "/groups/$groupId/meetings/$meetingId/view": typeof GroupsGroupIdMeetingsMeetingIdViewRoute
@@ -111,6 +119,7 @@ export interface FileRoutesByTo {
   "/user/settings": typeof UserSettingsRoute
   "/join/$membershipId": typeof PublicJoinMembershipIdRoute
   "/groups/$groupId/edit": typeof GroupsGroupIdEditRoute
+  "/groups/$groupId/notifications": typeof GroupsGroupIdNotificationsRoute
   "/groups/$groupId/view": typeof GroupsGroupIdViewRoute
   "/groups/$groupId/meetings/$meetingId/edit": typeof GroupsGroupIdMeetingsMeetingIdEditRoute
   "/groups/$groupId/meetings/$meetingId/view": typeof GroupsGroupIdMeetingsMeetingIdViewRoute
@@ -127,6 +136,7 @@ export interface FileRoutesById {
   "/user/settings": typeof UserSettingsRoute
   "/_public/join/$membershipId": typeof PublicJoinMembershipIdRoute
   "/groups/$groupId/edit": typeof GroupsGroupIdEditRoute
+  "/groups/$groupId/notifications": typeof GroupsGroupIdNotificationsRoute
   "/groups/$groupId/view": typeof GroupsGroupIdViewRoute
   "/groups/$groupId/meetings/$meetingId/edit": typeof GroupsGroupIdMeetingsMeetingIdEditRoute
   "/groups/$groupId/meetings/$meetingId/view": typeof GroupsGroupIdMeetingsMeetingIdViewRoute
@@ -142,6 +152,7 @@ export interface FileRouteTypes {
     | "/user/settings"
     | "/join/$membershipId"
     | "/groups/$groupId/edit"
+    | "/groups/$groupId/notifications"
     | "/groups/$groupId/view"
     | "/groups/$groupId/meetings/$meetingId/edit"
     | "/groups/$groupId/meetings/$meetingId/view"
@@ -155,6 +166,7 @@ export interface FileRouteTypes {
     | "/user/settings"
     | "/join/$membershipId"
     | "/groups/$groupId/edit"
+    | "/groups/$groupId/notifications"
     | "/groups/$groupId/view"
     | "/groups/$groupId/meetings/$meetingId/edit"
     | "/groups/$groupId/meetings/$meetingId/view"
@@ -170,6 +182,7 @@ export interface FileRouteTypes {
     | "/user/settings"
     | "/_public/join/$membershipId"
     | "/groups/$groupId/edit"
+    | "/groups/$groupId/notifications"
     | "/groups/$groupId/view"
     | "/groups/$groupId/meetings/$meetingId/edit"
     | "/groups/$groupId/meetings/$meetingId/view"
@@ -182,6 +195,7 @@ export interface RootRouteChildren {
   GroupsCreateRoute: typeof GroupsCreateRoute
   UserSettingsRoute: typeof UserSettingsRoute
   GroupsGroupIdEditRoute: typeof GroupsGroupIdEditRoute
+  GroupsGroupIdNotificationsRoute: typeof GroupsGroupIdNotificationsRoute
   GroupsGroupIdViewRoute: typeof GroupsGroupIdViewRoute
   GroupsGroupIdMeetingsMeetingIdEditRoute: typeof GroupsGroupIdMeetingsMeetingIdEditRoute
   GroupsGroupIdMeetingsMeetingIdViewRoute: typeof GroupsGroupIdMeetingsMeetingIdViewRoute
@@ -252,6 +266,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof GroupsGroupIdViewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/groups/$groupId/notifications": {
+      id: "/groups/$groupId/notifications"
+      path: "/groups/$groupId/notifications"
+      fullPath: "/groups/$groupId/notifications"
+      preLoaderRoute: typeof GroupsGroupIdNotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/groups/$groupId/edit": {
       id: "/groups/$groupId/edit"
       path: "/groups/$groupId/edit"
@@ -315,6 +336,7 @@ const rootRouteChildren: RootRouteChildren = {
   GroupsCreateRoute: GroupsCreateRoute,
   UserSettingsRoute: UserSettingsRoute,
   GroupsGroupIdEditRoute: GroupsGroupIdEditRoute,
+  GroupsGroupIdNotificationsRoute: GroupsGroupIdNotificationsRoute,
   GroupsGroupIdViewRoute: GroupsGroupIdViewRoute,
   GroupsGroupIdMeetingsMeetingIdEditRoute:
     GroupsGroupIdMeetingsMeetingIdEditRoute,

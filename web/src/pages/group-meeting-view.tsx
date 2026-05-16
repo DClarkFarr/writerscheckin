@@ -22,11 +22,7 @@ import { formatCheckinWindowMessage } from "@/lib/checkinWindowMessage";
 import type { UserMeetingCheckinState } from "@/api/types/groups";
 import { useEffect, useMemo, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+
 import { InviteLinkStatusPanel } from "@/components/invite/InviteLinkStatusPanel";
 import {
   useRequestToJoinMeetingInviteMutation,
@@ -409,20 +405,6 @@ export function GroupMeetingViewPage({
           {!canCheckinNow && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <p>{disabledCheckinReason}</p>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <button
-                    type="button"
-                    className="underline underline-offset-2"
-                    aria-label="Why check-in is disabled"
-                  >
-                    Why?
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{disabledCheckinReason}</p>
-                </TooltipContent>
-              </Tooltip>
             </div>
           )}
           {Boolean(checkinMutation.error) && (
