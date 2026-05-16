@@ -2,11 +2,7 @@ import { ObjectId } from "mongodb";
 import { ensureObjectId } from "../models/types";
 import { app } from "../utils/app";
 import { getGroupById } from "../models/groups";
-import {
-  getMembershipByGroup,
-  listGroupMembersByGroupId,
-  listGroupMembershipsByUserIdPaginated,
-} from "../models/groupMembers";
+import { getMembershipByGroup } from "../models/groupMembers";
 import { populateGroupsasSummaryItems } from "./groupsService";
 
 export const socketGroupEmitGroupSummaryItem = async (
