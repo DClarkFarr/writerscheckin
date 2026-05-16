@@ -25,7 +25,11 @@ Defines UI behavior for check-in actions and timing text in meeting feed and mee
 
 3. After check-in closes:
 
-- Action controls are disabled.
+- Attendee actions are restricted to downgrade-only transitions:
+  - `reading -> attending | skipping`
+  - `attending -> skipping`
+  - `skipping ->` no lower status available
+- Upgrade actions are disabled and show guidance to contact a group admin.
 - Supporting text indicates that the period has closed.
 
 ## Timer Rules

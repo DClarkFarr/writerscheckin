@@ -34,6 +34,8 @@ import type {
   SaveGroupResponse,
   SearchParticipantsResponse,
   UpdateMeetingInput,
+  AdminUpgradeAttendeeStatusInput,
+  AdminUpgradeAttendeeStatusResponse,
   UpdateMeetingCheckinInput,
   UpdateMeetingCheckinResponse,
   UpdateMeetingResponse,
@@ -341,6 +343,22 @@ export async function updateMeetingCheckin(
   try {
     const { data } = await apiClient.post<UpdateMeetingCheckinResponse>(
       `/groups/meetings/${meetingId}/checkin`,
+      input,
+    );
+    return data;
+  } catch (err) {
+    throw await toApiError(err);
+  }
+}
+
+export async function adminUpgradeMeetingAttendeeStatus(
+  meetingId: string,
+  memberId: string,
+  input: AdminUpgradeAttendeeStatusInput,
+): Promise<AdminUpgradeAttendeeStatusResponse> {
+  try {
+    const { data } = await apiClient.patch<AdminUpgradeAttendeeStatusResponse>(
+      `/groups/meetings/${meetingId}/attendees/${memberId}/status`,
       input,
     );
     return data;

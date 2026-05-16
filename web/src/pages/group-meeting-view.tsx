@@ -13,6 +13,11 @@ import { useMeetingViewQuery } from "@/queries/useMeetingViewQuery";
 import { useMeetingCheckinMutation } from "@/queries/useMeetingCheckinMutation";
 import { Button } from "@/components/ui/button";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   parseDateStrict,
   formatStaticDateTime,
   formatStaticFullDateTime,
@@ -22,9 +27,16 @@ import {
   getCheckinDisabledReason,
   resolveCheckinWindowUiState,
 } from "@/lib/checkinWindowMessage";
-import type { UserMeetingCheckinState } from "@/api/types/groups";
+import type {
+  MeetingSocketPayload,
+  UserMeetingCheckinState,
+} from "@/api/types/groups";
+import { useSocketStore } from "@/store/socketStore";
 import { useEffect, useMemo, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { adminUpgradeMeetingAttendeeStatus } from "@/api/groups";
+import { useQueryClient } from "@tanstack/react-query";
+import { meetingViewQueryKey } from "@/queries/useMeetingViewQuery";
 
 import { InviteLinkStatusPanel } from "@/components/invite/InviteLinkStatusPanel";
 import {
@@ -62,6 +74,24 @@ function getParticipantColors(checkinState: UserMeetingCheckinState) {
   }
 }
 
+// Status hierarchy: reading (3) > attending (2) > skipping (1) > none (0)
+const STATUS_HIERARCHY: Record<UserMeetingCheckinState, number> = {
+  reading: 3,
+  attending: 2,
+  skipping: 1,
+  none: 0,
+};
+
+const canDowngradeTo = (
+  current: UserMeetingCheckinState,
+  target: UserMeetingCheckinState,
+): boolean => STATUS_HIERARCHY[target] < STATUS_HIERARCHY[current];
+
+const canUpgradeTo = (
+  current: UserMeetingCheckinState,
+  target: UserMeetingCheckinState,
+): boolean => STATUS_HIERARCHY[target] > STATUS_HIERARCHY[current];
+
 const sortOrder: Record<UserMeetingCheckinState, number> = {
   reading: 0,
   attending: 1,
@@ -77,7 +107,13 @@ export function GroupMeetingViewPage({
   const [inviteDecisionMessage, setInviteDecisionMessage] = useState<
     string | null
   >(null);
+  const [adminUpgradeState, setAdminUpgradeState] = useState<{
+    memberId: string | null;
+    isPending: boolean;
+    error: string | null;
+  }>({ memberId: null, isPending: false, error: null });
 
+  const queryClient = useQueryClient();
   const checkinMutation = useMeetingCheckinMutation({ meetingId, groupId });
   const inviteDecisionMutation = useRespondToMeetingInviteDecisionMutation({
     groupId,
@@ -153,6 +189,24 @@ export function GroupMeetingViewPage({
     meeting?.isCheckinClosedByCuttoff,
     meeting?.occursAt,
   ]);
+
+  const { socket } = useSocketStore();
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleMeetingUpdate = (payload: MeetingSocketPayload) => {
+      if (payload.groupMeeting.meetingId === meetingId) {
+        queryClient.invalidateQueries({
+          queryKey: meetingViewQueryKey(groupId, meetingId),
+        });
+      }
+    };
+
+    socket.on("meeting", handleMeetingUpdate);
+    return () => {
+      socket.off("meeting", handleMeetingUpdate);
+    };
+  }, [socket, meetingId, groupId, queryClient]);
 
   const header = (
     <Breadcrumb variant="light">
@@ -293,6 +347,27 @@ export function GroupMeetingViewPage({
     isUpcomingMeeting: occursAt ? occursAt.isAfter(currentTime) : false,
   });
   const canCheckinNow = checkinWindowState === "open";
+  const isPeriodClosed = checkinWindowState === "closed";
+  const currentCheckinState = meeting.userCheckinState;
+
+  // Per-button enable logic: open → anything enabled; closed → downgrade only; else → disabled
+  const isButtonEnabled = (targetState: UserMeetingCheckinState): boolean => {
+    if (checkinMutation.isPending) return false;
+    if (canCheckinNow) return true;
+    if (!isPeriodClosed) return false;
+    return canDowngradeTo(currentCheckinState, targetState);
+  };
+
+  const getButtonDisabledTooltip = (
+    targetState: UserMeetingCheckinState,
+  ): string | null => {
+    if (!isPeriodClosed) return null;
+    if (!canDowngradeTo(currentCheckinState, targetState)) {
+      return "Check-in period has closed. Contact the group admin to upgrade your status.";
+    }
+    return null;
+  };
+
   const disabledCheckinReason = getCheckinDisabledReason(checkinWindowState);
   const checkinErrorMessage =
     checkinMutation.error instanceof Error
@@ -369,57 +444,86 @@ export function GroupMeetingViewPage({
             {checkinWindowMessage}
           </p>
           <div className="grid gap-2 md:grid-cols-3">
-            <Button
-              type="button"
-              className={
-                meeting.userCheckinState === "reading"
-                  ? "bg-blue-700 text-white hover:bg-blue-700"
-                  : "bg-blue-700/10 hover:bg-blue-700/20 text-gray-800 hover:text-gray-900"
-              }
-              disabled={!canCheckinNow || checkinMutation.isPending}
-              onClick={() =>
-                checkinMutation.mutate({
-                  state: "reading",
-                })
-              }
-            >
-              Reading
-            </Button>
-            <Button
-              type="button"
-              className={
-                meeting.userCheckinState === "attending"
-                  ? "bg-emerald-700 text-white hover:bg-emerald-700"
-                  : "bg-emerald-700/10 hover:bg-emerald-700/20 text-gray-800 hover:text-gray-900"
-              }
-              disabled={!canCheckinNow || checkinMutation.isPending}
-              onClick={() =>
-                checkinMutation.mutate({
-                  state: "attending",
-                })
-              }
-            >
-              Attending
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  className={
+                    meeting.userCheckinState === "reading"
+                      ? "bg-blue-700 text-white hover:bg-blue-700"
+                      : "bg-blue-700/10 hover:bg-blue-700/20 text-gray-800 hover:text-gray-900"
+                  }
+                  disabled={!isButtonEnabled("reading")}
+                  onClick={() => checkinMutation.mutate({ state: "reading" })}
+                >
+                  Reading
+                </Button>
+              </TooltipTrigger>
+              {getButtonDisabledTooltip("reading") && (
+                <TooltipContent>
+                  <p>{getButtonDisabledTooltip("reading")}</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
 
-            <Button
-              type="button"
-              className={
-                meeting.userCheckinState === "skipping"
-                  ? "bg-red-700 text-white hover:bg-red-700"
-                  : "bg-red-700/10 hover:bg-red-700/20 text-gray-800 hover:text-gray-900"
-              }
-              disabled={!canCheckinNow || checkinMutation.isPending}
-              onClick={() =>
-                checkinMutation.mutate({
-                  state: "not_attending",
-                })
-              }
-            >
-              Not Attending
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  className={
+                    meeting.userCheckinState === "attending"
+                      ? "bg-emerald-700 text-white hover:bg-emerald-700"
+                      : "bg-emerald-700/10 hover:bg-emerald-700/20 text-gray-800 hover:text-gray-900"
+                  }
+                  disabled={!isButtonEnabled("attending")}
+                  onClick={() => checkinMutation.mutate({ state: "attending" })}
+                >
+                  Attending
+                </Button>
+              </TooltipTrigger>
+              {getButtonDisabledTooltip("attending") && (
+                <TooltipContent>
+                  <p>{getButtonDisabledTooltip("attending")}</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  type="button"
+                  className={
+                    meeting.userCheckinState === "skipping"
+                      ? "bg-red-700 text-white hover:bg-red-700"
+                      : "bg-red-700/10 hover:bg-red-700/20 text-gray-800 hover:text-gray-900"
+                  }
+                  disabled={!isButtonEnabled("skipping")}
+                  onClick={() =>
+                    checkinMutation.mutate({ state: "not_attending" })
+                  }
+                >
+                  Not Attending
+                </Button>
+              </TooltipTrigger>
+              {getButtonDisabledTooltip("skipping") && (
+                <TooltipContent>
+                  <p>{getButtonDisabledTooltip("skipping")}</p>
+                </TooltipContent>
+              )}
+            </Tooltip>
           </div>
-          {!canCheckinNow && (
+          {isPeriodClosed && (
+            <div className="border-l-2 border-amber-500 bg-amber-50 p-3 rounded space-y-1">
+              <p className="text-sm font-medium text-amber-900">
+                Check-in period has ended
+              </p>
+              <p className="text-xs text-amber-800">
+                You can only downgrade your status. To increase your status,
+                contact the group admin.
+              </p>
+            </div>
+          )}
+          {!canCheckinNow && !isPeriodClosed && (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <p>{disabledCheckinReason}</p>
             </div>
@@ -446,6 +550,126 @@ export function GroupMeetingViewPage({
             <p className="text-lg font-semibold">{meeting.readingCount}</p>
           </div>
         </div>
+
+        {/* Admin: Upgrade Attendee Status */}
+        {meeting.canEdit && sortedParticipants.length > 0 && (
+          <div className="space-y-3 border-t pt-4">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Admin: Manage Attendee Status
+            </p>
+            <p className="text-xs text-muted-foreground">
+              As an admin, you can upgrade any attendee&apos;s status at any
+              time regardless of the check-in window.
+            </p>
+            {adminUpgradeState.error && (
+              <Alert variant="destructive">
+                <AlertDescription>{adminUpgradeState.error}</AlertDescription>
+              </Alert>
+            )}
+            <div className="space-y-2">
+              {sortedParticipants
+                .filter((p) => !p.isCurrentUser)
+                .map((participant) => {
+                  const current = participant.attendanceState;
+                  const isPending =
+                    adminUpgradeState.isPending &&
+                    adminUpgradeState.memberId === participant.memberId;
+                  const colors = getParticipantColors(current);
+
+                  const handleAdminUpgrade = async (
+                    newStatus: "attending" | "reading" | "skipping",
+                  ) => {
+                    setAdminUpgradeState({
+                      memberId: participant.memberId,
+                      isPending: true,
+                      error: null,
+                    });
+                    try {
+                      await adminUpgradeMeetingAttendeeStatus(
+                        meetingId,
+                        participant.memberId,
+                        { status: newStatus },
+                      );
+                      await queryClient.invalidateQueries({
+                        queryKey: meetingViewQueryKey(groupId, meetingId),
+                      });
+                      setAdminUpgradeState({
+                        memberId: null,
+                        isPending: false,
+                        error: null,
+                      });
+                    } catch (err) {
+                      setAdminUpgradeState({
+                        memberId: participant.memberId,
+                        isPending: false,
+                        error:
+                          err instanceof Error
+                            ? err.message
+                            : "Failed to upgrade status.",
+                      });
+                    }
+                  };
+
+                  return (
+                    <div
+                      key={participant.memberId}
+                      className={`flex items-center justify-between rounded-md border p-3 text-sm ${colors.borderColor} ${colors.bgColor}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {participant.avatarUrl && (
+                          <img
+                            src={participant.avatarUrl}
+                            alt={participant.displayName}
+                            className="h-8 w-8 rounded-full"
+                          />
+                        )}
+                        <div>
+                          <p className="font-medium">
+                            {participant.displayName}
+                          </p>
+                          <p className="text-xs text-muted-foreground capitalize">
+                            {current === "none" ? "No status" : current}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-1">
+                        {canUpgradeTo(current, "attending") && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={isPending}
+                            onClick={() => void handleAdminUpgrade("attending")}
+                          >
+                            → Attending
+                          </Button>
+                        )}
+                        {canUpgradeTo(current, "reading") && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={isPending}
+                            onClick={() => void handleAdminUpgrade("reading")}
+                          >
+                            → Reading
+                          </Button>
+                        )}
+                        {current === "none" && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={isPending}
+                            onClick={() => void handleAdminUpgrade("skipping")}
+                          >
+                            → Skipping
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        )}
 
         {/* Participants List */}
         <div className="space-y-3 border-t pt-4">

@@ -19,6 +19,8 @@ export interface MeetingAttendeeDefinition extends BaseModelBlueprint {
   meetingId: ObjectId;
   memberId: ObjectId;
   status: AttendanceStatus;
+  changedBy?: ObjectId;
+  isAdminOverride?: boolean;
 }
 
 export type MeetingAttendeeBlueprint =
@@ -34,6 +36,8 @@ export interface CreateMeetingAttendeeInput {
 export interface AttendanceLogContext {
   groupId: string | ObjectId;
   userId: string | ObjectId;
+  changedBy?: string | ObjectId;
+  isAdminOverride?: boolean;
 }
 
 export interface CreateMeetingAttendeeIfMissingResult {
@@ -212,11 +216,20 @@ export const updateMeetingAttendeeStatusById = async (
     return null;
   }
 
+  const auditFields: Record<string, unknown> = {};
+  if (logContext?.changedBy !== undefined) {
+    auditFields.changedBy = toObjectId(logContext.changedBy, "changedBy");
+  }
+  if (logContext?.isAdminOverride !== undefined) {
+    auditFields.isAdminOverride = logContext.isAdminOverride;
+  }
+
   const result = await collection.findOneAndUpdate(
     { _id: attendee._id },
     {
       $set: {
         status: nextStatus,
+        ...auditFields,
         ...touchTimestamps(),
       },
     },

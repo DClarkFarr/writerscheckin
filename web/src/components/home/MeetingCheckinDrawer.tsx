@@ -29,6 +29,24 @@ interface MeetingCheckinDrawerProps {
   onSubmit: (state: "attending" | "reading" | "not_attending") => Promise<void>;
 }
 
+// Status hierarchy: "reading" (3) > "attending" (2) > "skipping" (1) > "invited" (0)
+const getStatusHierarchy = (status: string | null | undefined): number => {
+  const hierarchy: Record<string, number> = {
+    reading: 3,
+    attending: 2,
+    skipping: 1,
+    invited: 0,
+  };
+  return hierarchy[status ?? ""] ?? 0;
+};
+
+const canDowngradeTo = (
+  currentStatus: string | null | undefined,
+  targetStatus: string,
+): boolean => {
+  return getStatusHierarchy(targetStatus) < getStatusHierarchy(currentStatus);
+};
+
 export const MeetingCheckinDrawer = ({
   isOpen,
   selectedMeeting,
@@ -49,7 +67,7 @@ export const MeetingCheckinDrawer = ({
       return;
     }
 
-    setCurrentTime(new Date());
+    (() => setCurrentTime(new Date()))();
 
     if (!closesAt.isAfter(new Date())) {
       return;
@@ -76,6 +94,13 @@ export const MeetingCheckinDrawer = ({
   const meetingTitle = selectedMeeting.name.trim() || "Untitled meeting";
   const isCheckinCutoffClosed =
     selectedMeeting.isCheckinClosedByCuttoff === true;
+
+  // Determine if the period is actually closed
+  const closesAt = selectedMeeting.checkinClosesAt
+    ? parseDateStrict(selectedMeeting.checkinClosesAt)
+    : null;
+  const isPeriodClosed = closesAt ? !closesAt.isAfter(currentTime) : false;
+
   const checkinWindowMessage = selectedMeeting.checkinClosesAt
     ? formatCheckinWindowMessage({
         checkinClosesAt: selectedMeeting.checkinClosesAt,
@@ -83,11 +108,60 @@ export const MeetingCheckinDrawer = ({
       })
     : (selectedMeeting.checkinPeriodMessage ??
       "Check-in period end time unavailable.");
+
   const helperText = canCheckin
     ? "How are you planning to attend this meeting?"
     : isCheckinCutoffClosed
       ? "Check-in is closed because the cutoff time has passed."
       : "Check-in is unavailable for this meeting right now.";
+
+  const canClickButton = (buttonStatus: string): boolean => {
+    if (!isPeriodClosed) {
+      return !isSubmitting && canCheckin;
+    }
+
+    // Period is closed - only allow downgrades
+    return (
+      !isSubmitting &&
+      (buttonStatus === "attending"
+        ? canDowngradeTo(attendanceState, "attending")
+        : buttonStatus === "reading"
+          ? canDowngradeTo(attendanceState, "reading")
+          : buttonStatus === "skipping"
+            ? canDowngradeTo(attendanceState, "skipping")
+            : false)
+    );
+  };
+
+  const getButtonDisabledReason = (buttonStatus: string): string | null => {
+    if (!isPeriodClosed) {
+      return null;
+    }
+
+    // Period is closed
+    if (
+      buttonStatus === "attending" &&
+      !canDowngradeTo(attendanceState, "attending")
+    ) {
+      return "Check-in period has closed. Contact the group admin to upgrade your status.";
+    }
+
+    if (
+      buttonStatus === "reading" &&
+      !canDowngradeTo(attendanceState, "reading")
+    ) {
+      return "Check-in period has closed. Contact the group admin to upgrade your status.";
+    }
+
+    if (
+      buttonStatus === "skipping" &&
+      !canDowngradeTo(attendanceState, "skipping")
+    ) {
+      return "Check-in period has closed. Contact the group admin to upgrade your status.";
+    }
+
+    return null;
+  };
 
   return (
     <Drawer open={isOpen} onOpenChange={onClose}>
@@ -106,34 +180,65 @@ export const MeetingCheckinDrawer = ({
             {checkinWindowMessage}
           </p>
 
-          <Button
-            variant={attendanceState === "attending" ? "default" : "outline"}
-            className="w-full justify-start"
-            onClick={() => onSubmit("attending")}
-            disabled={isSubmitting || !canCheckin}
-          >
-            <span className="text-sm font-medium">Attending</span>
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={
+                  attendanceState === "attending" ? "default" : "outline"
+                }
+                className="w-full justify-start"
+                onClick={() => onSubmit("attending")}
+                disabled={isSubmitting || !canClickButton("attending")}
+              >
+                <span className="text-sm font-medium">Attending</span>
+              </Button>
+            </TooltipTrigger>
+            {getButtonDisabledReason("attending") && (
+              <TooltipContent>
+                <p>{getButtonDisabledReason("attending")}</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
 
-          <Button
-            variant={attendanceState === "reading" ? "default" : "outline"}
-            className="w-full justify-start"
-            onClick={() => onSubmit("reading")}
-            disabled={isSubmitting || !canCheckin}
-          >
-            <span className="text-sm font-medium">Reading</span>
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={attendanceState === "reading" ? "default" : "outline"}
+                className="w-full justify-start"
+                onClick={() => onSubmit("reading")}
+                disabled={isSubmitting || !canClickButton("reading")}
+              >
+                <span className="text-sm font-medium">Reading</span>
+              </Button>
+            </TooltipTrigger>
+            {getButtonDisabledReason("reading") && (
+              <TooltipContent>
+                <p>{getButtonDisabledReason("reading")}</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
 
-          <Button
-            variant={attendanceState === "skipping" ? "destructive" : "outline"}
-            className="w-full justify-start"
-            onClick={() => onSubmit("not_attending")}
-            disabled={isSubmitting || !canCheckin}
-          >
-            <span className="text-sm font-medium">Not Attending</span>
-          </Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant={
+                  attendanceState === "skipping" ? "destructive" : "outline"
+                }
+                className="w-full justify-start"
+                onClick={() => onSubmit("not_attending")}
+                disabled={isSubmitting || !canClickButton("skipping")}
+              >
+                <span className="text-sm font-medium">Not Attending</span>
+              </Button>
+            </TooltipTrigger>
+            {getButtonDisabledReason("skipping") && (
+              <TooltipContent>
+                <p>{getButtonDisabledReason("skipping")}</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
 
-          {!canCheckin && (
+          {!canCheckin && !isPeriodClosed && (
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">
                 You can still open the meeting to review the details even when
@@ -153,6 +258,18 @@ export const MeetingCheckinDrawer = ({
                   <p>{helperText}</p>
                 </TooltipContent>
               </Tooltip>
+            </div>
+          )}
+
+          {isPeriodClosed && (
+            <div className="space-y-2 border-l-2 border-amber-500 bg-amber-50 p-3 rounded">
+              <p className="text-sm font-medium text-amber-900">
+                Check-in period has ended
+              </p>
+              <p className="text-xs text-amber-800">
+                You can only downgrade your status. To increase your status,
+                contact the group admin.
+              </p>
             </div>
           )}
 

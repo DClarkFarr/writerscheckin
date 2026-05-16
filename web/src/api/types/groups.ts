@@ -345,6 +345,19 @@ export interface UpdateMeetingCheckinInput {
   state: "attending" | "reading" | "not_attending";
 }
 
+export interface AdminUpgradeAttendeeStatusInput {
+  status: "attending" | "reading" | "skipping";
+}
+
+export interface AdminUpgradeAttendeeStatusResponse {
+  meetingId: string;
+  groupId: string;
+  userCheckinState: "attending" | "reading" | "skipping";
+  attendingCount: number;
+  readingCount: number;
+  appliedAt: string;
+}
+
 export interface UpdateMeetingCheckinResponse {
   meetingId: string;
   userCheckinState: "attending" | "reading" | "skipping";

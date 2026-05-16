@@ -31,7 +31,10 @@ import {
   getAggregationMemberMeetingsPaginated,
   memberMeetingAggregationRowToResponse,
 } from "../services/groupMeetingsService";
-import { updateMeetingCheckin } from "../services/meetingCheckinService";
+import {
+  updateMeetingCheckin,
+  adminUpgradeMeetingAttendee,
+} from "../services/meetingCheckinService";
 import { GroupMemberInviteStatus } from "../models/groupModelCommon";
 import { decodeCursor, encodeCursor } from "../utils/pagination";
 import {
@@ -283,6 +286,46 @@ const applyGroupRoutes = () => {
           return;
         }
 
+        throw error;
+      }
+
+      socketGroupEmitGroupSummaryItem(data.groupId);
+      socketGroupEmitMeetingItem(data.groupId, data.meetingId);
+
+      res.status(200).json(data);
+    }),
+  );
+
+  groupsRouter.patch(
+    "/meetings/:meetingId/attendees/:memberId/status",
+    handleAsync(async (req, res) => {
+      const adminUserId = getAuthenticatedUserId(req);
+      const meetingId = getRouteParam(req.params.meetingId, "meetingId");
+      const memberId = getRouteParam(req.params.memberId, "memberId");
+
+      const newStatus = req.body?.status;
+      if (
+        newStatus !== "attending" &&
+        newStatus !== "reading" &&
+        newStatus !== "skipping" &&
+        newStatus !== "invited"
+      ) {
+        throw new Error("Invalid attendance status.");
+      }
+
+      let data;
+      try {
+        data = await adminUpgradeMeetingAttendee({
+          meetingId,
+          memberId,
+          adminUserId,
+          newStatus,
+        });
+      } catch (error) {
+        if (error instanceof AuthError) {
+          res.status(error.status).json({ message: error.message });
+          return;
+        }
         throw error;
       }
 

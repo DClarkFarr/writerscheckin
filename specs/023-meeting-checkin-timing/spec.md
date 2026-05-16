@@ -54,12 +54,51 @@ As a meeting attendee, I see a stable button label that says check-in starts soo
 1. **Given** the check-in window has not opened, **When** the attendee views the meeting feed item, **Then** the button label displays check-in starts soon.
 2. **Given** the check-in window has not opened, **When** countdown information is shown, **Then** countdown values appear in supporting text below the button and never inside the button label.
 
+---
+
+### User Story 4 - Downgrade Check-in Status After Period Closes (Priority: P2)
+
+As a meeting attendee, after the check-in period has ended, I can downgrade my check-in status to a lower level but cannot upgrade it.
+
+**Why this priority**: Allows attendees to correct an optimistic check-in status without being locked into their choice, improving the user experience when circumstances change.
+
+**Independent Test**: Set a meeting with a closed check-in period. Verify an attendee with 'reading' status can change to 'attending' or 'skipping', an attendee with 'attending' status can change to 'skipping', and no attendee can upgrade their status.
+
+**Acceptance Scenarios**:
+
+1. **Given** check-in period has closed and attendee status is 'reading', **When** attendee views status options, **Then** they can downgrade to 'attending' or 'skipping'.
+2. **Given** check-in period has closed and attendee status is 'attending', **When** attendee views status options, **Then** they can downgrade to 'skipping' but not upgrade to 'reading'.
+3. **Given** check-in period has closed and attendee status is 'skipping', **When** attendee views status options, **Then** no upgrades are available.
+4. **Given** check-in period is still open, **When** attendee attempts a status change, **Then** the change is blocked and user sees appropriate messaging.
+
+---
+
+### User Story 5 - Admin Manual Status Upgrade (Priority: P2)
+
+As a group admin, I can manually upgrade any attendee's check-in status at any time, overriding their self-selected status.
+
+**Why this priority**: Group admins need control over accurate attendance records, especially for attendees who cannot update their own status or when circumstances require correction.
+
+**Independent Test**: As an admin, select an attendee and verify you can upgrade their status from 'skipping' → 'attending' → 'reading' regardless of check-in window state.
+
+**Acceptance Scenarios**:
+
+1. **Given** I am a group admin viewing a meeting, **When** I access attendee management, **Then** I can select an attendee and upgrade their status.
+2. **Given** an attendee has status 'skipping', **When** I upgrade to 'attending', **Then** the change persists and is reflected immediately.
+3. **Given** an attendee has status 'attending', **When** I upgrade to 'reading', **Then** the change persists and is reflected immediately.
+4. **Given** check-in period is still open or has closed, **When** I upgrade an attendee's status, **Then** my admin upgrade action succeeds regardless of window state.
+5. **Given** I am not a group admin, **When** I attempt to upgrade another attendee's status, **Then** the action is denied with appropriate permission error.
+
 ### Edge Cases
 
 - Current time equals check-in start time exactly; check-in becomes available immediately at that boundary.
 - Check-in start occurs on a different calendar day than meeting date because of an extended lead time (for example 48 hours); eligibility still follows check-in start and end timestamps.
 - Client clock continues updating while the feed item stays mounted for long periods; countdown remains accurate and does not freeze.
 - User crosses midnight or local timezone boundaries while viewing the meeting item; availability is still based on the defined check-in window rather than same-day meeting matching.
+- Attendee attempts downgrade immediately when check-in period closes (at exact close boundary); downgrade is allowed.
+- Attendee's status has already been upgraded by admin; when attendee later attempts to downgrade, the admin upgrade is overridden by attendee downgrade action.
+- Multiple admins upgrade same attendee simultaneously; last write wins and system remains consistent.
+- Attendee whose status was downgraded by themselves later has it upgraded by admin; subsequent attendee downgrade is allowed since check-in period remains closed.
 
 ## Requirements _(mandatory)_
 
@@ -72,6 +111,11 @@ As a meeting attendee, I see a stable button label that says check-in starts soo
 - **FR-005**: System MUST keep the pre-window button label as check-in starts soon and MUST NOT embed countdown values in that button text.
 - **FR-006**: System MUST show countdown details, when applicable, in supporting text beneath the action button.
 - **FR-007**: System MUST update UI state immediately when check-in transitions between not-open, open, and closed states during an active viewing session.
+- **FR-008**: After check-in period closes, attendees MUST be able to downgrade their status ('reading' → 'attending'/'skipping', 'attending' → 'skipping') but MUST NOT be able to upgrade.
+- **FR-009**: System MUST prevent status changes while check-in period is open; all status modifications for attendees MUST be blocked until check-in has closed.
+- **FR-010**: Group admins MUST be able to upgrade any attendee's check-in status to any higher level regardless of check-in window state or current attendee status.
+- **FR-011**: Group admins MUST NOT be able to downgrade attendee status; admin action is restricted to upgrades only.
+- **FR-012**: System MUST enforce group admin role authorization before allowing admin status upgrade operations; non-admins MUST receive permission denied error.
 
 ## Success Criteria _(mandatory)_
 
@@ -81,10 +125,18 @@ As a meeting attendee, I see a stable button label that says check-in starts soo
 - **SC-002**: During active check-in windows, displayed remaining-time text updates every second for at least 60 consecutive seconds without skipped intervals.
 - **SC-003**: In pre-window state verification, 100% of observed meeting feed items retain the static button label check-in starts soon with no countdown content in the button.
 - **SC-004**: User-reported confusion about day-of-meeting-only check-in behavior is reduced by at least 80% within one release cycle after rollout.
+- **SC-005**: Attendee downgrade functionality works for 100% of valid downgrade paths ('reading' → 'attending'/'skipping', 'attending' → 'skipping') after check-in closes.
+- **SC-006**: Status downgrade operations are rejected 100% of the time when attempted while check-in period is open.
+- **SC-007**: Admin status upgrade operations succeed 100% of the time for authorized group admins and are rejected for non-admins.
+- **SC-008**: Attendee-initiated downgrade and admin-initiated upgrade operations can coexist; last action taken determines final status.
 
 ## Assumptions
 
 - Existing meeting records already define authoritative check-in start and check-in end timestamps.
-- This feature applies to meeting feed presentation and check-in eligibility behavior only; no new user roles or permissions are introduced.
+- This feature applies to meeting feed presentation, check-in eligibility behavior, and post-period status management.
 - Countdown display and state transitions rely on client-side time progression during an open session.
 - Existing check-in authorization and audit behavior outside these timing/display rules remains unchanged.
+- Group admin authorization is determined by existing group membership role (group admins can already perform management actions).
+- Status hierarchy is: 'reading' > 'attending' > 'skipping' (from high to low commitment level).
+- Attendee self-initiated downgrades require check-in period to be closed; admin upgrades are unrestricted by window state.
+- Once check-in period closes, it does not reopen for that meeting; status modifications made after close persist until changed again.

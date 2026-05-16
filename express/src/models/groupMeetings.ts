@@ -39,6 +39,7 @@ export interface GroupMeetingDefinition extends BaseModelBlueprint {
   durationMinutes: number;
   publishEmailMessage: string;
   attendanceEmailMessage: string;
+  startCheckinHoursAfterCreation: number;
   publishHoursBefore: number;
   notifyAttendanceHoursBefore: number;
   endCheckinHoursBefore: number;
@@ -61,6 +62,7 @@ export interface CreateGroupMeetingInput {
   durationMinutes: number;
   publishEmailMessage?: string;
   attendanceEmailMessage?: string;
+  startCheckinHoursAfterCreation?: number;
   publishHoursBefore: number;
   notifyAttendanceHoursBefore: number;
   endCheckinHoursBefore?: number;
@@ -78,6 +80,7 @@ export interface UpdateGroupMeetingInput {
   durationMinutes?: number;
   publishEmailMessage?: string;
   attendanceEmailMessage?: string;
+  startCheckinHoursAfterCreation?: number;
   publishHoursBefore?: number;
   notifyAttendanceHoursBefore?: number;
   endCheckinHoursBefore?: number;
@@ -140,6 +143,12 @@ const normalizeCreateInput = (
     input.notifyAttendanceHoursBefore,
     "notifyAttendanceHoursBefore",
   );
+  const startCheckinHoursAfterCreation =
+    input.startCheckinHoursAfterCreation ?? 0;
+  assertNonNegativeInteger(
+    startCheckinHoursAfterCreation,
+    "startCheckinHoursAfterCreation",
+  );
   const endCheckinHoursBefore = input.endCheckinHoursBefore ?? 0;
   assertNonNegativeInteger(endCheckinHoursBefore, "endCheckinHoursBefore");
 
@@ -156,6 +165,7 @@ const normalizeCreateInput = (
     attendanceEmailMessage: normalizeTemplateHtml(
       input.attendanceEmailMessage ?? "",
     ),
+    startCheckinHoursAfterCreation,
     publishHoursBefore: input.publishHoursBefore,
     notifyAttendanceHoursBefore: input.notifyAttendanceHoursBefore,
     endCheckinHoursBefore,
@@ -222,6 +232,15 @@ const normalizeUpdateInput = (
   if (typeof updates.publishHoursBefore === "number") {
     assertNonNegativeInteger(updates.publishHoursBefore, "publishHoursBefore");
     normalized.publishHoursBefore = updates.publishHoursBefore;
+  }
+
+  if (typeof updates.startCheckinHoursAfterCreation === "number") {
+    assertNonNegativeInteger(
+      updates.startCheckinHoursAfterCreation,
+      "startCheckinHoursAfterCreation",
+    );
+    normalized.startCheckinHoursAfterCreation =
+      updates.startCheckinHoursAfterCreation;
   }
 
   if (typeof updates.notifyAttendanceHoursBefore === "number") {

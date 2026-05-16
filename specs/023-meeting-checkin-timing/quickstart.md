@@ -1,79 +1,60 @@
 # Quickstart: Meeting Check-in Timing
 
-## Goal
+## Overview
 
-Allow check-in as soon as the check-in window opens (even on prior days), display check-in countdown updates every second in supporting text, and keep button labels static without embedded countdown content.
+This feature supports:
 
-## Implementation Order
+- cross-day check-in eligibility based on timestamps
+- live second-by-second countdown messaging
+- static pre-open button labels
+- attendee downgrade-only changes after check-in closes
+- admin upgrade-only attendee status changes at any time
 
-1. Confirm and align eligibility boundaries
+Status hierarchy:
 
-- Review `meetingCheckinService.ts` check-in-close validation and ensure it remains the authoritative mutation guard.
-- Confirm frontend derives `canCheckin` from backend/state without same-day date checks.
+- `reading` (highest)
+- `attending`
+- `skipping` (lowest)
 
-2. Remove same-day UI gating
+## Implemented Endpoints
 
-- Update [web/src/components/home/MeetingFeedItem.tsx](web/src/components/home/MeetingFeedItem.tsx) to remove `isMeetingDayToday` from `canCheckinNow` computation.
-- Update [web/src/pages/group-meeting-view.tsx](web/src/pages/group-meeting-view.tsx) to remove day-of-meeting gating and day-only disabled message.
+- Attendee check-in / post-close downgrade:
+  - `POST /groups/meetings/:meetingId/checkin`
+- Admin attendee upgrade:
+  - `PATCH /groups/meetings/:meetingId/attendees/:memberId/status`
 
-3. Enforce button label vs countdown separation
+## Implementation Notes
 
-- Keep pre-window button label static as `Check-in starts soon`.
-- Ensure countdown text is rendered only in supporting text below action controls.
+- Attendee updates after close are validated as downgrade-only in `updateMeetingCheckin()`.
+- Admin updates are validated as upgrade-only in `adminUpgradeMeetingAttendee()`.
+- `meetingAttendees` audit metadata is persisted on updates:
+  - attendee downgrade: `changedBy=<attendeeUserId>`, `isAdminOverride=false`
+  - admin upgrade: `changedBy=<adminUserId>`, `isAdminOverride=true`
+- Meeting detail admin UI listens for `meeting` socket events and invalidates the meeting-view query for real-time refresh.
 
-4. Make countdown update every second while active
+## Validation Outcomes
 
-- Ensure feed and detail views run one-second interval updates while check-in window is active/open.
-- Stop intervals at close and on unmount.
+### Automated Evidence
 
-5. Harmonize window messages
+- `cd express && npx tsc --noEmit` passed
+- `cd web && npx tsc --noEmit` passed
 
-- Update shared message formatter in [web/src/lib/checkinWindowMessage.ts](web/src/lib/checkinWindowMessage.ts) if needed so active windows consistently show second-level countdown text.
-- Ensure wording removes day-of-meeting-only language.
+### Scenario Execution Matrix
 
-6. Validate mutation and cache behavior
+- T073 Exact close boundary downgrade: pending manual QA
+- T074 Attendee downgrade after admin upgrade: pending manual QA
+- T075 Concurrent admin upgrades: pending manual QA
+- T076 Midnight/client clock transition: pending manual QA
+- T077 Cross-day open-window check-in: pending manual QA
+- T078 P1 cross-day scenario capture: pending manual QA
+- T079 P2 countdown scenario capture: pending manual QA
+- T080 P3 static label scenario capture: pending manual QA
+- T081 P2 downgrade scenario capture: pending manual QA
+- T082 P2 admin upgrade scenario capture: pending manual QA
 
-- Verify `useMeetingCheckinMutation` optimistic/update flow remains intact when check-in opens on prior day.
-- Verify UI transitions at boundaries (`pre-open`, `open`, `closed`) without refresh.
+## How To Run Manual QA
 
-## Manual Validation Scenarios
-
-1. Cross-day open window
-
-- Set a meeting with check-in open at least 24-48 hours before `occursAt`.
-- Confirm check-in controls become usable immediately at open time, even if meeting is on another day.
-
-2. Live second countdown
-
-- During active window, observe message text for at least 10 seconds.
-- Confirm seconds decrement each second and do not stall.
-
-3. Static pre-window button label
-
-- Before open time, verify button reads `Check-in starts soon` with no countdown in button text.
-- Confirm countdown/timing details appear only in supporting text below.
-
-4. Close boundary
-
-- At or just after `checkinClosesAt`, verify controls disable and message shows closed state.
-- Attempt mutation and confirm existing conflict behavior remains.
-
-5. Feed/detail consistency
-
-- Compare same meeting in My Meetings feed and detail page.
-- Confirm matching availability and message semantics.
-
-## Build Checks
-
-- `cd express && npm run build`
-- `cd web && npx tsc --noEmit`
-
-## Notes
-
-- Keep business validation in backend service layer; frontend behavior should mirror backend constraints but not replace them.
-
-## Validation Notes (May 16, 2026)
-
-- Backend compile validation passed: `cd express && npm run build`.
-- Frontend typecheck validation passed: `cd web && npx tsc --noEmit`.
-- Manual validation scenarios remain pending.
+1. Start backend: `cd express && npm run dev`
+2. Start frontend: `cd web && npm run dev`
+3. Use seeded users for attendee/admin roles in the same group
+4. Execute T073-T082 scenarios and record pass/fail evidence in this file
