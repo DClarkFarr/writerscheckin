@@ -206,6 +206,44 @@ export function MeetingForm({
         </Field>
 
         <Field>
+          <FieldLabel htmlFor="publishHoursBefore">
+            Auto-publish hours before meeting
+          </FieldLabel>
+          <Input
+            id="publishHoursBefore"
+            name="publishHoursBefore"
+            type="number"
+            min="0"
+            value={fields.publishHoursBefore}
+            onChange={onFieldChange}
+            onBlur={onFieldBlur}
+            disabled={formDisabled}
+          />
+          {meeting.publishScheduledFor && (
+            <FieldDescription>
+              Scheduled to auto-publish{" "}
+              {new Date(meeting.publishScheduledFor).toLocaleString()}
+            </FieldDescription>
+          )}
+        </Field>
+
+        <Field>
+          <FieldLabel htmlFor="notifyAttendanceHoursBefore">
+            Send attendance reminder hours before meeting
+          </FieldLabel>
+          <Input
+            id="notifyAttendanceHoursBefore"
+            name="notifyAttendanceHoursBefore"
+            type="number"
+            min="0"
+            value={fields.notifyAttendanceHoursBefore}
+            onChange={onFieldChange}
+            onBlur={onFieldBlur}
+            disabled={formDisabled}
+          />
+        </Field>
+
+        <Field>
           <FieldLabel htmlFor="endCheckinHoursBefore">
             Check-in closes (hours before start)
           </FieldLabel>
@@ -295,44 +333,6 @@ export function MeetingForm({
           <RichTextEditor
             value={fields.attendanceEmailMessage}
             onChange={onChangeAttendanceEmailMessage}
-            disabled={formDisabled}
-          />
-        </Field>
-
-        <Field>
-          <FieldLabel htmlFor="publishHoursBefore">
-            Auto-publish hours before meeting
-          </FieldLabel>
-          <Input
-            id="publishHoursBefore"
-            name="publishHoursBefore"
-            type="number"
-            min="0"
-            value={fields.publishHoursBefore}
-            onChange={onFieldChange}
-            onBlur={onFieldBlur}
-            disabled={formDisabled}
-          />
-          {meeting.publishScheduledFor && (
-            <FieldDescription>
-              Scheduled to auto-publish{" "}
-              {new Date(meeting.publishScheduledFor).toLocaleString()}
-            </FieldDescription>
-          )}
-        </Field>
-
-        <Field>
-          <FieldLabel htmlFor="notifyAttendanceHoursBefore">
-            Send attendance reminder hours before meeting
-          </FieldLabel>
-          <Input
-            id="notifyAttendanceHoursBefore"
-            name="notifyAttendanceHoursBefore"
-            type="number"
-            min="0"
-            value={fields.notifyAttendanceHoursBefore}
-            onChange={onFieldChange}
-            onBlur={onFieldBlur}
             disabled={formDisabled}
           />
         </Field>

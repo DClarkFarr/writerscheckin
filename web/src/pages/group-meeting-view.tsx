@@ -43,6 +43,7 @@ import {
   useRequestToJoinMeetingInviteMutation,
   useRespondToMeetingInviteDecisionMutation,
 } from "@/queries/useRespondToJoinInviteMutation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export interface GroupMeetingViewPageProps {
   groupId: string;
@@ -436,7 +437,7 @@ export function GroupMeetingViewPage({
         )}
 
         {/* Check-In Actions */}
-        <div className="space-y-3 border-t pt-4">
+        <div className="space-y-3 bg-gray-100 p-4">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             My Check-In Status
           </p>
@@ -451,7 +452,7 @@ export function GroupMeetingViewPage({
                   className={
                     meeting.userCheckinState === "reading"
                       ? "bg-blue-700 text-white hover:bg-blue-700"
-                      : "bg-blue-700/10 hover:bg-blue-700/20 text-gray-800 hover:text-gray-900"
+                      : "bg-blue-700/20 hover:bg-blue-700/40 text-gray-800 hover:text-gray-900 disabled:bg-gray-600 disabled:text-gray-50 disabled:hover:bg-gray-600 disabled:hover:text-gray-50"
                   }
                   disabled={!isButtonEnabled("reading")}
                   onClick={() => checkinMutation.mutate({ state: "reading" })}
@@ -470,10 +471,16 @@ export function GroupMeetingViewPage({
               <TooltipTrigger asChild>
                 <Button
                   type="button"
+                  variant={
+                    isButtonEnabled("attending") &&
+                    meeting.userCheckinState !== "attending"
+                      ? "outline"
+                      : "default"
+                  }
                   className={
                     meeting.userCheckinState === "attending"
                       ? "bg-emerald-700 text-white hover:bg-emerald-700"
-                      : "bg-emerald-700/10 hover:bg-emerald-700/20 text-gray-800 hover:text-gray-900"
+                      : "bg-emerald-700/20 hover:bg-emerald-700/40 text-gray-800 hover:text-gray-900 disabled:bg-gray-600 disabled:text-gray-50 disabled:hover:bg-gray-600 disabled:hover:text-gray-50"
                   }
                   disabled={!isButtonEnabled("attending")}
                   onClick={() => checkinMutation.mutate({ state: "attending" })}
@@ -495,7 +502,7 @@ export function GroupMeetingViewPage({
                   className={
                     meeting.userCheckinState === "skipping"
                       ? "bg-red-700 text-white hover:bg-red-700"
-                      : "bg-red-700/10 hover:bg-red-700/20 text-gray-800 hover:text-gray-900"
+                      : "bg-red-700/20 hover:bg-red-700/40 text-gray-800 hover:text-gray-900 disabled:bg-gray-600 disabled:text-gray-50 disabled:hover:bg-gray-600 disabled:hover:text-gray-50"
                   }
                   disabled={!isButtonEnabled("skipping")}
                   onClick={() =>
@@ -517,9 +524,22 @@ export function GroupMeetingViewPage({
               <p className="text-sm font-medium text-amber-900">
                 Check-in period has ended
               </p>
-              <p className="text-xs text-amber-800">
-                You can only downgrade your status. To increase your status,
-                contact the group admin.
+              <p className="text-xs text-slate-800">
+                {meeting.userCheckinState === "skipping" && (
+                  <>You can no longer change your attending status.</>
+                )}
+                {meeting.userCheckinState === "attending" && (
+                  <>
+                    You can always change your status to "not attending" if
+                    something comes up.
+                  </>
+                )}
+                {meeting.userCheckinState === "reading" && (
+                  <>
+                    You can downgrade to "attending" or "not attending" until
+                    the meeting starts.
+                  </>
+                )}
               </p>
             </div>
           )}
@@ -536,7 +556,7 @@ export function GroupMeetingViewPage({
         </div>
 
         {/* Attendance Summary */}
-        <div className="flex gap-6 border-t pt-4">
+        <div className="flex justify-around gap-6 border-t border-gray-300 pt-6 text-center">
           <div>
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
               Attending
@@ -553,126 +573,141 @@ export function GroupMeetingViewPage({
 
         {/* Admin: Upgrade Attendee Status */}
         {meeting.canEdit && sortedParticipants.length > 0 && (
-          <div className="space-y-3 border-t pt-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Admin: Manage Attendee Status
-            </p>
-            <p className="text-xs text-muted-foreground">
-              As an admin, you can upgrade any attendee&apos;s status at any
-              time regardless of the check-in window.
-            </p>
-            {adminUpgradeState.error && (
-              <Alert variant="destructive">
-                <AlertDescription>{adminUpgradeState.error}</AlertDescription>
-              </Alert>
-            )}
-            <div className="space-y-2">
-              {sortedParticipants
-                .filter((p) => !p.isCurrentUser)
-                .map((participant) => {
-                  const current = participant.attendanceState;
-                  const isPending =
-                    adminUpgradeState.isPending &&
-                    adminUpgradeState.memberId === participant.memberId;
-                  const colors = getParticipantColors(current);
+          <Card className="border border-red-500">
+            <CardHeader>
+              <CardTitle className="font-medium uppercase tracking-wide text-muted-foreground">
+                Admin: Manage Attendee Status
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 border-t pt-4">
+                <p className="text-xs "></p>
+                <p className="text-xs text-muted-foreground">
+                  As an admin, you can upgrade any attendee&apos;s status at any
+                  time regardless of the check-in window.
+                </p>
+                {adminUpgradeState.error && (
+                  <Alert variant="destructive">
+                    <AlertDescription>
+                      {adminUpgradeState.error}
+                    </AlertDescription>
+                  </Alert>
+                )}
+                <div className="space-y-2">
+                  {sortedParticipants
+                    .filter((p) => !p.isCurrentUser)
+                    .map((participant) => {
+                      const current = participant.attendanceState;
+                      const isPending =
+                        adminUpgradeState.isPending &&
+                        adminUpgradeState.memberId === participant.memberId;
+                      const colors = getParticipantColors(current);
 
-                  const handleAdminUpgrade = async (
-                    newStatus: "attending" | "reading" | "skipping",
-                  ) => {
-                    setAdminUpgradeState({
-                      memberId: participant.memberId,
-                      isPending: true,
-                      error: null,
-                    });
-                    try {
-                      await adminUpgradeMeetingAttendeeStatus(
-                        meetingId,
-                        participant.memberId,
-                        { status: newStatus },
-                      );
-                      await queryClient.invalidateQueries({
-                        queryKey: meetingViewQueryKey(groupId, meetingId),
-                      });
-                      setAdminUpgradeState({
-                        memberId: null,
-                        isPending: false,
-                        error: null,
-                      });
-                    } catch (err) {
-                      setAdminUpgradeState({
-                        memberId: participant.memberId,
-                        isPending: false,
-                        error:
-                          err instanceof Error
-                            ? err.message
-                            : "Failed to upgrade status.",
-                      });
-                    }
-                  };
+                      const handleAdminUpgrade = async (
+                        newStatus: "attending" | "reading" | "skipping",
+                      ) => {
+                        setAdminUpgradeState({
+                          memberId: participant.memberId,
+                          isPending: true,
+                          error: null,
+                        });
+                        try {
+                          await adminUpgradeMeetingAttendeeStatus(
+                            meetingId,
+                            participant.memberId,
+                            { status: newStatus },
+                          );
+                          await queryClient.invalidateQueries({
+                            queryKey: meetingViewQueryKey(groupId, meetingId),
+                          });
+                          setAdminUpgradeState({
+                            memberId: null,
+                            isPending: false,
+                            error: null,
+                          });
+                        } catch (err) {
+                          setAdminUpgradeState({
+                            memberId: participant.memberId,
+                            isPending: false,
+                            error:
+                              err instanceof Error
+                                ? err.message
+                                : "Failed to upgrade status.",
+                          });
+                        }
+                      };
 
-                  return (
-                    <div
-                      key={participant.memberId}
-                      className={`flex items-center justify-between rounded-md border p-3 text-sm ${colors.borderColor} ${colors.bgColor}`}
-                    >
-                      <div className="flex items-center gap-2">
-                        {participant.avatarUrl && (
-                          <img
-                            src={participant.avatarUrl}
-                            alt={participant.displayName}
-                            className="h-8 w-8 rounded-full"
-                          />
-                        )}
-                        <div>
-                          <p className="font-medium">
-                            {participant.displayName}
-                          </p>
-                          <p className="text-xs text-muted-foreground capitalize">
-                            {current === "none" ? "No status" : current}
-                          </p>
+                      return (
+                        <div
+                          key={participant.memberId}
+                          className={`flex items-center justify-between rounded-md border p-3 text-sm ${colors.borderColor} ${colors.bgColor}`}
+                        >
+                          <div className="flex items-center gap-2">
+                            {participant.avatarUrl && (
+                              <img
+                                src={participant.avatarUrl}
+                                alt={participant.displayName}
+                                className="h-8 w-8 rounded-full"
+                              />
+                            )}
+                            <div>
+                              <p className="font-medium">
+                                {participant.displayName}
+                              </p>
+                              <p className="text-xs text-muted-foreground capitalize">
+                                {current === "none" ? "No status" : current}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex gap-1">
+                            {canUpgradeTo(current, "attending") && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={isPending}
+                                onClick={() =>
+                                  void handleAdminUpgrade("attending")
+                                }
+                              >
+                                → Attending
+                              </Button>
+                            )}
+                            {canUpgradeTo(current, "reading") && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={isPending}
+                                onClick={() =>
+                                  void handleAdminUpgrade("reading")
+                                }
+                              >
+                                → Reading
+                              </Button>
+                            )}
+                            {current === "none" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={isPending}
+                                onClick={() =>
+                                  void handleAdminUpgrade("skipping")
+                                }
+                              >
+                                → Skipping
+                              </Button>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex gap-1">
-                        {canUpgradeTo(current, "attending") && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={isPending}
-                            onClick={() => void handleAdminUpgrade("attending")}
-                          >
-                            → Attending
-                          </Button>
-                        )}
-                        {canUpgradeTo(current, "reading") && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={isPending}
-                            onClick={() => void handleAdminUpgrade("reading")}
-                          >
-                            → Reading
-                          </Button>
-                        )}
-                        {current === "none" && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            disabled={isPending}
-                            onClick={() => void handleAdminUpgrade("skipping")}
-                          >
-                            → Skipping
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-            </div>
-          </div>
+                      );
+                    })}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Participants List */}
-        <div className="space-y-3 border-t pt-4">
+        <div className="space-y-3 border-t border-gray-300 pt-4">
           <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
             Participants
           </p>
