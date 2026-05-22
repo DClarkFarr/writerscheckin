@@ -37,6 +37,15 @@ main() {
 
     if [[ -z "${changed_projects}" ]]; then
         log_info "No changes detected in web/ or express/"
+
+        # Keep the no-change path fast, but recover if the PM2 app is down.
+        if pm2 describe "wci-server" >/dev/null 2>&1; then
+            log_info "wci-server is already running; skipping restart"
+        else
+            log_warn "wci-server is not running; starting server"
+            run_command "${COMMAND_DIR}/start-server.sh"
+        fi
+
         local no_change_end
         no_change_end=$(date +%s)
         log_summary "true" "$(calculate_duration "${start_time}" "${no_change_end}")"
