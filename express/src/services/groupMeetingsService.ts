@@ -1,6 +1,5 @@
 import {
   createGroupMeeting,
-  CreateGroupMeetingInput,
   getGroupMeetingById,
   listDueDraftMeetingsByPublishWindow,
   publishGroupMeetingById as publishGroupMeetingDocumentById,
