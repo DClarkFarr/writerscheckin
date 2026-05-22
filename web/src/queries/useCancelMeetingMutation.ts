@@ -21,7 +21,7 @@ export const useCancelMeetingMutation = ({
     mutationFn: async () => {
       return cancelMeeting(groupId, meetingId);
     },
-    onSuccess: (data: CancelMeetingResponse) => {
+    onSuccess: (_data: CancelMeetingResponse) => {
       // Invalidate meeting view/edit queries to reflect cancelled state
       queryClient.invalidateQueries({
         queryKey: meetingViewQueryKey(groupId, meetingId),

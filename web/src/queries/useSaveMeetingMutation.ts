@@ -23,7 +23,7 @@ export const useSaveMeetingMutation = ({
     mutationFn: async (input: UpdateMeetingInput) => {
       return updateMeeting(groupId, meetingId, input);
     },
-    onSuccess: (data: UpdateMeetingResponse) => {
+    onSuccess: (_data: UpdateMeetingResponse) => {
       // Invalidate both view and edit queries to reflect server state
       queryClient.invalidateQueries({
         queryKey: meetingViewQueryKey(groupId, meetingId),
