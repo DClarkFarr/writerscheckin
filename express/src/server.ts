@@ -13,6 +13,7 @@ import { uploadRouter } from "./routers/uploadRouter";
 import { webRouter } from "./routers/webRouter";
 import QueueService from "./services/QueueService";
 import { PublishScheduledMeetings } from "./jobs/PublishScheduledMeetings";
+import { AnnounceMeetingAttendance } from "./jobs/AnnounceMeetingAttendance";
 
 const startServer = async () => {
   app.setupEnvironment();
@@ -52,7 +53,7 @@ const initCronJobs = () => {
   const queueService = new QueueService();
 
   const publishScheduledMeetingsJob = new CronJob(
-    "*/5 * * * *", // every 5 minutes
+    "*/5 * * * *", // every 5th minute
     function () {
       console.info("Enqueuing PublishScheduledMeetings");
       queueService.add(async () => {
@@ -69,5 +70,24 @@ const initCronJobs = () => {
     "America/Denver", // Mountain timezone execution
   );
 
+  const announceMeetingAttendanceJob = new CronJob(
+    "*/10 * * * *", // every 10th minute
+    function () {
+      console.info("Enqueuing AnnounceMeetingAttendance");
+      queueService.add(async () => {
+        console.info("Running AnnounceMeetingAttendance");
+        try {
+          await AnnounceMeetingAttendance.execute();
+        } catch (err) {
+          console.error("Error executing AnnounceMeetingAttendance:", err);
+        }
+      });
+    },
+    undefined,
+    false,
+    "America/Denver", // Mountain timezone execution
+  );
+
   publishScheduledMeetingsJob.start();
+  announceMeetingAttendanceJob.start();
 };
