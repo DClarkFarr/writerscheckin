@@ -1,8 +1,7 @@
 import { createPortal } from "react-dom";
-import type { PortalWrapperId } from "../../types";
 
 export type PortalProps = React.PropsWithChildren<{
-  wrapperId: PortalWrapperId;
+  wrapperId: string;
 }>;
 export function Portal({ children, wrapperId }: PortalProps) {
   const wrapperElement = document.getElementById(wrapperId);

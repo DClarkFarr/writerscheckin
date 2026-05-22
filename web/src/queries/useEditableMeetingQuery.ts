@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getEditableMeeting } from "@/api/groups";
 import type { BaseQueryOptions } from "@/types/query.types";
-import type { EditableMeetingResponse } from "@/api/types/groups";
 
 export type UseEditableMeetingQueryProps = {
   groupId: string | undefined;
