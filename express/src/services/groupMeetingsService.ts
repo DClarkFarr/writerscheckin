@@ -7,6 +7,7 @@ import {
   getAggregationMemberMeetingsPaginated as getAggregationMemberMeetingsPaginatedModel,
   getAggregationMemberNextUpcomingMeetings as getAggregationMemberNextUpcomingMeetingsModel,
   getLatestUpcomingMeetingByGroupId,
+  markGroupMeetingAttendanceNotifiedById,
   type DueDraftMeetingCandidateRow,
   type MemberMeetingAggregationBaseItem,
   type MemberMeetingAggregationItem,
@@ -18,6 +19,7 @@ import { getGroupById, GroupDocument } from "../models/groups";
 import {
   listActivePublicationRecipientsByGroupId,
   listGroupMembersByGroupId,
+  getGroupOwnerByGroupId,
   type GroupMemberDocument,
 } from "../models/groupMembers";
 import { ensureDate, ensureObjectId } from "../models/types";
@@ -38,6 +40,7 @@ import { sendEmail } from "./emailService";
 import { emailLinks } from "./emailTemplates/baseEmailTemplate";
 import { GROUP_MESSAGE_TEMPLATE_DEFAULTS } from "./emailTemplates/groupMessageTemplateDefaults";
 import { buildGroupMeetingPublishEmail } from "./emailTemplates/groupMeetingPublish";
+import { buildGroupMeetingAttendanceEmail } from "./emailTemplates/groupMeetingAttendance";
 import { isGroupMemberUnsubscribedFromNotification } from "./groupMembersService";
 import {
   InviteLinkAccessState,
@@ -211,7 +214,7 @@ export interface ScheduledMeetingAttendanceCandidate {
   groupId: string;
   occursAt: string;
   notifyAttendanceHoursBefore: number;
-  notifyEmailMessage: string;
+  attendanceEmailMessage: string;
   notifyAt: string;
 }
 
@@ -305,7 +308,7 @@ const dueMeetingAttendanceRowToCandidate = (
     groupId: row.groupId.toHexString(),
     occursAt: row.occursAt.toISOString(),
     notifyAttendanceHoursBefore: row.notifyAttendanceHoursBefore,
-    notifyEmailMessage: row.notifyEmailMessage,
+    attendanceEmailMessage: row.attendanceEmailMessage,
     notifyAt: row.notifyAt.toISOString(),
   };
 };
@@ -342,6 +345,12 @@ interface PublishMeetingAndNotifyResult {
   emailSentCount: number;
 }
 
+interface AttendanceListMember {
+  name: string;
+  email: string;
+  status: string;
+}
+
 const resolvePublicationRecipientEmail = async (
   member: GroupMemberDocument,
 ): Promise<string | null> => {
@@ -353,6 +362,42 @@ const resolvePublicationRecipientEmail = async (
   }
 
   return member.email ?? null;
+};
+
+const resolveMemberContact = async (
+  member: GroupMemberDocument,
+): Promise<{ name: string; email: string | null }> => {
+  if (member.userId) {
+    const user = await getUserById(member.userId);
+    if (user?.email) {
+      const fullName = `${user.firstName} ${user.lastName}`.trim();
+      return {
+        name: fullName.length > 0 ? fullName : user.email,
+        email: user.email,
+      };
+    }
+  }
+
+  return {
+    name: member.email ?? "Group member",
+    email: member.email ?? null,
+  };
+};
+
+const toAttendanceStatusLabel = (status: string): string => {
+  if (status === "reading") {
+    return "Reading";
+  }
+
+  if (status === "attending") {
+    return "Attending";
+  }
+
+  if (status === "invited") {
+    return "Invited";
+  }
+
+  return status;
 };
 
 const publishMeetingAndNotify = async (input: {
@@ -469,20 +514,157 @@ export const notifyUpcomingMeetingFromSchedule = async (
   const now = input.now ?? new Date();
   const { candidate } = input;
 
-  const meeting = await getGroupMeetingById(candidate.meetingId);
+  const candidateMeetingId = candidate._id.toHexString();
+  const candidateGroupId = candidate.groupId.toHexString();
+  const candidateOccursAt = candidate.occursAt.toISOString();
+  const candidateNotifyAt = candidate.notifyAt.toISOString();
+
+  const meeting = await getGroupMeetingById(candidateMeetingId);
   if (!meeting) {
     return {
-      meetingId: candidate.meetingId,
-      groupId: candidate.groupId?.toHexString() ?? "",
+      meetingId: candidateMeetingId,
+      groupId: candidateGroupId,
       groupName: null,
-      occursAt: candidate.occursAt?.toISOString() ?? null,
-      notifyAt: candidate.notifyAt?.toISOString() ?? null,
+      occursAt: candidateOccursAt,
+      notifyAt: candidateNotifyAt,
       emailSentCount: 0,
       errorMessage: "Meeting not found.",
     };
   }
 
-  // TODO: Finish method
+  const group = await getGroupById(meeting.groupId);
+  const notifyAt = new Date(meeting.occursAt);
+  notifyAt.setHours(notifyAt.getHours() - meeting.notifyAttendanceHoursBefore);
+
+  if (meeting.cancelledAt || meeting.status !== "published") {
+    return {
+      meetingId: meeting._id.toHexString(),
+      groupId: meeting.groupId.toHexString(),
+      groupName: group?.name ?? null,
+      occursAt: meeting.occursAt.toISOString(),
+      notifyAt: notifyAt.toISOString(),
+      emailSentCount: 0,
+    };
+  }
+
+  if (meeting.attendanceNotified) {
+    return {
+      meetingId: meeting._id.toHexString(),
+      groupId: meeting.groupId.toHexString(),
+      groupName: group?.name ?? null,
+      occursAt: meeting.occursAt.toISOString(),
+      notifyAt: notifyAt.toISOString(),
+      emailSentCount: 0,
+    };
+  }
+
+  if (notifyAt.getTime() > now.getTime()) {
+    return {
+      meetingId: meeting._id.toHexString(),
+      groupId: meeting.groupId.toHexString(),
+      groupName: group?.name ?? null,
+      occursAt: meeting.occursAt.toISOString(),
+      notifyAt: notifyAt.toISOString(),
+      emailSentCount: 0,
+    };
+  }
+
+  try {
+    const recipients = await listActivePublicationRecipientsByGroupId(
+      meeting.groupId,
+      {
+        limit: 500,
+      },
+    );
+    const attendees = await listMeetingAttendeesByMeetingId(meeting._id);
+    const attendeeStatusByMemberId = new Map(
+      attendees.map((attendee) => [
+        attendee.memberId.toHexString(),
+        attendee.status,
+      ]),
+    );
+
+    const owner = await getGroupOwnerByGroupId(meeting.groupId);
+    const ownerEmail = owner
+      ? await resolvePublicationRecipientEmail(owner)
+      : null;
+
+    const attendanceListMembers: AttendanceListMember[] = [];
+    for (const member of recipients) {
+      const rawStatus = attendeeStatusByMemberId.get(member._id.toHexString());
+      if (rawStatus === "skipping") {
+        continue;
+      }
+
+      const contact = await resolveMemberContact(member);
+      if (!contact.email) {
+        continue;
+      }
+
+      attendanceListMembers.push({
+        name: contact.name,
+        email: contact.email,
+        status: toAttendanceStatusLabel(rawStatus ?? "invited"),
+      });
+    }
+
+    let emailSentCount = 0;
+    for (const recipient of recipients) {
+      const recipientEmail = await resolvePublicationRecipientEmail(recipient);
+      if (!recipientEmail) {
+        continue;
+      }
+
+      if (isMemberUnsubscribed(recipient, "meetingAttendance")) {
+        continue;
+      }
+
+      const email = buildGroupMeetingAttendanceEmail({
+        groupName: group?.name ?? meeting.name,
+        occursAt: meeting.occursAt,
+        meetingAddress: meeting.address,
+        attendanceMessage: meeting.attendanceEmailMessage,
+        adminEmail: ownerEmail ?? "support@writerscheck.in",
+        attendanceEntries: attendanceListMembers,
+      });
+
+      await sendEmail({
+        to: recipientEmail,
+        subject: email.subject,
+        text: email.text,
+        html: email.html,
+      });
+
+      emailSentCount += 1;
+    }
+
+    const marked = await markGroupMeetingAttendanceNotifiedById(meeting._id);
+    if (!marked) {
+      throw new Error("Failed to mark attendance notification as sent.");
+    }
+
+    return {
+      meetingId: meeting._id.toHexString(),
+      groupId: meeting.groupId.toHexString(),
+      groupName: group?.name ?? null,
+      occursAt: meeting.occursAt.toISOString(),
+      notifyAt: notifyAt.toISOString(),
+      emailSentCount,
+    };
+  } catch (error) {
+    return {
+      meetingId: meeting._id.toHexString(),
+      groupId: meeting.groupId.toHexString(),
+      groupName: group?.name ?? null,
+      occursAt: meeting.occursAt.toISOString(),
+      notifyAt: notifyAt.toISOString(),
+      emailSentCount: 0,
+      errorMessage:
+        error instanceof Error
+          ? error.message
+          : "Unknown attendance notification error.",
+    };
+  }
 };
 
 export const publishMeetingFromSchedule = async (

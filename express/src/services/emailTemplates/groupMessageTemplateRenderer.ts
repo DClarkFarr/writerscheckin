@@ -17,6 +17,8 @@ export type GroupTemplateToken =
 
 export type GroupTemplateReplacementMap = Record<GroupTemplateToken, string>;
 
+const PLACEHOLDER_PATTERN = /\[([A-Za-z][A-Za-z0-9]*)\]/g;
+
 const TOKEN_ORDER: GroupTemplateToken[] = [
   "[meetingName]",
   "[meetingDate]",
@@ -41,9 +43,13 @@ export const renderGroupTemplate = (
   template: string,
   replacements: GroupTemplateReplacementMap,
 ): string => {
-  let rendered = template;
-  for (const token of TOKEN_ORDER) {
-    rendered = rendered.split(token).join(replacements[token]);
-  }
-  return rendered;
+  const orderedEntries: Array<[GroupTemplateToken, string]> = TOKEN_ORDER.map(
+    (token) => [token, replacements[token]],
+  );
+  const replacementLookup = new Map<string, string>(orderedEntries);
+
+  return template.replace(PLACEHOLDER_PATTERN, (match, key: string) => {
+    const token = `[${key}]` as GroupTemplateToken;
+    return replacementLookup.get(token) ?? match;
+  });
 };

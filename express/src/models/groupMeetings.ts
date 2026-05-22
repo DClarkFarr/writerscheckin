@@ -43,6 +43,7 @@ export interface GroupMeetingDefinition extends BaseModelBlueprint {
   publishHoursBefore: number;
   notifyAttendanceHoursBefore: number;
   endCheckinHoursBefore: number;
+  attendanceNotified: boolean;
   status: GroupMeetingStatus;
   cancelledAt: Date | null;
   deletedAt?: Date;
@@ -84,6 +85,7 @@ export interface UpdateGroupMeetingInput {
   publishHoursBefore?: number;
   notifyAttendanceHoursBefore?: number;
   endCheckinHoursBefore?: number;
+  attendanceNotified?: boolean;
   status?: GroupMeetingStatus;
 }
 
@@ -169,6 +171,7 @@ const normalizeCreateInput = (
     publishHoursBefore: input.publishHoursBefore,
     notifyAttendanceHoursBefore: input.notifyAttendanceHoursBefore,
     endCheckinHoursBefore,
+    attendanceNotified: false,
     cancelledAt: input.cancelledAt
       ? assertDate(input.cancelledAt, "cancelledAt")
       : null,
@@ -258,6 +261,10 @@ const normalizeUpdateInput = (
       "endCheckinHoursBefore",
     );
     normalized.endCheckinHoursBefore = updates.endCheckinHoursBefore;
+  }
+
+  if (typeof updates.attendanceNotified === "boolean") {
+    normalized.attendanceNotified = updates.attendanceNotified;
   }
 
   if (typeof updates.status === "string") {
@@ -729,6 +736,7 @@ export const listDueMeetingsForAnnouncement = async (
         $match: {
           status: "published",
           cancelledAt: null,
+          attendanceNotified: { $ne: true },
           ...activeRecordFilter(),
         },
       },
@@ -858,6 +866,28 @@ export const publishGroupMeetingById = async (
     {
       $set: {
         status: assertMeetingStatus("published"),
+        attendanceNotified: false,
+        ...touchTimestamps(),
+      },
+    },
+    { returnDocument: "after" },
+  );
+
+  return result;
+};
+
+export const markGroupMeetingAttendanceNotifiedById = async (
+  id: string | ObjectId,
+): Promise<GroupMeetingDocument | null> => {
+  const collection = getGroupMeetingsCollection();
+  const result = await collection.findOneAndUpdate(
+    {
+      _id: toObjectId(id, "groupMeetingId"),
+      ...activeRecordFilter(),
+    },
+    {
+      $set: {
+        attendanceNotified: true,
         ...touchTimestamps(),
       },
     },
