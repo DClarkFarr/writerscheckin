@@ -60,7 +60,6 @@ export function GroupViewPage() {
   }, [groupId]);
 
   const callbacks = useMemo<SubscribeSocketToGroupsCallbacks>(() => {
-    console.log("computing callbacks");
     return {
       onChangeGroup: (updatedGroup) => {
         if (updatedGroup.groupId === groupId) {

@@ -44,6 +44,9 @@ import {
 } from "@/queries/useRespondToJoinInviteMutation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MeetingCheckinMessage } from "@/components/meeting/MeetingCheckinMessage";
+import IconPencil from "~icons/mdi/pencil";
+import IconAccountSupervisor from "~icons/mdi/account-supervisor";
+import { ButtonGroup } from "@/components/ui/button-group";
 
 export interface GroupMeetingViewPageProps {
   groupId: string;
@@ -384,14 +387,23 @@ export function GroupMeetingViewPage({
               </p>
             </div>
             {meeting.canEdit && (
-              <Link
-                to="/groups/$groupId/meetings/$meetingId/edit"
-                params={{ groupId, meetingId }}
-              >
-                <Button variant="outline" size="sm">
-                  Edit
-                </Button>
-              </Link>
+              <ButtonGroup>
+                <Link
+                  to="/groups/$groupId/meetings/$meetingId/edit"
+                  params={{ groupId, meetingId }}
+                >
+                  <Button variant="outline" size="sm">
+                    <IconPencil />
+                    Meeting
+                  </Button>
+                </Link>
+                <Link to="/groups/$groupId/edit" params={{ groupId }}>
+                  <Button variant="outline" size="sm">
+                    <IconPencil />
+                    Group
+                  </Button>
+                </Link>
+              </ButtonGroup>
             )}
           </div>
 
@@ -570,12 +582,23 @@ export function GroupMeetingViewPage({
           <Card className="border border-red-500">
             <CardHeader>
               <CardTitle className="font-medium uppercase tracking-wide text-muted-foreground">
-                Admin: Manage Attendee Status
+                <div className="flex gap-1">
+                  <div className="grow">Admin: Manage Attendee Status</div>
+                  <div className="shink-0">
+                    <Link to="/groups/$groupId/edit" params={{ groupId }}>
+                      <Button size="sm">
+                        <IconAccountSupervisor />
+                        Add
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3 border-t pt-4">
                 <p className="text-xs "></p>
+                <div className="text-right"></div>
                 <p className="text-xs text-muted-foreground">
                   As an admin, you can upgrade any attendee&apos;s status at any
                   time regardless of the check-in window.

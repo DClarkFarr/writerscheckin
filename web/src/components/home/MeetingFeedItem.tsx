@@ -319,6 +319,18 @@ export const MeetingFeedItem = ({
                             Edit meeting
                           </DropdownMenuItem>
                         )}
+                        <DropdownMenuItem
+                          onSelect={() =>
+                            navigate({
+                              to: "/groups/$groupId/view",
+                              params: {
+                                groupId: item.groupId,
+                              },
+                            })
+                          }
+                        >
+                          View Group
+                        </DropdownMenuItem>
                         {canPublishFromMenu && (
                           <>
                             <DropdownMenuSeparator />
