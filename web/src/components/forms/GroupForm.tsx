@@ -16,6 +16,7 @@ import { GroupUserMultiSelect } from "./GroupUserMultiSelect";
 import type { GroupFormProps } from "@/hooks/useGroupForm";
 import { useRef, type KeyboardEventHandler } from "react";
 import { GROUP_TEMPLATE_PLACEHOLDER_HELPER_TEXT } from "@/lib/groupTemplatePlaceholders";
+import { GroupAdminActionsMenu } from "../group/GroupAdminActionsDropdown";
 
 const WEEKDAY_OPTIONS = [
   { value: 0, label: "Sun" },
@@ -29,6 +30,7 @@ const WEEKDAY_OPTIONS = [
 
 export function GroupForm({
   mode,
+  group,
   groupId,
   fields,
   fieldErrors,
@@ -68,12 +70,21 @@ export function GroupForm({
 
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
-      <div className="space-y-2">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Groups
-        </p>
-        <h1 className="text-2xl font-semibold text-foreground">{heading}</h1>
-        <p className="text-sm text-muted-foreground">{summary}</p>
+      <div className="flex w-100">
+        <div className="grow">
+          <div className="space-y-2">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              Groups
+            </p>
+            <h1 className="text-2xl font-semibold text-foreground">
+              {heading}
+            </h1>
+            <p className="text-sm text-muted-foreground">{summary}</p>
+          </div>
+        </div>
+        <div className="shrink-0">
+          {group && <GroupAdminActionsMenu hideViewLink group={group} />}
+        </div>
       </div>
 
       {formError ? (

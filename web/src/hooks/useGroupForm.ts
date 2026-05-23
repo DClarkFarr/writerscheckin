@@ -69,6 +69,7 @@ export interface GroupFormProps {
   groupId?: string;
   fields: Fields;
   fieldErrors: FieldErrors;
+  group?: EditableGroupResponse;
   touched: Touched;
   recurrenceDaysOfWeek: number[];
   selectedMembers: GroupFormMember[];

@@ -112,7 +112,7 @@ function LoadedGroupEditForm({
 
   return (
     <div className="space-y-6">
-      <GroupForm {...formProps} />
+      <GroupForm {...formProps} group={existingGroup} />
 
       <section className="space-y-2">
         <h2 className="text-sm font-semibold text-foreground">Members</h2>
