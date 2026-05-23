@@ -449,7 +449,7 @@ const publishMeetingAndNotify = async (input: {
         meeting._id.toHexString(),
       ),
       publishMessage: meeting.publishEmailMessage,
-      sentAt: now,
+      notifyAttendanceHoursBefore: meeting.notifyAttendanceHoursBefore,
     });
 
     await sendEmail({

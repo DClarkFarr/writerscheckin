@@ -9,13 +9,15 @@ import {
   renderGroupTemplate,
 } from "./groupMessageTemplateRenderer";
 
+import dayjs from "dayjs";
+
 export interface GroupMeetingPublishEmailInput {
   meetingName: string;
   occursAt: Date;
   meetingAddress: string;
   meetingUrl: string;
   publishMessage: string;
-  sentAt?: Date;
+  notifyAttendanceHoursBefore: number;
 }
 
 export interface GroupMeetingPublishEmailContent {
@@ -28,15 +30,16 @@ export const buildGroupMeetingPublishEmail = (
   input: GroupMeetingPublishEmailInput,
 ): GroupMeetingPublishEmailContent => {
   const subject = `Meeting published: ${input.meetingName}`;
-  const occursAtText = input.occursAt.toLocaleString();
   const meetingDateText = input.occursAt.toLocaleDateString();
   const meetingTimeText = input.occursAt.toLocaleTimeString([], {
     hour: "numeric",
     minute: "2-digit",
   });
-  const dateOfNotificationText = (
-    input.sentAt ?? new Date()
-  ).toLocaleDateString();
+  const dateOfNotificationText = dayjs(input.occursAt)
+    .subtract(input.notifyAttendanceHoursBefore ?? 24, "hour")
+    .toDate()
+    .toLocaleString();
+
   const messageTemplate = input.publishMessage.trim();
 
   const checkinButtonHtml = emailComponents.button(
