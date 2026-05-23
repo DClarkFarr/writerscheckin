@@ -111,6 +111,7 @@ const normalizeEditableGroupResponse = (
         data.availableActions?.canViewUpcomingMeeting ?? false,
     },
     endCheckinHoursBefore: data.endCheckinHoursBefore ?? 0,
+    notifyAttendanceHoursBefore: data.notifyAttendanceHoursBefore ?? 2,
     // Keep aliases stable for existing group form contracts.
     publicMessage: normalizeHtmlTemplate(data.publicMessage),
     attendanceMessage: normalizeHtmlTemplate(data.attendanceMessage),

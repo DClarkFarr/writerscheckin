@@ -179,7 +179,9 @@ export function GroupForm({
                 : undefined}
             </FieldError>
           </Field>
+        </FieldGroup>
 
+        <FieldGroup className="md:flex-row gap-4">
           <Field>
             <FieldLabel htmlFor="endCheckinHoursBefore">
               Check-in closes (hours before start)
@@ -208,7 +210,37 @@ export function GroupForm({
                 : undefined}
             </FieldError>
           </Field>
+
+          <Field>
+            <FieldLabel htmlFor="notifyAttendanceHoursBefore">
+              Notify attendance (hours before start)
+            </FieldLabel>
+            <Input
+              id="notifyAttendanceHoursBefore"
+              name="notifyAttendanceHoursBefore"
+              type="number"
+              min={0}
+              step={1}
+              value={fields.notifyAttendanceHoursBefore}
+              onChange={handleFieldChange}
+              onBlur={handleFieldBlur}
+              size="lg"
+              aria-invalid={
+                touched.notifyAttendanceHoursBefore &&
+                !!fieldErrors.notifyAttendanceHoursBefore
+              }
+            />
+            <FieldDescription>
+              Hours before the meeting to send attendance notifications.
+            </FieldDescription>
+            <FieldError>
+              {touched.notifyAttendanceHoursBefore
+                ? fieldErrors.notifyAttendanceHoursBefore
+                : undefined}
+            </FieldError>
+          </Field>
         </FieldGroup>
+
         <Field>
           <FieldLabel htmlFor="recurrenceFrequency">Recurrence</FieldLabel>
           <select

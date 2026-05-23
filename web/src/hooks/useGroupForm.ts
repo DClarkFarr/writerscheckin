@@ -24,6 +24,7 @@ type Fields = {
   startTime: string;
   durationMinutes: string;
   endCheckinHoursBefore: string;
+  notifyAttendanceHoursBefore: string;
   recurrenceFrequency: "weekly" | "biweekly";
   publicMessage: string;
   attendanceMessage: string;
@@ -43,6 +44,7 @@ export type GroupFormInitialValues = Omit<
       | "startTime"
       | "durationMinutes"
       | "endCheckinHoursBefore"
+      | "notifyAttendanceHoursBefore"
       | "recurrenceFrequency"
       | "recurrenceDaysOfWeek"
       | "publicMessage"
@@ -101,6 +103,7 @@ const DEFAULT_FIELDS: Fields = {
   startTime: "18:00",
   durationMinutes: "60",
   endCheckinHoursBefore: "2",
+  notifyAttendanceHoursBefore: "2",
   recurrenceFrequency: "weekly",
   publicMessage: `
     <p>Good morning my author friends!</p>
@@ -161,6 +164,16 @@ const validateField = (
       }
       return undefined;
     }
+    case "notifyAttendanceHoursBefore": {
+      const notify = Number.parseInt(fields.notifyAttendanceHoursBefore, 10);
+      if (Number.isNaN(notify)) {
+        return "Notify hours is required.";
+      }
+      if (notify < 0) {
+        return "Notify hours must be 0 or greater.";
+      }
+      return undefined;
+    }
     case "recurrenceDaysOfWeek":
       return recurrenceDaysOfWeek.length > 0
         ? undefined
@@ -183,6 +196,11 @@ const validateAll = (
   ),
   endCheckinHoursBefore: validateField(
     "endCheckinHoursBefore",
+    fields,
+    recurrenceDaysOfWeek,
+  ),
+  notifyAttendanceHoursBefore: validateField(
+    "notifyAttendanceHoursBefore",
     fields,
     recurrenceDaysOfWeek,
   ),
@@ -222,6 +240,10 @@ export function useGroupForm(
       options.existingGroup?.endCheckinHoursBefore !== undefined
         ? String(options.existingGroup.endCheckinHoursBefore)
         : DEFAULT_FIELDS.endCheckinHoursBefore,
+    notifyAttendanceHoursBefore:
+      options.existingGroup?.notifyAttendanceHoursBefore !== undefined
+        ? String(options.existingGroup.notifyAttendanceHoursBefore)
+        : DEFAULT_FIELDS.notifyAttendanceHoursBefore,
     recurrenceFrequency:
       options.existingGroup?.recurrenceFrequency ??
       DEFAULT_FIELDS.recurrenceFrequency,
@@ -383,6 +405,10 @@ export function useGroupForm(
       startTime: fields.startTime,
       durationMinutes: Number.parseInt(fields.durationMinutes, 10),
       endCheckinHoursBefore: Number.parseInt(fields.endCheckinHoursBefore, 10),
+      notifyAttendanceHoursBefore: Number.parseInt(
+        fields.notifyAttendanceHoursBefore,
+        10,
+      ),
       recurrenceFrequency: fields.recurrenceFrequency,
       recurrenceDaysOfWeek,
       publicMessage: fields.publicMessage.trim(),

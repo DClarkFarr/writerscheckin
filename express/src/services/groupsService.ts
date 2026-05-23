@@ -93,6 +93,7 @@ export interface GroupFormPayload {
   recurrenceFrequency: "weekly" | "biweekly";
   recurrenceDaysOfWeek: number[];
   endCheckinHoursBefore?: number;
+  notifyAttendanceHoursBefore?: number;
   publicMessage?: string;
   attendanceMessage?: string;
   members: GroupFormMemberInput[];
@@ -124,6 +125,7 @@ export interface EditableGroupFormResult {
   startTime: string;
   durationMinutes: number;
   endCheckinHoursBefore: number;
+  notifyAttendanceHoursBefore: number;
   recurrenceFrequency: "weekly" | "biweekly";
   recurrenceDaysOfWeek: number[];
   publicMessage: string;
@@ -655,7 +657,10 @@ export const createManagedGroup = async (
       ? { attendanceEmailMessage: input.attendanceMessage }
       : {}),
     publishHoursBefore: DEFAULT_PUBLISH_HOURS_BEFORE,
-    notifyAttendanceHoursBefore: DEFAULT_ATTENDANCE_HOURS_BEFORE,
+    notifyAttendanceHoursBefore:
+      typeof input.notifyAttendanceHoursBefore === "number"
+        ? input.notifyAttendanceHoursBefore
+        : DEFAULT_ATTENDANCE_HOURS_BEFORE,
     endCheckinHoursBefore,
     ...(typeof input.address === "string" ? { address: input.address } : {}),
     startTime: parseTimeString(input.startTime),
@@ -738,6 +743,8 @@ export const getManagedGroupForm = async (
     startTime: formatTimeString(group.startTime),
     durationMinutes: group.durationMinutes,
     endCheckinHoursBefore: group.endCheckinHoursBefore ?? 0,
+    notifyAttendanceHoursBefore:
+      group.notifyAttendanceHoursBefore ?? DEFAULT_ATTENDANCE_HOURS_BEFORE,
     recurrenceFrequency: group.recurrenceRule.frequency,
     recurrenceDaysOfWeek: group.recurrenceRule.daysOfWeek,
     ...toGroupTemplateAliases(resolvedTemplates),
@@ -911,6 +918,9 @@ export const updateManagedGroup = async (
       : {}),
     ...(typeof input.endCheckinHoursBefore === "number"
       ? { endCheckinHoursBefore: input.endCheckinHoursBefore }
+      : {}),
+    ...(typeof input.notifyAttendanceHoursBefore === "number"
+      ? { notifyAttendanceHoursBefore: input.notifyAttendanceHoursBefore }
       : {}),
     ...(typeof input.address === "string" ? { address: input.address } : {}),
     startTime: parseTimeString(input.startTime),

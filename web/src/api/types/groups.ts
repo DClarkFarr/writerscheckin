@@ -94,6 +94,7 @@ export interface GroupFormDraft {
   recurrenceFrequency: GroupRecurrenceFrequency;
   recurrenceDaysOfWeek: number[];
   endCheckinHoursBefore: number;
+  notifyAttendanceHoursBefore: number;
   // HTML-compatible template source mapped to groups.publishEmailMessage.
   publicMessage: string;
   // HTML-compatible template source mapped to groups.attendanceEmailMessage.
@@ -109,6 +110,7 @@ export interface EditableGroupResponse extends GroupSummaryItem {
   recurrenceFrequency: GroupRecurrenceFrequency;
   recurrenceDaysOfWeek: number[];
   endCheckinHoursBefore: number;
+  notifyAttendanceHoursBefore: number;
   // Alias for groups.publishEmailMessage used by existing group form contract.
   publicMessage: string;
   // Alias for groups.attendanceEmailMessage used by existing group form contract.
