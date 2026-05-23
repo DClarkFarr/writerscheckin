@@ -39,7 +39,6 @@ export function GroupForm({
   selectedMembers,
   isSubmitting,
   formError,
-  submitNotice,
   submitLabel,
   handleFieldChange,
   handleFieldBlur,
@@ -90,12 +89,6 @@ export function GroupForm({
       {formError ? (
         <Alert variant="destructive">
           <AlertDescription>{formError}</AlertDescription>
-        </Alert>
-      ) : null}
-
-      {submitNotice ? (
-        <Alert>
-          <AlertDescription>{submitNotice}</AlertDescription>
         </Alert>
       ) : null}
 
@@ -247,6 +240,36 @@ export function GroupForm({
             <FieldError>
               {touched.notifyAttendanceHoursBefore
                 ? fieldErrors.notifyAttendanceHoursBefore
+                : undefined}
+            </FieldError>
+          </Field>
+        </FieldGroup>
+
+        <FieldGroup className="md:flex-row gap-4">
+          <Field>
+            <FieldLabel htmlFor="publishHoursBefore">
+              Publish Hours Before
+            </FieldLabel>
+            <Input
+              id="publishHoursBefore"
+              name="publishHoursBefore"
+              type="number"
+              min={0}
+              step={1}
+              value={fields.publishHoursBefore}
+              onChange={handleFieldChange}
+              onBlur={handleFieldBlur}
+              size="lg"
+              aria-invalid={
+                touched.publishHoursBefore && !!fieldErrors.publishHoursBefore
+              }
+            />
+            <FieldDescription>
+              Will automatically be published at this time.
+            </FieldDescription>
+            <FieldError>
+              {touched.publishHoursBefore
+                ? fieldErrors.publishHoursBefore
                 : undefined}
             </FieldError>
           </Field>

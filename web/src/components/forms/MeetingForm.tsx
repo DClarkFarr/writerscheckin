@@ -27,9 +27,16 @@ import IconEye from "~icons/mdi/eye";
 
 import { Input } from "@/components/ui/input";
 import type { EditableMeetingResponse } from "@/api/types/groups";
-import { formatStaticDateTime } from "@/lib/dateFormat";
+import {
+  formatStaticDateTime,
+  formatStaticFullDateTime,
+} from "@/lib/dateFormat";
 import { RichTextEditor } from "./RichTextEditor";
 import { Link } from "@tanstack/react-router";
+
+import dayjs from "dayjs";
+
+import { useMemo } from "react";
 
 export interface MeetingFormProps {
   meeting: EditableMeetingResponse | null;
@@ -69,6 +76,14 @@ export interface MeetingFormProps {
   onCancelMeeting: () => void;
 }
 
+function displaySubtractedDate(
+  baseDate: Date | string | undefined,
+  hoursBefore: number,
+) {
+  const d = dayjs(baseDate).subtract(hoursBefore, "hour");
+  return d.isValid() ? formatStaticFullDateTime(d.toDate()) : "";
+}
+
 export function MeetingForm({
   meeting,
   isLoading,
@@ -92,6 +107,20 @@ export function MeetingForm({
 }: MeetingFormProps) {
   const formDisabled =
     isSaving || isPublishing || isCancelling || !!meeting?.cancelledAt;
+
+  const notifyAttendanceAt = useMemo(() => {
+    return displaySubtractedDate(
+      meeting?.occursAt,
+      Number(fields.notifyAttendanceHoursBefore),
+    );
+  }, [meeting?.occursAt, fields.notifyAttendanceHoursBefore]);
+
+  const checkinClosesAt = useMemo(() => {
+    return displaySubtractedDate(
+      meeting?.occursAt,
+      Number(fields.endCheckinHoursBefore),
+    );
+  }, [meeting?.occursAt, fields.endCheckinHoursBefore]);
 
   if (isLoading) {
     return (
@@ -222,7 +251,7 @@ export function MeetingForm({
           {meeting.publishScheduledFor && (
             <FieldDescription>
               Scheduled to auto-publish{" "}
-              {new Date(meeting.publishScheduledFor).toLocaleString()}
+              {formatStaticFullDateTime(meeting.publishScheduledFor)}
             </FieldDescription>
           )}
         </Field>
@@ -241,6 +270,12 @@ export function MeetingForm({
             onBlur={onFieldBlur}
             disabled={formDisabled}
           />
+
+          {notifyAttendanceAt && (
+            <FieldDescription>
+              Scheduled to send attendance reminder {notifyAttendanceAt}
+            </FieldDescription>
+          )}
         </Field>
 
         <Field>
@@ -262,6 +297,12 @@ export function MeetingForm({
             fieldErrors.endCheckinHoursBefore && (
               <FieldError>{fieldErrors.endCheckinHoursBefore}</FieldError>
             )}
+
+          {checkinClosesAt && (
+            <FieldDescription>
+              Check-in closes at {checkinClosesAt}
+            </FieldDescription>
+          )}
         </Field>
 
         <Field>

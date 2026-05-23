@@ -25,6 +25,7 @@ type Fields = {
   durationMinutes: string;
   endCheckinHoursBefore: string;
   notifyAttendanceHoursBefore: string;
+  publishHoursBefore: string;
   recurrenceFrequency: "weekly" | "biweekly";
   publicMessage: string;
   attendanceMessage: string;
@@ -45,6 +46,7 @@ export type GroupFormInitialValues = Omit<
       | "durationMinutes"
       | "endCheckinHoursBefore"
       | "notifyAttendanceHoursBefore"
+      | "publishHoursBefore"
       | "recurrenceFrequency"
       | "recurrenceDaysOfWeek"
       | "publicMessage"
@@ -75,7 +77,6 @@ export interface GroupFormProps {
   selectedMembers: GroupFormMember[];
   isSubmitting: boolean;
   formError: string | null;
-  submitNotice: string | null;
   submitLabel: string;
   handleFieldChange: (
     event: ChangeEvent<
@@ -105,6 +106,7 @@ const DEFAULT_FIELDS: Fields = {
   durationMinutes: "60",
   endCheckinHoursBefore: "2",
   notifyAttendanceHoursBefore: "2",
+  publishHoursBefore: "24",
   recurrenceFrequency: "weekly",
   publicMessage: `
     <p>Good morning my author friends!</p>
@@ -175,6 +177,16 @@ const validateField = (
       }
       return undefined;
     }
+    case "publishHoursBefore": {
+      const publish = Number.parseInt(fields.publishHoursBefore, 10);
+      if (Number.isNaN(publish)) {
+        return "Publish hours is required.";
+      }
+      if (publish < 0) {
+        return "Publish hours must be 0 or greater.";
+      }
+      return undefined;
+    }
     case "recurrenceDaysOfWeek":
       return recurrenceDaysOfWeek.length > 0
         ? undefined
@@ -202,6 +214,11 @@ const validateAll = (
   ),
   notifyAttendanceHoursBefore: validateField(
     "notifyAttendanceHoursBefore",
+    fields,
+    recurrenceDaysOfWeek,
+  ),
+  publishHoursBefore: validateField(
+    "publishHoursBefore",
     fields,
     recurrenceDaysOfWeek,
   ),
@@ -245,6 +262,10 @@ export function useGroupForm(
       options.existingGroup?.notifyAttendanceHoursBefore !== undefined
         ? String(options.existingGroup.notifyAttendanceHoursBefore)
         : DEFAULT_FIELDS.notifyAttendanceHoursBefore,
+    publishHoursBefore:
+      options.existingGroup?.publishHoursBefore !== undefined
+        ? String(options.existingGroup.publishHoursBefore)
+        : DEFAULT_FIELDS.publishHoursBefore,
     recurrenceFrequency:
       options.existingGroup?.recurrenceFrequency ??
       DEFAULT_FIELDS.recurrenceFrequency,
@@ -263,7 +284,6 @@ export function useGroupForm(
   const [touched, setTouched] = useState<Touched>({});
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [formError, setFormError] = useState<string | null>(null);
-  const [submitNotice, setSubmitNotice] = useState<string | null>(null);
   const saveGroupMutation = useSaveGroupMutation({
     mode: options.mode ?? "create",
     groupId: options.groupId,
@@ -319,7 +339,6 @@ export function useGroupForm(
     const fieldName = name as keyof Fields;
 
     setFields((current) => ({ ...current, [fieldName]: value }));
-    setSubmitNotice(null);
     setFormError(null);
 
     if (touched[fieldName]) {
@@ -347,19 +366,16 @@ export function useGroupForm(
 
   const handleDescriptionChange = (value: string) => {
     setFields((current) => ({ ...current, description: value }));
-    setSubmitNotice(null);
     setFormError(null);
   };
 
   const handlePublicMessageChange = (value: string) => {
     setFields((current) => ({ ...current, publicMessage: value }));
-    setSubmitNotice(null);
     setFormError(null);
   };
 
   const handleAttendanceMessageChange = (value: string) => {
     setFields((current) => ({ ...current, attendanceMessage: value }));
-    setSubmitNotice(null);
     setFormError(null);
   };
 
@@ -382,7 +398,6 @@ export function useGroupForm(
 
       return nextValue;
     });
-    setSubmitNotice(null);
     setFormError(null);
   };
 
@@ -395,7 +410,6 @@ export function useGroupForm(
     setFieldErrors(errors);
 
     if (hasErrors(errors)) {
-      setSubmitNotice(null);
       return;
     }
 
@@ -410,6 +424,7 @@ export function useGroupForm(
         fields.notifyAttendanceHoursBefore,
         10,
       ),
+      publishHoursBefore: Number.parseInt(fields.publishHoursBefore, 10),
       recurrenceFrequency: fields.recurrenceFrequency,
       recurrenceDaysOfWeek,
       publicMessage: fields.publicMessage.trim(),
@@ -427,11 +442,10 @@ export function useGroupForm(
           return;
         }
 
-        setSubmitNotice(
+        alert.success(
           options.mode === "edit" ? "Group changes saved." : "Group created.",
         );
       } catch (error) {
-        setSubmitNotice(null);
         setFormError(mapApiError(error));
       }
     };
@@ -449,7 +463,6 @@ export function useGroupForm(
     selectedMembers: selectedGroupMembers,
     isSubmitting: isPending,
     formError,
-    submitNotice,
     submitLabel: options.mode === "edit" ? "Save Changes" : "Create Group",
     handleFieldChange,
     handleFieldBlur,
