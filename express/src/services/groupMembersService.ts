@@ -14,11 +14,13 @@ import {
   type GroupMemberUnsubscribedNotifications,
   type GroupMemberDocument,
 } from "../models/groupMembers";
+import { listEligiblePublishedMeetingsForMembershipBackfill } from "../models/groupMeetings";
 import {
   assertRole,
   type GroupMemberInviteStatus,
   type GroupMemberRole,
 } from "../models/groupModelCommon";
+import { createMeetingAttendeeIfMissing } from "../models/meetingAttendees";
 import { getUserByEmail, getUserById, normalizeEmail } from "../models/users";
 import { ensureObjectId } from "../models/types";
 import { validateEmail } from "../utils/validators";
@@ -81,6 +83,14 @@ export interface GetGroupMemberNotificationSettingsInput {
   userId: string;
 }
 
+export interface MembershipActivationBackfillResult {
+  membershipId: string;
+  groupId: string;
+  evaluatedMeetingCount: number;
+  attendeeCreatedCount: number;
+  attendeeExistingCount: number;
+}
+
 const isObjectIdLike = (value: string): boolean => ObjectId.isValid(value);
 
 const assertMemberBelongsToGroup = async (
@@ -128,6 +138,53 @@ const resolveIdentifier = async (
 
   return {
     email,
+  };
+};
+
+export const backfillMeetingAttendeesForAcceptedMembership = async (
+  membership: GroupMemberDocument,
+): Promise<MembershipActivationBackfillResult> => {
+  const membershipId = membership._id.toHexString();
+  const groupId = membership.groupId.toHexString();
+
+  if (membership.status !== "accepted") {
+    return {
+      membershipId,
+      groupId,
+      evaluatedMeetingCount: 0,
+      attendeeCreatedCount: 0,
+      attendeeExistingCount: 0,
+    };
+  }
+
+  const meetings = await listEligiblePublishedMeetingsForMembershipBackfill(
+    membership.groupId,
+    { limit: 1000 },
+  );
+
+  let attendeeCreatedCount = 0;
+  let attendeeExistingCount = 0;
+
+  for (const meeting of meetings) {
+    const attendeeResult = await createMeetingAttendeeIfMissing({
+      meetingId: meeting._id,
+      memberId: membership._id,
+      status: "invited",
+    });
+
+    if (attendeeResult.created) {
+      attendeeCreatedCount += 1;
+    } else {
+      attendeeExistingCount += 1;
+    }
+  }
+
+  return {
+    membershipId,
+    groupId,
+    evaluatedMeetingCount: meetings.length,
+    attendeeCreatedCount,
+    attendeeExistingCount,
   };
 };
 
@@ -187,6 +244,10 @@ export const addGroupMember = async (
     }).catch(() => {
       // Best-effort — do not fail the invite if email delivery fails
     });
+  }
+
+  if (saved.status === "accepted") {
+    await backfillMeetingAttendeesForAcceptedMembership(saved);
   }
 
   return saved;
@@ -257,6 +318,10 @@ export const respondToGroupInvite = async (
     throw new Error("Unable to respond to group invite.");
   }
 
+  if (updated.status === "accepted") {
+    await backfillMeetingAttendeesForAcceptedMembership(updated);
+  }
+
   const groupId = updated.groupId.toHexString();
 
   return {
@@ -292,6 +357,9 @@ export const attachUserToInvitedMembers = async (
     });
 
     if (updated) {
+      if (updated.status === "accepted") {
+        await backfillMeetingAttendeesForAcceptedMembership(updated);
+      }
       updatedMembers.push(updated);
     }
   }

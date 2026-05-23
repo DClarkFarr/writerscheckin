@@ -16,6 +16,7 @@ import { AuthError } from "./authService";
 import { env } from "../utils/env";
 import { sendEmail } from "./emailService";
 import { buildGroupReinviteRequestEmail } from "./emailTemplates/groupInviteEmail";
+import { backfillMeetingAttendeesForAcceptedMembership } from "./groupMembersService";
 
 export const INVITE_LINK_ACCESS_STATES = [
   "active_member",
@@ -413,6 +414,10 @@ export const respondToJoinGroupInvite = async (
     throw new Error("Unable to respond to group invite.");
   }
 
+  if (updated.status === "accepted") {
+    await backfillMeetingAttendeesForAcceptedMembership(updated);
+  }
+
   return {
     membershipId: updated._id.toHexString(),
     groupId: updated.groupId.toHexString(),
@@ -475,6 +480,10 @@ export const respondToMeetingInviteDecision = async (
   const updated = await updateGroupMemberById(membership._id, updatePatch);
   if (!updated) {
     throw new Error("Unable to update invite status.");
+  }
+
+  if (updated.status === "accepted") {
+    await backfillMeetingAttendeesForAcceptedMembership(updated);
   }
 
   const updatedState = resolveInviteLinkAccessState({

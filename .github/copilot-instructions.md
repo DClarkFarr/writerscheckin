@@ -1,6 +1,6 @@
 <!-- SPECKIT START -->
 
 For additional context about technologies to be used, project structure,
-shell commands, and other important information, read specs/023-meeting-checkin-timing/plan.md
+shell commands, and other important information, read specs/024-backfill-attendees/plan.md
 
 <!-- SPECKIT END -->

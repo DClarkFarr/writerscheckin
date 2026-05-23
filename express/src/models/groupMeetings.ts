@@ -301,6 +301,26 @@ export const listGroupMeetingsByGroupId = async (
     .toArray();
 };
 
+export const listEligiblePublishedMeetingsForMembershipBackfill = async (
+  groupId: string | ObjectId,
+  options: ListGroupMeetingsOptions = {},
+): Promise<GroupMeetingDocument[]> => {
+  const collection = getGroupMeetingsCollection();
+  const limit = options.limit ?? 500;
+
+  return collection
+    .find({
+      groupId: toObjectId(groupId, "groupId"),
+      status: "published",
+      cancelledAt: null,
+      occursAt: { $gte: new Date() },
+      ...activeRecordFilter(options.includeDeleted),
+    })
+    .sort({ occursAt: -1, _id: -1 })
+    .limit(limit)
+    .toArray();
+};
+
 export const listGroupMeetingsForFeed = async ({
   groupId,
   statuses,
