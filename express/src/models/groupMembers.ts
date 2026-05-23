@@ -98,11 +98,11 @@ export const getGroupMembersCollection = (): Collection<GroupMemberDocument> =>
 export const ensureGroupMemberIndexes = async (): Promise<void> => {
   const collection = getGroupMembersCollection();
   await collection.createIndex({ groupId: 1, role: 1, deletedAt: 1 });
+  await collection.dropIndex("groupId_1_userId_1").catch(() => undefined);
   await collection.createIndex(
     { groupId: 1, userId: 1 },
     {
-      name: "groupId_userId_unique",
-      unique: true,
+      name: "groupId_userId",
       partialFilterExpression: {
         userId: { $exists: true },
       },
