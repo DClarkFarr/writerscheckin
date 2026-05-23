@@ -366,16 +366,9 @@ export function useGroupForm(
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
 
-    const nextTouched: Touched = {
-      name: true,
-      startTime: true,
-      durationMinutes: true,
-      endCheckinHoursBefore: true,
-      recurrenceDaysOfWeek: true,
-    };
     const errors = validateAll(fields, recurrenceDaysOfWeek);
 
-    setTouched((current) => ({ ...current, ...nextTouched }));
+    setTouched({});
     setFieldErrors(errors);
 
     if (hasErrors(errors)) {
