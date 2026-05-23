@@ -107,7 +107,10 @@ export const getMemberMeetingCheckinWindowState = (
     checkinOpensAt.getHours() - (meeting.publishHoursBefore ?? 0),
   );
 
-  if (now.getTime() < checkinOpensAt.getTime()) {
+  if (
+    now.getTime() < checkinOpensAt.getTime() &&
+    meeting.status !== "published"
+  ) {
     return "pre-open";
   }
 

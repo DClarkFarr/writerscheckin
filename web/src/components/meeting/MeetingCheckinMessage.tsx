@@ -61,6 +61,9 @@ export const MeetingCheckinMessage = ({ item }: MeetingCheckinMessageProps) => {
   }
 
   if (publishAt.isAfter(currentTime)) {
+    if (item.status === "published") {
+      return "Select your RSVP status";
+    }
     return (
       <CountdownText targetTime={publishAt.toDate()}>
         <span className="inline-block py-2 leading-1">Check-in starts in </span>
