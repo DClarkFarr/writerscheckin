@@ -106,7 +106,7 @@ export const buildGroupMeetingAttendanceEmail = (
 
   const html = buildBaseEmailTemplate({
     previewText: `Attendance update for ${input.groupName}`,
-    heading: "Meeting attendance update",
+    heading: `Attendance update: ${input.groupName}`,
     bodyHtml: renderedHtmlTemplate,
   });
 
