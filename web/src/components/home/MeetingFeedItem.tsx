@@ -26,10 +26,8 @@ import {
   formatBookendMonthDay,
   formatBookendYear,
   formatDate,
-  parseDateStrict,
 } from "@/lib/dateFormat";
 import {
-  formatCheckinWindowMessage,
   getCheckinDisabledReason,
   getCheckinPrimaryButtonLabel,
 } from "@/lib/checkinWindowMessage";
@@ -45,7 +43,7 @@ import { usePublishMeetingMutation } from "@/queries/usePublishMeetingMutation";
 import { useCancelMeetingMutation } from "@/queries/useCancelMeetingMutation";
 import { myMeetingsQueryKey } from "@/queries/useMyMeetingsQuery";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import IconEyeLock from "~icons/mdi/eye-lock";
 import IconClockTimeThree from "~icons/mdi/clock-time-three";
 import IconDotsVertical from "~icons/mdi/dots-vertical";
@@ -57,6 +55,7 @@ import IconEye from "~icons/mdi/eye";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ButtonGroup } from "../ui/button-group";
 import { Alert } from "../ui/alert";
+import { MeetingCheckinMessage } from "../meeting/MeetingCheckinMessage";
 
 interface MeetingFeedItemProps {
   item: MemberMeetingFeedItem;
@@ -138,7 +137,6 @@ export const MeetingFeedItem = ({
   item,
   onCheckInClick,
 }: MeetingFeedItemProps) => {
-  const [currentTime, setCurrentTime] = useState(() => new Date());
   const queryClient = useQueryClient();
 
   const isCancelled = !!item.cancelledAt;
@@ -160,12 +158,7 @@ export const MeetingFeedItem = ({
     derivedState.canEdit && isUpcomingMeeting && item.status === "draft";
   const canCancelFromMenu =
     derivedState.canEdit && isUpcomingMeeting && item.status === "published";
-  const checkinWindowMessage = item.checkinClosesAt
-    ? formatCheckinWindowMessage({
-        checkinClosesAt: item.checkinClosesAt,
-        now: currentTime,
-      })
-    : item.checkinPeriodMessage;
+
   const canCheckinNow = derivedState.canCheckin;
   const checkinWindowState = derivedState.checkinWindowState;
   const disabledCheckinReason = getCheckinDisabledReason(checkinWindowState);
@@ -180,44 +173,6 @@ export const MeetingFeedItem = ({
     meetingId: item.meetingId,
   });
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
-
-  useEffect(() => {
-    if (
-      !item.checkinClosesAt ||
-      isCancelled ||
-      derivedState.meetingTimeState !== "upcoming" ||
-      checkinWindowState !== "open"
-    ) {
-      return;
-    }
-
-    const closesAt = parseDateStrict(item.checkinClosesAt);
-    if (!closesAt) {
-      return;
-    }
-
-    (() => setCurrentTime(new Date()))();
-
-    if (!closesAt.isAfter(new Date())) {
-      return;
-    }
-
-    const timer = window.setInterval(() => {
-      const now = new Date();
-      setCurrentTime(now);
-
-      if (!closesAt.isAfter(now)) {
-        window.clearInterval(timer);
-      }
-    }, 1000);
-
-    return () => window.clearInterval(timer);
-  }, [
-    checkinWindowState,
-    derivedState.meetingTimeState,
-    isCancelled,
-    item.checkinClosesAt,
-  ]);
 
   const handlePublishMeeting = async () => {
     await publishMutation.mutateAsync();
@@ -475,11 +430,9 @@ export const MeetingFeedItem = ({
                       <p>{disabledCheckinReason}</p>
                     </TooltipContent>
                   </Tooltip>
-                  {checkinWindowMessage && (
-                    <p className="text-xs text-muted-foreground">
-                      {checkinWindowMessage}
-                    </p>
-                  )}
+                  <p className="text-xs text-muted-foreground">
+                    <MeetingCheckinMessage item={item} />
+                  </p>
                 </div>
               )}
             {!isCancelled && canCheckinNow && (
@@ -491,11 +444,10 @@ export const MeetingFeedItem = ({
                 >
                   {userCheckinState === "none" ? "Check In" : "Update Check-In"}
                 </Button>
-                {checkinWindowMessage && (
-                  <p className="text-xs text-muted-foreground">
-                    {checkinWindowMessage}
-                  </p>
-                )}
+
+                <p className="text-xs text-muted-foreground">
+                  <MeetingCheckinMessage item={item} />
+                </p>
               </div>
             )}
 

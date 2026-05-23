@@ -18,7 +18,7 @@ import {
   getMemberMeetingAttendanceState,
 } from "@/hooks/useMemberMeetingDerivedState";
 import { parseDateStrict } from "@/lib/dateFormat";
-import { formatCheckinWindowMessage } from "@/lib/checkinWindowMessage";
+import { MeetingCheckinMessage } from "../meeting/MeetingCheckinMessage";
 
 interface MeetingCheckinDrawerProps {
   isOpen: boolean;
@@ -101,14 +101,6 @@ export const MeetingCheckinDrawer = ({
     : null;
   const isPeriodClosed = closesAt ? !closesAt.isAfter(currentTime) : false;
 
-  const checkinWindowMessage = selectedMeeting.checkinClosesAt
-    ? formatCheckinWindowMessage({
-        checkinClosesAt: selectedMeeting.checkinClosesAt,
-        now: currentTime,
-      })
-    : (selectedMeeting.checkinPeriodMessage ??
-      "Check-in period end time unavailable.");
-
   const helperText = canCheckin
     ? "How are you planning to attend this meeting?"
     : isCheckinCutoffClosed
@@ -177,7 +169,7 @@ export const MeetingCheckinDrawer = ({
 
         <div className="p-4 space-y-3 mb-8">
           <p className="text-sm text-muted-foreground">
-            {checkinWindowMessage}
+            <MeetingCheckinMessage item={selectedMeeting} />
           </p>
 
           <Tooltip>

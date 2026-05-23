@@ -103,6 +103,7 @@ export interface MeetingDetailResponse extends CheckinWindowMetadata {
   readingCount: number;
   participantRows: MeetingParticipantRow[];
   inviteLinkContext?: NonActiveInviteLinkContextResponse | null;
+  publishHoursBefore: number;
 }
 
 export interface NonActiveInviteLinkContextResponse {
@@ -1143,6 +1144,7 @@ export const buildMeetingDetailResponse = async (
         meeting.occursAt,
         meeting.endCheckinHoursBefore,
       ),
+      publishHoursBefore: meeting.publishHoursBefore,
       userCheckinState: "none",
       canCheckin: false,
       canEdit: false,
@@ -1253,6 +1255,7 @@ export const buildMeetingDetailResponse = async (
     readingCount,
     participantRows,
     inviteLinkContext: null,
+    publishHoursBefore: meeting.publishHoursBefore,
   };
 };
 

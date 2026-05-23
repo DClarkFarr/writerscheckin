@@ -23,7 +23,6 @@ import {
   formatStaticFullDateTime,
 } from "@/lib/dateFormat";
 import {
-  formatCheckinWindowMessage,
   getCheckinDisabledReason,
   resolveCheckinWindowUiState,
 } from "@/lib/checkinWindowMessage";
@@ -44,6 +43,7 @@ import {
   useRespondToMeetingInviteDecisionMutation,
 } from "@/queries/useRespondToJoinInviteMutation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { MeetingCheckinMessage } from "@/components/meeting/MeetingCheckinMessage";
 
 export interface GroupMeetingViewPageProps {
   groupId: string;
@@ -335,12 +335,6 @@ export function GroupMeetingViewPage({
     );
   }
 
-  const checkinWindowMessage = meeting.checkinClosesAt
-    ? formatCheckinWindowMessage({
-        checkinClosesAt: meeting.checkinClosesAt,
-        now: currentTime,
-      })
-    : (meeting.checkinPeriodMessage ?? "Check-in period end time unavailable.");
   const occursAt = parseDateStrict(meeting.occursAt);
   const checkinWindowState = resolveCheckinWindowUiState({
     canCheckin: meeting.canCheckin,
@@ -442,7 +436,7 @@ export function GroupMeetingViewPage({
             My Check-In Status
           </p>
           <p className="text-sm text-muted-foreground">
-            {checkinWindowMessage}
+            <MeetingCheckinMessage item={meeting} />
           </p>
           <div className="grid gap-2 md:grid-cols-3">
             <Tooltip>

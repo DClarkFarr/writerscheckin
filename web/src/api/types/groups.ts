@@ -402,6 +402,7 @@ export interface MeetingDetailResponse {
   readingCount: number;
   participantRows: MeetingParticipantRow[];
   inviteLinkContext?: InviteLinkAccessContext | null;
+  publishHoursBefore: number;
 }
 
 export interface EditableMeetingResponse {

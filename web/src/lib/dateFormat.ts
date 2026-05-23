@@ -258,22 +258,79 @@ export function isSameCalendarDay(left: DateValue, right: DateValue): boolean {
   return leftDate.isSame(rightDate, "day");
 }
 
+export const calculateCountdownTimeSegments = (
+  targetTime: DateValue,
+  now: DateValue = new Date(),
+) => {
+  const targetDate = parseDateStrict(targetTime);
+  const nowDate = parseDateStrict(now);
+
+  if (!targetDate || !nowDate) {
+    return null;
+  }
+
+  const diffSeconds = Math.max(0, targetDate.diff(nowDate, "second"));
+  const totalSeconds = Math.floor(diffSeconds);
+  const segs = [
+    {
+      label: "d",
+      period: 86400,
+    },
+    {
+      label: "h",
+      period: 3600,
+    },
+    {
+      label: "m",
+      period: 60,
+    },
+    {
+      label: "s",
+      period: 1,
+    },
+  ] as const;
+
+  const { remainder: _remainder, ...segments } = segs.reduce(
+    (acc, { label, period }) => {
+      const value = Math.floor(acc.remainder / period);
+      acc.remainder = acc.remainder % period;
+      acc[label] = value;
+      return acc;
+    },
+    {
+      d: 0,
+      h: 0,
+      m: 0,
+      s: 0,
+      remainder: totalSeconds,
+    },
+  );
+
+  return {
+    ...segments,
+    parts: segs
+      .map(({ label }) => {
+        const value = segments[label];
+        if (value > 0) {
+          return `${value}${label}`;
+        }
+        return false;
+      })
+      .filter(Boolean)
+      .slice(0, 3) as string[],
+  };
+};
 export function formatCountdownHms(
   target: DateValue,
   now: DateValue = new Date(),
 ): string {
-  const targetDate = parseDateStrict(target);
-  const nowDate = parseDateStrict(now);
+  const segments = calculateCountdownTimeSegments(target, now);
 
-  if (!targetDate || !nowDate) {
-    return "0hr 0min 0sec";
+  if (!segments) {
+    return "0h 0m 0s";
   }
 
-  const diffMs = Math.max(0, targetDate.diff(nowDate, "millisecond"));
-  const totalSeconds = Math.floor(diffMs / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
+  const { parts } = segments;
 
-  return `${hours}hr ${minutes}min ${seconds}sec`;
+  return parts.join(" ");
 }
