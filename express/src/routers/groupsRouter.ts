@@ -437,6 +437,7 @@ const applyGroupRoutes = () => {
           recurrenceDaysOfWeek: req.body?.recurrenceDaysOfWeek,
           endCheckinHoursBefore: req.body?.endCheckinHoursBefore,
           notifyAttendanceHoursBefore: req.body?.notifyAttendanceHoursBefore,
+          publishHoursBefore: req.body?.publishHoursBefore,
           // Keep frontend aliases stable: publicMessage/attendanceMessage map
           // to backend publishEmailMessage/attendanceEmailMessage fields.
           publicMessage: req.body?.publicMessage,

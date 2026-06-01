@@ -96,6 +96,7 @@ export interface GroupFormPayload {
   notifyAttendanceHoursBefore?: number;
   publicMessage?: string;
   attendanceMessage?: string;
+  publishHoursBefore?: number;
   members: GroupFormMemberInput[];
 }
 
@@ -130,6 +131,7 @@ export interface EditableGroupFormResult {
   recurrenceDaysOfWeek: number[];
   publicMessage: string;
   attendanceMessage: string;
+  publishHoursBefore: number;
 }
 
 export interface ResolvedGroupEmailTemplates {
@@ -656,7 +658,10 @@ export const createManagedGroup = async (
     ...(typeof input.attendanceMessage === "string"
       ? { attendanceEmailMessage: input.attendanceMessage }
       : {}),
-    publishHoursBefore: DEFAULT_PUBLISH_HOURS_BEFORE,
+    publishHoursBefore:
+      typeof input.publishHoursBefore === "number"
+        ? input.publishHoursBefore
+        : DEFAULT_PUBLISH_HOURS_BEFORE,
     notifyAttendanceHoursBefore:
       typeof input.notifyAttendanceHoursBefore === "number"
         ? input.notifyAttendanceHoursBefore
@@ -747,6 +752,8 @@ export const getManagedGroupForm = async (
       group.notifyAttendanceHoursBefore ?? DEFAULT_ATTENDANCE_HOURS_BEFORE,
     recurrenceFrequency: group.recurrenceRule.frequency,
     recurrenceDaysOfWeek: group.recurrenceRule.daysOfWeek,
+    publishHoursBefore:
+      group.publishHoursBefore ?? DEFAULT_PUBLISH_HOURS_BEFORE,
     ...toGroupTemplateAliases(resolvedTemplates),
   };
 };
@@ -923,6 +930,9 @@ export const updateManagedGroup = async (
       ? { notifyAttendanceHoursBefore: input.notifyAttendanceHoursBefore }
       : {}),
     ...(typeof input.address === "string" ? { address: input.address } : {}),
+    ...(typeof input.publishHoursBefore === "number"
+      ? { publishHoursBefore: input.publishHoursBefore }
+      : {}),
     startTime: parseTimeString(input.startTime),
     durationMinutes: input.durationMinutes,
     recurrenceRule: {
