@@ -142,6 +142,7 @@ const applyGroupRoutes = () => {
           notifyAttendanceHoursBefore: req.body?.notifyAttendanceHoursBefore,
           // Keep frontend aliases stable: publicMessage/attendanceMessage map
           // to backend publishEmailMessage/attendanceEmailMessage fields.
+          publishHoursBefore: req.body?.publishHoursBefore,
           publicMessage: req.body?.publicMessage,
           attendanceMessage: req.body?.attendanceMessage,
           members: Array.isArray(req.body?.members) ? req.body.members : [],
